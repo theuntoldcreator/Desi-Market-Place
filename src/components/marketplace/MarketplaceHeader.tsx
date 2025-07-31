@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { Link } from 'react-router-dom';
+import logo from '@/assets/logofile.png';
 
 interface MarketplaceHeaderProps {
   onCreateListing: () => void;
@@ -14,7 +15,7 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-md">
-              <img src="/logofile.png" alt="Desi Market Place Logo" className="w-6 h-6" />
+              <img src={logo} alt="Desi Market Place Logo" className="w-6 h-6" />
             </div>
             <div className="hidden sm:block">
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
