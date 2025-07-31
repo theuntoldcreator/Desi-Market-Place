@@ -11,7 +11,7 @@ This project is built with a modern, type-safe, and component-based architecture
 - **UI Components:** shadcn/ui for a pre-built, accessible, and customizable component library.
 - **Styling:** Tailwind CSS for all utility-first styling.
 - **Routing:** React Router (`react-router-dom`) for all client-side routing.
-- **Authentication:** Clerk for user management, sign-in, sign-up, and protected routes.
+- **Backend:** Supabase for Authentication, Database, and Storage.
 - **Data Fetching & Server State:** TanStack Query for managing asynchronous operations, caching, and server state.
 - **Forms:** React Hook Form and Zod for performant, scalable form state management and schema validation.
 - **Icons:** Lucide React for a comprehensive and consistent set of icons.
@@ -38,12 +38,14 @@ To maintain consistency and quality, please adhere to the following rules:
 - **Primary Library:** Use **React Router (`react-router-dom`)**.
 - **Route Definitions:** All application routes must be defined within the `<Routes>` component in `src/App.tsx`.
 
-### 4. Authentication
-- **Primary Library:** Use **Clerk (`@clerk/clerk-react`)**.
-- **Implementation:** Use the `<SignedIn>`, `<SignedOut>`, and `<UserButton>` components for managing UI based on authentication state. Use the `AuthWrapper` component in `src/components/auth` to protect pages that require a user to be logged in.
+### 4. Authentication & Backend
+- **Primary Library:** Use **Supabase (`@supabase/supabase-js`)**.
+- **Authentication:** Use `@supabase/auth-helpers-react` and `@supabase/auth-ui-react` for managing user sessions and login forms.
+- **Database & Storage:** All data operations (listings, profiles, favorites) and file uploads must go through the Supabase client.
+- **Security:** Always implement and respect Supabase Row Level Security (RLS) policies.
 
 ### 5. Data Fetching & State
-- **Server State:** Use **TanStack Query** for all interactions with APIs or any other asynchronous data fetching. This includes fetching, caching, and mutating data.
+- **Server State:** Use **TanStack Query** for all interactions with the Supabase API. This includes fetching, caching, and mutating data.
 - **Client State:** For simple, local component state, use React's built-in hooks like `useState` and `useReducer`.
 
 ### 6. Forms

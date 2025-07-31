@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Heart, MapPin, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, MapPin, Phone, ChevronLeft, ChevronRight, Trash2, Pencil } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 interface ListingCardProps {
@@ -21,13 +21,16 @@ interface ListingCardProps {
   category: string;
   timeAgo: string;
   isFavorited?: boolean;
+  isOwner?: boolean;
   onFavoriteToggle?: (id: string, isFavorited: boolean) => void;
   onContact?: (contact: string) => void;
+  onDelete?: () => void;
+  onEdit?: () => void;
 }
 
 export function ListingCard({
   id, title, price, image_urls, location, contact, seller, category, timeAgo,
-  isFavorited = false, onFavoriteToggle, onContact
+  isFavorited = false, isOwner = false, onFavoriteToggle, onContact, onDelete, onEdit
 }: ListingCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -50,9 +53,11 @@ export function ListingCard({
               )}
             </>
           ) : <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>}
-          <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-white/20 hover:bg-white/40 backdrop-blur-sm h-8 w-8" onClick={(e) => { e.stopPropagation(); onFavoriteToggle?.(id, isFavorited); }}>
-            <Heart className={cn("w-4 h-4 transition-all", isFavorited ? 'fill-red-500 text-red-500' : 'text-white')} />
-          </Button>
+          {!isOwner && (
+            <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-white/20 hover:bg-white/40 backdrop-blur-sm h-8 w-8" onClick={(e) => { e.stopPropagation(); onFavoriteToggle?.(id, isFavorited); }}>
+              <Heart className={cn("w-4 h-4 transition-all", isFavorited ? 'fill-red-500 text-red-500' : 'text-white')} />
+            </Button>
+          )}
           <Badge variant="secondary" className="absolute top-2 left-2 bg-white/90">{category}</Badge>
         </div>
         <div className="p-4 space-y-4">
@@ -64,10 +69,18 @@ export function ListingCard({
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="w-4 h-4" /> <span className="truncate">{location}</span></div>
-          <div className="flex items-center justify-between pt-2 border-t">
-            <div className="flex items-center gap-2 min-w-0"><Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url} /><AvatarFallback>{seller.full_name?.[0]}</AvatarFallback></Avatar><span className="text-sm font-medium truncate">{seller.full_name}</span></div>
-            <Button onClick={() => onContact?.(contact)} size="sm"><Phone className="w-3 h-3 mr-1" /> Contact</Button>
-          </div>
+          
+          {isOwner ? (
+            <div className="flex items-center gap-2 pt-2 border-t">
+              <Button onClick={onEdit} size="sm" variant="outline" disabled><Pencil className="w-3 h-3 mr-1" /> Edit</Button>
+              <Button onClick={onDelete} size="sm" variant="destructive"><Trash2 className="w-3 h-3 mr-1" /> Delete</Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between pt-2 border-t">
+              <div className="flex items-center gap-2 min-w-0"><Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url} /><AvatarFallback>{seller.full_name?.[0]}</AvatarFallback></Avatar><span className="text-sm font-medium truncate">{seller.full_name}</span></div>
+              <Button onClick={() => onContact?.(contact)} size="sm"><Phone className="w-3 h-3 mr-1" /> Contact</Button>
+            </div>
+          )}
         </div>
       </CardContent>
       <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,7 @@ import { DisclaimerSection } from '@/components/marketplace/DisclaimerSection';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, SortAsc, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 
 const fetchListings = async (userId: string | undefined) => {
   const { data: listings, error: listingsError } = await supabase
@@ -55,6 +56,7 @@ export default function Marketplace() {
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['listings', session?.user?.id],
     queryFn: () => fetchListings(session?.user?.id),
+    staleTime: 1000 * 60, // 1 minute
   });
 
   const favoriteMutation = useMutation({
@@ -69,8 +71,16 @@ export default function Marketplace() {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      const listing = listings.find(l => l.id === variables.listingId);
+      if (listing) {
+        toast({
+          title: variables.isFavorited ? 'Removed from favorites' : 'Added to favorites',
+          description: listing.title,
+        });
+      }
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -78,14 +88,7 @@ export default function Marketplace() {
   });
 
   const handleFavoriteToggle = (id: string, isFavorited: boolean) => {
-    const listing = listings.find(l => l.id === id);
     favoriteMutation.mutate({ listingId: id, isFavorited });
-    if (listing) {
-      toast({
-        title: isFavorited ? 'Removed from favorites' : 'Added to favorites',
-        description: listing.title,
-      });
-    }
   };
 
   const handleContact = (contact: string) => {
@@ -116,8 +119,10 @@ export default function Marketplace() {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex justify-center items-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Card key={i} className="p-0"><div className="h-96 bg-muted animate-pulse"></div></Card>
+          ))}
         </div>
       );
     }
@@ -167,41 +172,43 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
-      <MarketplaceHeader
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onCreateListing={() => setShowCreateListing(true)}
-      />
-      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold text-foreground">
-              {selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              {filteredListings.length} items found
-              {searchQuery && ` for "${searchQuery}"`}
-            </p>
+      <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
+      <div className="flex">
+        <MarketplaceSidebar
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-bold text-foreground">
+                {selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
+              </h2>
+              <p className="text-muted-foreground mt-1">
+                {filteredListings.length} items found
+                {searchQuery && ` for "${searchQuery}"`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortBy(sortBy === 'newest' ? 'price-low' : sortBy === 'price-low' ? 'price-high' : 'newest')}
+                className="gap-2"
+              >
+                <SortAsc className="w-4 h-4" />
+                {sortBy === 'newest' && 'Newest First'}
+                {sortBy === 'price-low' && 'Price: Low to High'}
+                {sortBy === 'price-high' && 'Price: High to Low'}
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSortBy(sortBy === 'newest' ? 'price-low' : sortBy === 'price-low' ? 'price-high' : 'newest')}
-              className="gap-2"
-            >
-              <SortAsc className="w-4 h-4" />
-              {sortBy === 'newest' && 'Newest First'}
-              {sortBy === 'price-low' && 'Price: Low to High'}
-              {sortBy === 'price-high' && 'Price: High to Low'}
-            </Button>
-          </div>
-        </div>
-        {renderContent()}
-        <DisclaimerSection />
-      </main>
+          {renderContent()}
+          <DisclaimerSection />
+        </main>
+      </div>
       <CreateListing
         isOpen={showCreateListing}
         onClose={() => setShowCreateListing(false)}

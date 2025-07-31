@@ -1,4 +1,4 @@
-import { Bell, MessageCircle } from 'lucide-react';
+import { Bell, MessageCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { UserMenu } from '@/components/auth/UserMenu';
@@ -8,7 +8,7 @@ interface MarketplaceHeaderProps {
   onCreateListing: () => void;
 }
 
-export function MarketplaceHeader({ onCreateListing }: Omit<MarketplaceHeaderProps, 'selectedCategory' | 'onCategoryChange' | 'searchQuery' | 'onSearchChange'> & { selectedCategory: string; onCategoryChange: (category: string) => void; searchQuery: string; onSearchChange: (query: string) => void; }) {
+export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-white/95 backdrop-blur-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 max-w-screen-2xl">
@@ -25,6 +25,8 @@ export function MarketplaceHeader({ onCreateListing }: Omit<MarketplaceHeaderPro
           </Link>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
+          <Button onClick={onCreateListing} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
+          <Button onClick={onCreateListing} size="icon" className="sm:hidden flex"><Plus className="w-4 h-4" /></Button>
           <Button variant="ghost" size="icon" className="relative h-9 w-9"><Bell className="w-4 h-4" /><Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs bg-destructive">3</Badge></Button>
           <Button variant="ghost" size="icon" className="relative h-9 w-9"><MessageCircle className="w-4 h-4" /><Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs bg-primary">2</Badge></Button>
           <UserMenu />
