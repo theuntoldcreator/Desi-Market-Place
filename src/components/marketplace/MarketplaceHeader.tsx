@@ -15,11 +15,11 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-sm">UFM</span>
+              <span className="text-white font-bold text-sm">DMP</span>
             </div>
             <div className="hidden sm:block">
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Uni-Finds Market
+                Desi Market Place
               </h1>
             </div>
           </Link>
