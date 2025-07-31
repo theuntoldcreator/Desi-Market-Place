@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { format } from 'date-fns';
+import { EditProfile } from '@/components/auth/EditProfile';
 
 const fetchProfile = async (supabase: any, userId: string) => {
   const { data, error } = await supabase
@@ -23,6 +24,7 @@ export default function Profile() {
   const session = useSession();
   const supabase = useSupabaseClient();
   const [showCreateListing, setShowCreateListing] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   const { data: profile, isLoading, isError } = useQuery({
     queryKey: ['profile', session?.user?.id],
@@ -52,31 +54,42 @@ export default function Profile() {
     const fallback = fullName ? fullName[0].toUpperCase() : session?.user.email?.[0].toUpperCase();
 
     return (
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>My Profile</CardTitle>
-          <Button variant="outline" size="sm" disabled><Edit className="w-4 h-4 mr-2" /> Edit (Soon)</Button>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center gap-6">
-            <Avatar className="w-24 h-24">
-              <AvatarImage src={profile.avatar_url} alt={fullName} />
-              <AvatarFallback className="text-4xl">{fallback}</AvatarFallback>
-            </Avatar>
-            <div className="space-y-1">
-              <h2 className="text-2xl font-bold">{fullName}</h2>
-              <p className="text-muted-foreground">{session?.user.email}</p>
+      <>
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>My Profile</CardTitle>
+            <Button variant="outline" size="sm" onClick={() => setShowEditProfile(true)}>
+              <Edit className="w-4 h-4 mr-2" /> Edit
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center gap-6">
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={profile.avatar_url} alt={fullName} />
+                <AvatarFallback className="text-4xl">{fallback}</AvatarFallback>
+              </Avatar>
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold">{fullName}</h2>
+                <p className="text-muted-foreground">{session?.user.email}</p>
+              </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t">
-            {renderProfileDetail(User, 'Full Name', fullName)}
-            {renderProfileDetail(Mail, 'Email', session?.user.email)}
-            {renderProfileDetail(Phone, 'Phone Number', profile.phone_number)}
-            {renderProfileDetail(Calendar, 'Date of Birth', profile.dob ? format(new Date(profile.dob), 'PPP') : null)}
-            {renderProfileDetail(User, 'Gender', profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : null)}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t">
+              {renderProfileDetail(User, 'Full Name', fullName)}
+              {renderProfileDetail(Mail, 'Email', session?.user.email)}
+              {renderProfileDetail(Phone, 'Phone Number', profile.phone_number)}
+              {renderProfileDetail(Calendar, 'Date of Birth', profile.dob ? format(new Date(profile.dob), 'PPP') : null)}
+              {renderProfileDetail(User, 'Gender', profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : null)}
+            </div>
+          </CardContent>
+        </Card>
+        {showEditProfile && (
+          <EditProfile
+            isOpen={showEditProfile}
+            onClose={() => setShowEditProfile(false)}
+            profile={profile}
+          />
+        )}
+      </>
     );
   };
 
