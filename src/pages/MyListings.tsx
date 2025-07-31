@@ -134,7 +134,7 @@ export default function MyListings() {
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">My Listings</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">My Listings</h2>
           <p className="text-muted-foreground mt-1">{listings.length} items posted</p>
         </div>
         {renderContent()}

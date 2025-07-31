@@ -34,11 +34,6 @@ html {
     background: hsl(var(--muted-foreground));
 }
 
-.black {
-    color: black !important;
-}
-
-
 /* Desi Market Place Design System - Modern marketplace aesthetic */
 
 @layer base {

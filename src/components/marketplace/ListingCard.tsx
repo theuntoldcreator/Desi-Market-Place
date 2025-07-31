@@ -64,7 +64,7 @@ export function ListingCard({
           <div>
             <h3 className="font-semibold text-lg line-clamp-2 h-14 group-hover:text-primary">{title}</h3>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-black-300">${price.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-marketplace-price-text">${price.toLocaleString()}</span>
               <span className="text-sm text-muted-foreground">{timeAgo}</span>
             </div>
           </div>

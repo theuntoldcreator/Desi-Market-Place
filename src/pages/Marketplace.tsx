@@ -196,7 +196,7 @@ export default function Marketplace() {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-3xl font-bold text-foreground">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
                 {selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
               </h2>
               <p className="text-muted-foreground mt-1">
