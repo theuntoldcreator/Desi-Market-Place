@@ -110,7 +110,7 @@ export default function Marketplace() {
 
   const loadMore = () => setVisibleCount(prev => prev + 12);
 
-  const renderContent = ()_ => {
+  const renderContent = () => {
     if (isLoading) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
