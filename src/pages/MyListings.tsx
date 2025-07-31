@@ -21,14 +21,32 @@ import {
 } from "@/components/ui/alert-dialog"
 
 const fetchMyListings = async (userId: string) => {
-  const { data, error } = await supabase
+  // Fetch listings for the current user
+  const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles(full_name, avatar_url)')
+    .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return data || [];
+  if (listingsError) throw new Error(listingsError.message);
+  if (!listings) return [];
+
+  // Fetch the profile of the current user
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('full_name, avatar_url')
+    .eq('id', userId)
+    .single();
+  
+  if (profileError) {
+    console.warn('Could not fetch profile for my listings:', profileError.message);
+  }
+
+  // Attach the same profile to all listings
+  return listings.map(listing => ({
+    ...listing,
+    profile: profile || { full_name: 'You', avatar_url: null }
+  }));
 };
 
 export default function MyListings() {

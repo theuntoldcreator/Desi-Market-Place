@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, Phone, ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, X, Phone, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,11 +24,6 @@ const categories = [
   { value: 'vehicles', label: 'Vehicles' },
   { value: 'clothing', label: 'Clothing' },
   { value: 'gaming', label: 'Gaming' },
-];
-
-const locations = [
-  'Delhi University North Campus', 'Delhi University South Campus', 'JNU Campus',
-  'Jamia Millia Islamia', 'IIT Delhi', 'AIIMS Delhi', 'Other'
 ];
 
 export function CreateListing({ isOpen, onClose }: CreateListingProps) {
@@ -140,17 +135,17 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
             <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="Listing Title *" />
             <Textarea id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Description" rows={3} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input id="price" type="number" value={formData.price} onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))} placeholder="Price (₹) *" min="1" />
+              <Input id="price" type="number" value={formData.price} onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))} placeholder="Price ($) *" min="1" />
               <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
                 <SelectTrigger><SelectValue placeholder="Select Category *" /></SelectTrigger>
                 <SelectContent>{categories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Select value={formData.location} onValueChange={(value) => setFormData(prev => ({ ...prev, location: value }))}>
-                <SelectTrigger><SelectValue placeholder="Select Location *" /></SelectTrigger>
-                <SelectContent>{locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
-              </Select>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))} placeholder="Location (e.g., Dallas) *" className="pl-10" />
+              </div>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input id="contact" value={formData.contact} onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))} placeholder="Contact Number *" className="pl-10" />

@@ -1,6 +1,5 @@
-import { Bell, MessageCircle, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { Link } from 'react-router-dom';
 
@@ -27,8 +26,6 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
         <div className="flex items-center gap-2 sm:gap-3">
           <Button onClick={onCreateListing} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
           <Button onClick={onCreateListing} size="icon" className="sm:hidden flex"><Plus className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" className="relative h-9 w-9"><Bell className="w-4 h-4" /><Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs bg-destructive">3</Badge></Button>
-          <Button variant="ghost" size="icon" className="relative h-9 w-9"><MessageCircle className="w-4 h-4" /><Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs bg-primary">2</Badge></Button>
           <UserMenu />
         </div>
       </div>
