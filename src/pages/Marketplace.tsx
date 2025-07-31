@@ -13,10 +13,10 @@ import { useToast } from '@/hooks/use-toast';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 
 const fetchListings = async (userId: string | undefined) => {
-  // Step 1: Fetch all listings with their profiles
+  // Step 1: Fetch all listings with their profiles using a LEFT JOIN
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles!listings_user_id_fkey(*)')
+    .select('*, profile:profiles!left!listings_user_id_fkey(*)')
     .order('created_at', { ascending: false });
 
   if (listingsError) throw new Error(listingsError.message);
