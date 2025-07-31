@@ -28,7 +28,7 @@ const fetchMyListings = async (userId: string) => {
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return data;
+  return data || [];
 };
 
 export default function MyListings() {
@@ -47,19 +47,14 @@ export default function MyListings() {
 
   const deleteMutation = useMutation({
     mutationFn: async (listing: any) => {
-      // Delete images from storage first
       const imagePaths = listing.image_urls.map((url: string) => {
         const parts = url.split('/');
         return parts.slice(parts.length - 2).join('/');
       });
       if (imagePaths.length > 0) {
-        const { error: storageError } = await supabase.storage.from('listing_images').remove(imagePaths);
-        if (storageError) throw new Error(`Failed to delete images: ${storageError.message}`);
+        await supabase.storage.from('listing_images').remove(imagePaths);
       }
-      
-      // Delete the listing from the database
-      const { error: dbError } = await supabase.from('listings').delete().eq('id', listing.id);
-      if (dbError) throw new Error(`Failed to delete listing: ${dbError.message}`);
+      await supabase.from('listings').delete().eq('id', listing.id);
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Your listing has been deleted." });

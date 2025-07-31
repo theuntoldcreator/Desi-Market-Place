@@ -8,36 +8,48 @@ import { CreateListing } from '@/components/marketplace/CreateListing';
 import { DisclaimerSection } from '@/components/marketplace/DisclaimerSection';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronDown, SortAsc, Loader2 } from 'lucide-react';
+import { ChevronDown, SortAsc } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 
 const fetchListings = async (userId: string | undefined) => {
+  // Step 1: Fetch all listings
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles(full_name, avatar_url)')
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (listingsError) throw new Error(listingsError.message);
+  if (!listings) return [];
 
+  // Step 2: Fetch profiles for the fetched listings
+  const userIds = [...new Set(listings.map(l => l.user_id))];
+  const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds);
+  const profilesById = profiles?.reduce((acc, p) => {
+    acc[p.id] = p;
+    return acc;
+  }, {} as any) || {};
+
+  // Step 3: Combine listings with their profiles
+  const listingsWithProfiles = listings.map(l => ({
+    ...l,
+    profile: profilesById[l.user_id] || null,
+  }));
+
+  // Step 4: If user is logged in, determine which are favorited
   if (!userId) {
-    return listings.map(l => ({ ...l, isFavorited: false }));
+    return listingsWithProfiles.map(l => ({ ...l, isFavorited: false }));
   }
 
   const listingIds = listings.map(l => l.id);
-  const { data: favorites, error: favError } = await supabase
+  const { data: favorites } = await supabase
     .from('favorites')
     .select('listing_id')
     .eq('user_id', userId)
     .in('listing_id', listingIds);
 
-  if (favError) {
-    console.error("Error fetching favorites:", favError);
-    return listings.map(l => ({ ...l, isFavorited: false }));
-  }
-
-  const favoriteSet = new Set(favorites.map(f => f.listing_id));
-  return listings.map(l => ({
+  const favoriteSet = new Set(favorites?.map(f => f.listing_id) || []);
+  return listingsWithProfiles.map(l => ({
     ...l,
     isFavorited: favoriteSet.has(l.id),
   }));

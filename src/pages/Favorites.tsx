@@ -10,6 +10,7 @@ import { CreateListing } from '@/components/marketplace/CreateListing';
 import { Link } from 'react-router-dom';
 
 const fetchFavoriteListings = async (userId: string) => {
+  // Step 1: Fetch favorite listing IDs
   const { data: favorites, error: favError } = await supabase
     .from('favorites')
     .select('listing_id')
@@ -20,6 +21,7 @@ const fetchFavoriteListings = async (userId: string) => {
   const listingIds = favorites.map(f => f.listing_id);
   if (listingIds.length === 0) return [];
 
+  // Step 2: Fetch the listings for those IDs
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
     .select('*, profile:profiles(full_name, avatar_url)')
@@ -27,6 +29,8 @@ const fetchFavoriteListings = async (userId: string) => {
     .order('created_at', { ascending: false });
 
   if (listingsError) throw new Error(listingsError.message);
+  
+  // All fetched listings are favorites by definition
   return listings.map(l => ({ ...l, isFavorited: true }));
 };
 
