@@ -1,16 +1,11 @@
 import { createRoot } from 'react-dom/client'
-import { ClerkProvider } from '@clerk/clerk-react'
 import App from './App.tsx'
 import './index.css'
-
-const PUBLISHABLE_KEY = "pk_test_aWRlYWwtZ3VwcHktMTguY2xlcmsuYWNjb3VudHMuZGV2JA";
-
-if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Clerk Publishable Key");
-}
+import { SessionContextProvider } from '@supabase/auth-helpers-react'
+import { supabase } from './integrations/supabase/client.ts'
 
 createRoot(document.getElementById("root")!).render(
-  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+  <SessionContextProvider supabaseClient={supabase}>
     <App />
-  </ClerkProvider>
+  </SessionContextProvider>
 );
