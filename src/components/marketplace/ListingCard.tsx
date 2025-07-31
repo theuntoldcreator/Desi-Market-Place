@@ -32,7 +32,7 @@ interface ListingCardProps {
 
 export function ListingCard({
   id, title, description, price, image_urls, location, seller, category, timeAgo,
-  isFavorited = false, isOwner = false, onFavoriteToggle, onDelete, onEdit
+  isFavorited = false, isOwner: isOwnerProp, onFavoriteToggle, onDelete, onEdit
 }: ListingCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -42,6 +42,9 @@ export function ListingCard({
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // The card can now determine if it's the owner, even if not explicitly told.
+  const isOwner = isOwnerProp !== undefined ? isOwnerProp : (session?.user?.id === seller.id);
 
   const nextImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % image_urls.length); };
   const prevImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + image_urls.length) % image_urls.length); };
