@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 interface ListingCardProps {
   id: string;
   title: string;
+  description: string | null;
   price: number;
   image_urls: string[];
   location: string;
@@ -28,7 +29,7 @@ interface ListingCardProps {
 }
 
 export function ListingCard({
-  id, title, price, image_urls, location, contact, seller, category, timeAgo,
+  id, title, description, price, image_urls, location, contact, seller, category, timeAgo,
   isFavorited = false, isOwner = false, onFavoriteToggle, onDelete, onEdit
 }: ListingCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -41,8 +42,8 @@ export function ListingCard({
   const whatsappUrl = `https://wa.me/${cleanedContact}`;
 
   return (
-    <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white overflow-hidden transform hover:-translate-y-1">
-      <CardContent className="p-0">
+    <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white overflow-hidden transform hover:-translate-y-1 flex flex-col">
+      <CardContent className="p-0 flex flex-col flex-grow">
         <div className="relative h-52 bg-muted overflow-hidden" onClick={() => setIsImageModalOpen(true)}>
           {image_urls.length > 0 ? (
             <>
@@ -62,16 +63,25 @@ export function ListingCard({
           )}
           <Badge variant="secondary" className="absolute top-2 left-2 bg-white/90">{category}</Badge>
         </div>
-        <div className="p-4 space-y-4">
-          <div>
-            <h3 className="font-semibold text-lg line-clamp-2 h-14 group-hover:text-primary">{title}</h3>
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-marketplace-price-text">${price.toLocaleString()}</span>
-              <span className="text-sm text-muted-foreground">{timeAgo}</span>
-            </div>
+        <div className="p-4 space-y-3 flex flex-col flex-grow">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-lg truncate group-hover:text-primary" title={title}>
+              {title}
+            </h3>
+            <p className="text-sm text-muted-foreground line-clamp-2 h-10">
+              {description || 'No description provided.'}
+            </p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="w-4 h-4" /> <span className="truncate">{location}</span></div>
+          <div className="flex items-center justify-between">
+            <span className="text-2xl font-bold text-marketplace-price-text">${price.toLocaleString()}</span>
+            <span className="text-sm text-muted-foreground">{timeAgo}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="w-4 h-4" /> <span className="truncate">{location}</span>
+          </div>
           
+          <div className="flex-grow" />
+
           {isOwner ? (
             <div className="flex items-center gap-2 pt-2 border-t">
               <Button onClick={onEdit} size="sm" variant="outline"><Pencil className="w-3 h-3 mr-1" /> Edit</Button>
@@ -79,7 +89,10 @@ export function ListingCard({
             </div>
           ) : (
             <div className="flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-2 min-w-0"><Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url} /><AvatarFallback>{seller.full_name?.[0]}</AvatarFallback></Avatar><span className="text-sm font-medium truncate">{seller.full_name}</span></div>
+              <div className="flex items-center gap-2 min-w-0">
+                <Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url} /><AvatarFallback>{seller.full_name?.[0]}</AvatarFallback></Avatar>
+                <span className="text-sm font-medium truncate">{seller.full_name}</span>
+              </div>
               <Button asChild size="sm">
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                   <Phone className="w-3 h-3 mr-1" /> Contact

@@ -118,6 +118,7 @@ export default function MyListings() {
           <ListingCard
             key={listing.id}
             {...listing}
+            description={listing.description}
             seller={listing.profile || { full_name: 'You' }}
             timeAgo={new Date(listing.created_at).toLocaleDateString()}
             isOwner={true}

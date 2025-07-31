@@ -108,6 +108,7 @@ export default function Favorites() {
           <ListingCard
             key={listing.id}
             {...listing}
+            description={listing.description}
             seller={listing.profile || { full_name: 'Unknown' }}
             timeAgo={new Date(listing.created_at).toLocaleDateString()}
             onFavoriteToggle={() => favoriteMutation.mutate({ listingId: listing.id, isFavorited: true })}
