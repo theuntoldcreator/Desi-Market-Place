@@ -64,10 +64,13 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
       // 1. Delete images marked for removal from storage
       if (imagesToDelete.length > 0) {
-        const fileNames = imagesToDelete.map(url => url.substring(url.lastIndexOf('/') + 1));
-        const imagePaths = fileNames.map(fileName => `${session.user.id}/${fileName}`);
+        const imagePaths = imagesToDelete.map(url => {
+            const path = new URL(url).pathname;
+            const pathParts = path.split('/listing_images/');
+            return pathParts[1];
+        });
         const { error: deleteError } = await supabase.storage.from('listing_images').remove(imagePaths);
-        if (deleteError) console.error("Error deleting images:", deleteError.message);
+        if (deleteError) throw new Error(`Image deletion failed: ${deleteError.message}`);
       }
 
       // 2. Upload new images to storage

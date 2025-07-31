@@ -21,28 +21,14 @@ import {
 } from "@/components/ui/alert-dialog"
 
 const fetchMyListings = async (userId: string) => {
-  // Step 1: Fetch listings for the current user
-  const { data: listings, error: listingsError } = await supabase
+  const { data, error } = await supabase
     .from('listings')
-    .select('*')
+    .select('*, profile:profiles(full_name, avatar_url)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (listingsError) throw new Error(listingsError.message);
-  if (!listings || listings.length === 0) return [];
-
-  // Step 2: Fetch the profile for the current user
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, avatar_url')
-    .eq('id', userId)
-    .single();
-
-  // Step 3: Attach the profile to each listing
-  return listings.map(listing => ({
-    ...listing,
-    profile: profile || { full_name: 'You', avatar_url: null },
-  }));
+  if (error) throw new Error(error.message);
+  return data || [];
 };
 
 export default function MyListings() {
@@ -61,14 +47,20 @@ export default function MyListings() {
 
   const deleteMutation = useMutation({
     mutationFn: async (listing: any) => {
+      // Robustly extract image paths from URLs for deletion
       const imagePaths = listing.image_urls.map((url: string) => {
-        const parts = url.split('/');
-        return parts.slice(parts.length - 2).join('/');
+        const path = new URL(url).pathname;
+        const pathParts = path.split('/listing_images/');
+        return pathParts[1];
       });
+
       if (imagePaths.length > 0) {
-        await supabase.storage.from('listing_images').remove(imagePaths);
+        const { error: deleteImageError } = await supabase.storage.from('listing_images').remove(imagePaths);
+        if (deleteImageError) throw new Error(`Failed to delete images: ${deleteImageError.message}`);
       }
-      await supabase.from('listings').delete().eq('id', listing.id);
+      
+      const { error: deleteListingError } = await supabase.from('listings').delete().eq('id', listing.id);
+      if (deleteListingError) throw new Error(`Failed to delete listing: ${deleteListingError.message}`);
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Your listing has been deleted." });
