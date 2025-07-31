@@ -33,10 +33,19 @@ const Login = () => {
           <CardContent>
             <Auth
               supabaseClient={supabase}
-              appearance={{ theme: ThemeSupa }}
-              providers={['google', 'github']}
+              appearance={{
+                theme: ThemeSupa,
+                variables: {
+                  default: {
+                    colors: {
+                      brand: 'hsl(214 84% 56%)',
+                      brandAccent: 'hsl(214 84% 50%)',
+                    },
+                  },
+                },
+              }}
+              providers={[]}
               theme="light"
-              socialLayout="horizontal"
             />
           </CardContent>
         </Card>
