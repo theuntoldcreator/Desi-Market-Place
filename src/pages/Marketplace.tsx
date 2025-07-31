@@ -7,6 +7,7 @@ import { ListingCard } from '@/components/marketplace/ListingCard';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { DisclaimerSection } from '@/components/marketplace/DisclaimerSection';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { ChevronDown, SortAsc, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
@@ -152,7 +153,7 @@ export default function Marketplace() {
             <ListingCard
               key={listing.id}
               {...listing}
-              seller={listing.profile || { name: 'Unknown User' }}
+              seller={listing.profile || { full_name: 'Unknown User' }}
               timeAgo={new Date(listing.created_at).toLocaleDateString()}
               onFavoriteToggle={() => handleFavoriteToggle(listing.id, listing.isFavorited)}
               onContact={handleContact}
