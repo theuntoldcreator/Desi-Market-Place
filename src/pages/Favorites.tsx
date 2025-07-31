@@ -35,7 +35,7 @@ const fetchFavoriteListings = async (userId: string) => {
   const userIds = [...new Set(listings.map(l => l.user_id))];
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url')
+    .select('id, first_name, last_name, avatar_url')
     .in('id', userIds);
 
   if (profilesError) throw new Error(profilesError.message);
@@ -43,12 +43,12 @@ const fetchFavoriteListings = async (userId: string) => {
   const profilesById = profiles.reduce((acc, p) => {
     acc[p.id] = p;
     return acc;
-  }, {} as Record<string, { id: string; full_name: string | null; avatar_url: string | null; }>);
+  }, {} as Record<string, { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null; }>);
 
   // Step 4: Combine listings with their profiles
   return listings.map(listing => ({
     ...listing,
-    profile: profilesById[listing.user_id] || { full_name: 'Unknown User', avatar_url: null },
+    profile: profilesById[listing.user_id] || null,
     isFavorited: true,
   }));
 };
@@ -109,7 +109,7 @@ export default function Favorites() {
             key={listing.id}
             {...listing}
             description={listing.description}
-            seller={listing.profile || { full_name: 'Unknown' }}
+            seller={listing.profile || {}}
             timeAgo={new Date(listing.created_at).toLocaleDateString()}
             onFavoriteToggle={() => favoriteMutation.mutate({ listingId: listing.id, isFavorited: true })}
           />

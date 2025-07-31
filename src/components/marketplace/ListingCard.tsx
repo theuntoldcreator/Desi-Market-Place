@@ -16,8 +16,9 @@ interface ListingCardProps {
   location: string;
   contact: string;
   seller: {
-    full_name: string;
-    avatar_url?: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    avatar_url?: string | null;
   };
   category: string;
   timeAgo: string;
@@ -40,6 +41,9 @@ export function ListingCard({
 
   const cleanedContact = contact.replace(/\D/g, '');
   const whatsappUrl = `https://wa.me/${cleanedContact}`;
+
+  const fullName = `${seller?.first_name || ''} ${seller?.last_name || ''}`.trim() || 'Unknown User';
+  const fallback = fullName?.[0]?.toUpperCase();
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white overflow-hidden transform hover:-translate-y-1 flex flex-col">
@@ -90,8 +94,8 @@ export function ListingCard({
           ) : (
             <div className="flex items-center justify-between pt-2 border-t">
               <div className="flex items-center gap-2 min-w-0">
-                <Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url} /><AvatarFallback>{seller.full_name?.[0]}</AvatarFallback></Avatar>
-                <span className="text-sm font-medium truncate">{seller.full_name}</span>
+                <Avatar className="w-8 h-8"><AvatarImage src={seller?.avatar_url || undefined} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
+                <span className="text-sm font-medium truncate">{fullName}</span>
               </div>
               <Button asChild size="sm">
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">

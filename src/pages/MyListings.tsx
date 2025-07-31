@@ -34,7 +34,7 @@ const fetchMyListings = async (userId: string) => {
   // Fetch the profile of the current user
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('full_name, avatar_url')
+    .select('first_name, last_name, avatar_url')
     .eq('id', userId)
     .single();
   
@@ -45,7 +45,7 @@ const fetchMyListings = async (userId: string) => {
   // Attach the same profile to all listings
   return listings.map(listing => ({
     ...listing,
-    profile: profile || { full_name: 'You', avatar_url: null }
+    profile: profile || null
   }));
 };
 
@@ -119,7 +119,7 @@ export default function MyListings() {
             key={listing.id}
             {...listing}
             description={listing.description}
-            seller={listing.profile || { full_name: 'You' }}
+            seller={listing.profile || { first_name: 'You' }}
             timeAgo={new Date(listing.created_at).toLocaleDateString()}
             isOwner={true}
             onDelete={() => setListingToDelete(listing)}

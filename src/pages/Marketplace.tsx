@@ -161,7 +161,7 @@ export default function Marketplace() {
               key={listing.id}
               {...listing}
               description={listing.description}
-              seller={listing.profile || { full_name: 'Unknown User' }}
+              seller={listing.profile || {}}
               timeAgo={new Date(listing.created_at).toLocaleDateString()}
               onFavoriteToggle={() => handleFavoriteToggle(listing.id, listing.isFavorited)}
             />
