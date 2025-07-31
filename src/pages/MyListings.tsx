@@ -8,6 +8,7 @@ import { Loader2, ShoppingBag, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
+import { EditListing } from '@/components/marketplace/EditListing';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +37,7 @@ export default function MyListings() {
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<any>(null);
+  const [listingToEdit, setListingToEdit] = useState<any>(null);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['my-listings', session?.user?.id],
@@ -101,6 +103,7 @@ export default function MyListings() {
             timeAgo={new Date(listing.created_at).toLocaleDateString()}
             isOwner={true}
             onDelete={() => setListingToDelete(listing)}
+            onEdit={() => setListingToEdit(listing)}
           />
         ))}
       </div>
@@ -118,6 +121,13 @@ export default function MyListings() {
         {renderContent()}
       </main>
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
+      {listingToEdit && (
+        <EditListing 
+          isOpen={!!listingToEdit} 
+          onClose={() => setListingToEdit(null)} 
+          listing={listingToEdit} 
+        />
+      )}
       <AlertDialog open={!!listingToDelete} onOpenChange={() => setListingToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

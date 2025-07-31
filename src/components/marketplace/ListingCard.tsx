@@ -72,7 +72,7 @@ export function ListingCard({
           
           {isOwner ? (
             <div className="flex items-center gap-2 pt-2 border-t">
-              <Button onClick={onEdit} size="sm" variant="outline" disabled><Pencil className="w-3 h-3 mr-1" /> Edit</Button>
+              <Button onClick={onEdit} size="sm" variant="outline"><Pencil className="w-3 h-3 mr-1" /> Edit</Button>
               <Button onClick={onDelete} size="sm" variant="destructive"><Trash2 className="w-3 h-3 mr-1" /> Delete</Button>
             </div>
           ) : (
