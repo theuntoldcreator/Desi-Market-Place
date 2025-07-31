@@ -173,6 +173,7 @@ export default function Marketplace() {
           onCategoryChange={setSelectedCategory}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          listings={listings}
         />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
