@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 
 const fetchListings = async (userId: string | undefined) => {
-  // Step 1: Fetch all listings
+  // Step 1: Fetch all listings with their profiles
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
     .select('*, profile:profiles(*)')
@@ -147,7 +147,7 @@ export default function Marketplace() {
               key={listing.id}
               {...listing}
               description={listing.description}
-              seller={listing.profile || { id: listing.user_id, full_name: 'Unknown User' }}
+              seller={listing.profile || { id: listing.user_id, first_name: 'Unknown', last_name: 'User', avatar_url: null }}
               timeAgo={new Date(listing.created_at).toLocaleDateString()}
               onFavoriteToggle={() => handleFavoriteToggle(listing.id, listing.isFavorited)}
             />
