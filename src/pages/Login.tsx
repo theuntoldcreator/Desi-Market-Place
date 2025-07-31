@@ -15,7 +15,7 @@ const Login = () => {
               <ShoppingBag className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Desi Market Place
+              Uni-Finds Market
             </h1>
           </div>
           <p className="text-xl text-muted-foreground">
