@@ -39,7 +39,14 @@ const SignInView = ({ setView }: { setView: (v: 'sign_in' | 'sign_up') => void }
       <CardDescription className="text-base">Sign in to continue</CardDescription>
     </CardHeader>
     <CardContent>
-      <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa, variables: { default: { colors: { brand: 'hsl(214 84% 56%)', brandAccent: 'hsl(214 84% 50%)' } } } }} providers={[]} theme="light" view="sign_in" />
+      <Auth
+        supabaseClient={supabase}
+        appearance={{ theme: ThemeSupa, variables: { default: { colors: { brand: 'hsl(214 84% 56%)', brandAccent: 'hsl(214 84% 50%)' } } } }}
+        providers={[]}
+        theme="light"
+        view="sign_in"
+        showLinks={false}
+      />
       <p className="mt-4 text-center text-sm">Don't have an account? <Button variant="link" className="p-0 h-auto" onClick={() => setView('sign_up')}>Sign up</Button></p>
     </CardContent>
   </>
