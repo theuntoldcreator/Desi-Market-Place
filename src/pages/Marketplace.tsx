@@ -16,7 +16,7 @@ const fetchListings = async (userId: string | undefined) => {
   // Step 1: Fetch all listings with their profiles
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles(*)')
+    .select('*, profile:profiles!listings_user_id_fkey(*)')
     .order('created_at', { ascending: false });
 
   if (listingsError) throw new Error(listingsError.message);

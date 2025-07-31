@@ -23,7 +23,7 @@ const fetchFavoriteListings = async (userId: string) => {
 
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles(id, first_name, last_name, avatar_url)')
+    .select('*, profile:profiles!listings_user_id_fkey(id, first_name, last_name, avatar_url)')
     .in('id', listingIds);
 
   if (listingsError) throw new Error(listingsError.message);
