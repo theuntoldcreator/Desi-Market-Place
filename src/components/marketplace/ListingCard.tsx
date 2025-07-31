@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, MapPin, MessageSquare, ChevronLeft, ChevronRight, Trash2, Pencil } from 'lucide-react';
+import { Heart, MapPin, MessageSquare, ChevronLeft, ChevronRight, Trash2, Pencil, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,6 @@ interface ListingCardProps {
   price: number;
   image_urls: string[];
   location: string;
-  contact: string;
   seller: {
     id: string;
     full_name: string;
@@ -38,7 +37,7 @@ export function ListingCard({
 }: ListingCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [isStartingChat, setIsStartingChat] = useState(false);
+  const [isPinging, setIsPinging] = useState(false);
 
   const session = useSession();
   const supabase = useSupabaseClient();
@@ -48,37 +47,37 @@ export function ListingCard({
   const nextImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % image_urls.length); };
   const prevImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + image_urls.length) % image_urls.length); };
 
-  const handleStartChat = async () => {
-    setIsStartingChat(true);
+  const handlePingSeller = async () => {
+    setIsPinging(true);
     if (!session) {
-      toast({ title: "Authentication required", description: "Please log in to start a chat.", variant: "destructive" });
-      setIsStartingChat(false);
+      toast({ title: "Authentication required", description: "Please log in to ping the seller.", variant: "destructive" });
+      setIsPinging(false);
       return;
     }
     if (session.user.id === seller.id) {
-      toast({ title: "Cannot chat with yourself", description: "This is your own listing.", variant: "destructive" });
-      setIsStartingChat(false);
+      toast({ title: "This is your listing", description: "You cannot start a chat on your own item.", variant: "destructive" });
+      setIsPinging(false);
       return;
     }
 
-    const [user1_id, user2_id] = [session.user.id, seller.id].sort();
-
     try {
-      let { data: chat } = await supabase.from('chats').select('id').eq('user1_id', user1_id).eq('user2_id', user2_id).single();
-
-      if (!chat) {
-        const { data: newChat, error: insertError } = await supabase.from('chats').insert({ user1_id, user2_id }).select('id').single();
-        if (insertError) throw insertError;
-        chat = newChat;
+      const { data: existingChat } = await supabase.from('chats').select('id, status').eq('listing_id', id).eq('buyer_id', session.user.id).single();
+      if (existingChat) {
+        toast({ title: "Already Pinging or Active", description: "You already have a conversation for this item." });
+        navigate(`/messages/${existingChat.id}`);
+        return;
       }
-      
-      navigate(`/messages/${chat.id}`);
+
+      const { error } = await supabase.from('chats').insert({ listing_id: id, buyer_id: session.user.id, seller_id: seller.id });
+      if (error) throw error;
+
+      toast({ title: "Ping Sent!", description: "The seller has been notified. You can see the request in your messages." });
     } catch (error: any) {
-      if (error.code !== 'PGRST116') { // Ignore "No rows found" error, as we handle it by creating a chat.
-        toast({ title: "Error starting chat", description: error.message, variant: "destructive" });
+      if (error.code !== 'PGRST116') { // Ignore "No rows found" which is expected
+        toast({ title: "Error Sending Ping", description: error.message, variant: "destructive" });
       }
     } finally {
-      setIsStartingChat(false);
+      setIsPinging(false);
     }
   };
 
@@ -123,7 +122,10 @@ export function ListingCard({
           ) : (
             <div className="flex items-center justify-between pt-2 border-t">
               <div className="flex items-center gap-2 min-w-0"><Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url} /><AvatarFallback>{seller.full_name?.[0]}</AvatarFallback></Avatar><span className="text-sm font-medium truncate">{seller.full_name}</span></div>
-              <Button onClick={handleStartChat} size="sm" disabled={isStartingChat}><MessageSquare className="w-3 h-3 mr-1" /> Chat</Button>
+              <Button onClick={handlePingSeller} size="sm" disabled={isPinging}>
+                {isPinging ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <MessageSquare className="w-3 h-3 mr-1" />}
+                Ping Seller
+              </Button>
             </div>
           )}
         </div>

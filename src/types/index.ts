@@ -4,11 +4,16 @@ export interface Profile {
   avatar_url: string;
 }
 
+export type ChatStatus = 'pending' | 'active' | 'ended' | 'declined';
+
 export interface Chat {
   id: number;
   created_at: string;
-  user1: Profile;
-  user2: Profile;
+  listing_id: number;
+  buyer: Profile;
+  seller: Profile;
+  status: ChatStatus;
+  listing: { title: string, image_urls: string[] };
 }
 
 export interface Message {
