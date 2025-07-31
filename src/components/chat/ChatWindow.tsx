@@ -9,6 +9,7 @@ import { Loader2, Check, X, LogOut, Info } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { formatFullName } from '@/lib/utils';
 
 const MESSAGES_PER_PAGE = 20;
 
@@ -36,9 +37,9 @@ const ChatHeader = ({ chat, currentUserId }: { chat: Chat, currentUserId: string
   return (
     <header className="p-4 border-b flex items-center justify-between gap-4 bg-white">
       <div className="flex items-center gap-4">
-        <Avatar><AvatarImage src={otherUser.avatar_url} /><AvatarFallback>{otherUser.full_name?.[0]}</AvatarFallback></Avatar>
+        <Avatar><AvatarImage src={otherUser.avatar_url ?? ''} /><AvatarFallback>{otherUser.first_name?.[0]}</AvatarFallback></Avatar>
         <div className="flex-1 truncate">
-          <h3 className="text-lg font-semibold truncate">{otherUser.full_name}</h3>
+          <h3 className="text-lg font-semibold truncate">{formatFullName(otherUser)}</h3>
           <p className="text-sm text-muted-foreground truncate">{chat.listing.title}</p>
         </div>
       </div>
@@ -95,7 +96,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading: areMessagesLoading } = useInfiniteQuery({
     queryKey: ['messages', chatId],
     queryFn: async ({ pageParam = 0 }) => {
-      const { data, error } = await supabase.from('messages').select('*, sender:profiles(id, full_name, avatar_url)').eq('chat_id', chatId).order('created_at', { ascending: false }).range(pageParam, pageParam + MESSAGES_PER_PAGE - 1);
+      const { data, error } = await supabase.from('messages').select('*, sender:profiles(id, first_name, last_name, avatar_url)').eq('chat_id', chatId).order('created_at', { ascending: false }).range(pageParam, pageParam + MESSAGES_PER_PAGE - 1);
       if (error) throw error;
       return data.reverse();
     },

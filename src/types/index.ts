@@ -1,7 +1,9 @@
 export interface Profile {
   id: string;
-  full_name: string;
-  avatar_url: string;
+  first_name: string | null;
+  last_name: string | null;
+  dob: string | null;
+  avatar_url: string | null;
 }
 
 export type ChatStatus = 'pending' | 'active' | 'ended' | 'declined';

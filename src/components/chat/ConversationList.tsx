@@ -3,7 +3,7 @@ import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { cn, formatFullName } from '@/lib/utils';
 import { Chat } from '@/types';
 import { Badge } from '../ui/badge';
 
@@ -20,12 +20,12 @@ const ConversationItem = ({ chat, currentUserId, selectedChatId }: { chat: Chat,
       )}
     >
       <Avatar>
-        <AvatarImage src={otherUser.avatar_url} alt={otherUser.full_name} />
-        <AvatarFallback>{otherUser.full_name?.[0]}</AvatarFallback>
+        <AvatarImage src={otherUser.avatar_url ?? ''} alt={formatFullName(otherUser)} />
+        <AvatarFallback>{otherUser.first_name?.[0]}</AvatarFallback>
       </Avatar>
       <div className="flex-1 truncate">
         <div className="flex justify-between items-center">
-          <p className={cn("font-semibold truncate", isSelected && "text-primary")}>{otherUser.full_name}</p>
+          <p className={cn("font-semibold truncate", isSelected && "text-primary")}>{formatFullName(otherUser)}</p>
           {chat.status === 'pending' && chat.seller.id === currentUserId && <Badge variant="default" className="bg-amber-500">New</Badge>}
         </div>
         <p className="text-sm text-muted-foreground truncate">{chat.listing.title}</p>

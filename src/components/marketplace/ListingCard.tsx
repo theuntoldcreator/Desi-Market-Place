@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { cn, formatFullName } from '@/lib/utils';
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { Profile } from '@/types';
+
+type SellerProfile = Pick<Profile, 'id' | 'first_name' | 'last_name' | 'avatar_url'>;
 
 interface ListingCardProps {
   id: string;
@@ -17,11 +20,7 @@ interface ListingCardProps {
   price: number;
   image_urls: string[];
   location: string;
-  seller: {
-    id: string;
-    full_name: string;
-    avatar_url?: string;
-  };
+  seller: SellerProfile;
   category: string;
   timeAgo: string;
   isFavorited?: boolean;
@@ -121,7 +120,7 @@ export function ListingCard({
             </div>
           ) : (
             <div className="flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-2 min-w-0"><Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url} /><AvatarFallback>{seller.full_name?.[0]}</AvatarFallback></Avatar><span className="text-sm font-medium truncate">{seller.full_name}</span></div>
+              <div className="flex items-center gap-2 min-w-0"><Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url ?? ''} /><AvatarFallback>{seller.first_name?.[0]}</AvatarFallback></Avatar><span className="text-sm font-medium truncate">{formatFullName(seller)}</span></div>
               <Button onClick={handlePingSeller} size="sm" disabled={isPinging}>
                 {isPinging ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <MessageSquare className="w-3 h-3 mr-1" />}
                 Ping Seller
