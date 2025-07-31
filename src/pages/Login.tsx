@@ -11,10 +11,10 @@ const Login = () => {
         {/* Left side - Welcome content */}
         <div className="space-y-8 text-center lg:text-left">
           <div className="flex items-center justify-center lg:justify-start gap-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-lg">
-              <ShoppingBag className="w-6 h-6 text-white" />
+            <div className="w-12 h-12   rounded-lg flex items-center justify-center shadow-lg">
+              <img src="/public/logofile.png" alt="Desi Market Place Logo" className="w-10 h-10" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r black to-accent bg-clip-text text-transparent">
               Desi Market Place
             </h1>
           </div>
