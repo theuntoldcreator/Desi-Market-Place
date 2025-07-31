@@ -104,11 +104,6 @@ export default function Marketplace() {
     favoriteMutation.mutate({ listingId: id, isFavorited });
   };
 
-  const handleContact = (contact: string) => {
-    navigator.clipboard.writeText(contact);
-    toast({ title: 'Contact copied!', description: `${contact} copied to clipboard` });
-  };
-
   const filteredListings = listings
     .filter(listing => {
       if (selectedCategory !== 'all' && listing.category.toLowerCase() !== selectedCategory) {
@@ -168,7 +163,6 @@ export default function Marketplace() {
               seller={listing.profile || { full_name: 'Unknown User' }}
               timeAgo={new Date(listing.created_at).toLocaleDateString()}
               onFavoriteToggle={() => handleFavoriteToggle(listing.id, listing.isFavorited)}
-              onContact={handleContact}
             />
           ))}
         </div>

@@ -23,20 +23,22 @@ interface ListingCardProps {
   isFavorited?: boolean;
   isOwner?: boolean;
   onFavoriteToggle?: (id: string, isFavorited: boolean) => void;
-  onContact?: (contact: string) => void;
   onDelete?: () => void;
   onEdit?: () => void;
 }
 
 export function ListingCard({
   id, title, price, image_urls, location, contact, seller, category, timeAgo,
-  isFavorited = false, isOwner = false, onFavoriteToggle, onContact, onDelete, onEdit
+  isFavorited = false, isOwner = false, onFavoriteToggle, onDelete, onEdit
 }: ListingCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const nextImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % image_urls.length); };
   const prevImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + image_urls.length) % image_urls.length); };
+
+  const cleanedContact = contact.replace(/\D/g, '');
+  const whatsappUrl = `https://wa.me/${cleanedContact}`;
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white overflow-hidden transform hover:-translate-y-1">
@@ -78,7 +80,11 @@ export function ListingCard({
           ) : (
             <div className="flex items-center justify-between pt-2 border-t">
               <div className="flex items-center gap-2 min-w-0"><Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url} /><AvatarFallback>{seller.full_name?.[0]}</AvatarFallback></Avatar><span className="text-sm font-medium truncate">{seller.full_name}</span></div>
-              <Button onClick={() => onContact?.(contact)} size="sm"><Phone className="w-3 h-3 mr-1" /> Contact</Button>
+              <Button asChild size="sm">
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                  <Phone className="w-3 h-3 mr-1" /> Contact
+                </a>
+              </Button>
             </div>
           )}
         </div>
