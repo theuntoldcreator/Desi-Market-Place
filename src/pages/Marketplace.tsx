@@ -16,29 +16,15 @@ const fetchListings = async (userId: string | undefined) => {
   // Step 1: Fetch all listings
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*')
+    .select('*, profile:profiles(*)')
     .order('created_at', { ascending: false });
 
   if (listingsError) throw new Error(listingsError.message);
   if (!listings) return [];
 
-  // Step 2: Fetch profiles for the fetched listings
-  const userIds = [...new Set(listings.map(l => l.user_id))];
-  const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds);
-  const profilesById = profiles?.reduce((acc, p) => {
-    acc[p.id] = p;
-    return acc;
-  }, {} as any) || {};
-
-  // Step 3: Combine listings with their profiles
-  const listingsWithProfiles = listings.map(l => ({
-    ...l,
-    profile: profilesById[l.user_id] || null,
-  }));
-
-  // Step 4: If user is logged in, determine which are favorited
+  // Step 2: If user is logged in, determine which are favorited
   if (!userId) {
-    return listingsWithProfiles.map(l => ({ ...l, isFavorited: false }));
+    return listings.map(l => ({ ...l, isFavorited: false }));
   }
 
   const listingIds = listings.map(l => l.id);
@@ -49,7 +35,7 @@ const fetchListings = async (userId: string | undefined) => {
     .in('listing_id', listingIds);
 
   const favoriteSet = new Set(favorites?.map(f => f.listing_id) || []);
-  return listingsWithProfiles.map(l => ({
+  return listings.map(l => ({
     ...l,
     isFavorited: favoriteSet.has(l.id),
   }));
@@ -124,7 +110,7 @@ export default function Marketplace() {
 
   const loadMore = () => setVisibleCount(prev => prev + 12);
 
-  const renderContent = () => {
+  const renderContent = ()_ => {
     if (isLoading) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -161,7 +147,7 @@ export default function Marketplace() {
               key={listing.id}
               {...listing}
               description={listing.description}
-              seller={listing.profile || { full_name: 'Unknown User' }}
+              seller={listing.profile || { id: listing.user_id, full_name: 'Unknown User' }}
               timeAgo={new Date(listing.created_at).toLocaleDateString()}
               onFavoriteToggle={() => handleFavoriteToggle(listing.id, listing.isFavorited)}
             />
