@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
@@ -8,6 +8,7 @@ import { Loader2, Heart } from 'lucide-react';
 import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { Link } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const fetchFavoriteListings = async (userId: string) => {
   // Step 1: Fetch favorite listing IDs
@@ -17,9 +18,9 @@ const fetchFavoriteListings = async (userId: string) => {
     .eq('user_id', userId);
 
   if (favError) throw new Error(favError.message);
+  if (!favorites || favorites.length === 0) return [];
 
   const listingIds = favorites.map(f => f.listing_id);
-  if (listingIds.length === 0) return [];
 
   // Step 2: Fetch the listings for those IDs
   const { data: listings, error: listingsError } = await supabase
@@ -31,17 +32,37 @@ const fetchFavoriteListings = async (userId: string) => {
   if (listingsError) throw new Error(listingsError.message);
   
   // All fetched listings are favorites by definition
-  return listings.map(l => ({ ...l, isFavorited: true }));
+  return (listings || []).map(l => ({ ...l, isFavorited: true }));
 };
 
 export default function Favorites() {
   const session = useSession();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['favorites', session?.user?.id],
     queryFn: () => fetchFavoriteListings(session!.user.id),
     enabled: !!session,
+  });
+
+  const favoriteMutation = useMutation({
+    mutationFn: async ({ listingId, isFavorited }: { listingId: string, isFavorited: boolean }) => {
+      if (!session) throw new Error("You must be logged in to favorite items.");
+      if (isFavorited) { // In this context, the only action is to UN-favorite
+        const { error } = await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      toast({ title: 'Removed from favorites' });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   });
 
   const renderContent = () => {
@@ -71,6 +92,7 @@ export default function Favorites() {
             {...listing}
             seller={listing.profile || { full_name: 'Unknown' }}
             timeAgo={new Date(listing.created_at).toLocaleDateString()}
+            onFavoriteToggle={() => favoriteMutation.mutate({ listingId: listing.id, isFavorited: true })}
           />
         ))}
       </div>
