@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 const fetchMyListings = async (userId: string) => {
+  // Fetch listings for the current user
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
     .select('*')
@@ -30,9 +31,10 @@ const fetchMyListings = async (userId: string) => {
   if (listingsError) throw new Error(listingsError.message);
   if (!listings) return [];
 
+  // Fetch the profile of the current user
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, avatar_url')
+    .select('full_name, avatar_url')
     .eq('id', userId)
     .single();
   
@@ -40,9 +42,10 @@ const fetchMyListings = async (userId: string) => {
     console.warn('Could not fetch profile for my listings:', profileError.message);
   }
 
+  // Attach the same profile to all listings
   return listings.map(listing => ({
     ...listing,
-    profile: profile || { id: userId, first_name: 'You', last_name: '', avatar_url: null }
+    profile: profile || { full_name: 'You', avatar_url: null }
   }));
 };
 
@@ -62,6 +65,7 @@ export default function MyListings() {
 
   const deleteMutation = useMutation({
     mutationFn: async (listing: any) => {
+      // Robustly extract image paths from URLs for deletion
       const imagePaths = listing.image_urls.map((url: string) => {
         const path = new URL(url).pathname;
         const pathParts = path.split('/listing_images/');
@@ -115,7 +119,7 @@ export default function MyListings() {
             key={listing.id}
             {...listing}
             description={listing.description}
-            seller={listing.profile}
+            seller={listing.profile || { full_name: 'You' }}
             timeAgo={new Date(listing.created_at).toLocaleDateString()}
             isOwner={true}
             onDelete={() => setListingToDelete(listing)}

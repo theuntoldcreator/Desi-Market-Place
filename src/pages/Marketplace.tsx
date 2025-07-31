@@ -13,18 +13,32 @@ import { useToast } from '@/hooks/use-toast';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 
 const fetchListings = async (userId: string | undefined) => {
-  // Step 1: Fetch all listings with their profiles using an explicit LEFT JOIN
+  // Step 1: Fetch all listings
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles!left!listings_user_id_fkey(*)')
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (listingsError) throw new Error(listingsError.message);
   if (!listings) return [];
 
-  // Step 2: If user is logged in, determine which are favorited
+  // Step 2: Fetch profiles for the fetched listings
+  const userIds = [...new Set(listings.map(l => l.user_id))];
+  const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds);
+  const profilesById = profiles?.reduce((acc, p) => {
+    acc[p.id] = p;
+    return acc;
+  }, {} as any) || {};
+
+  // Step 3: Combine listings with their profiles
+  const listingsWithProfiles = listings.map(l => ({
+    ...l,
+    profile: profilesById[l.user_id] || null,
+  }));
+
+  // Step 4: If user is logged in, determine which are favorited
   if (!userId) {
-    return listings.map(l => ({ ...l, isFavorited: false }));
+    return listingsWithProfiles.map(l => ({ ...l, isFavorited: false }));
   }
 
   const listingIds = listings.map(l => l.id);
@@ -35,7 +49,7 @@ const fetchListings = async (userId: string | undefined) => {
     .in('listing_id', listingIds);
 
   const favoriteSet = new Set(favorites?.map(f => f.listing_id) || []);
-  return listings.map(l => ({
+  return listingsWithProfiles.map(l => ({
     ...l,
     isFavorited: favoriteSet.has(l.id),
   }));
@@ -147,7 +161,7 @@ export default function Marketplace() {
               key={listing.id}
               {...listing}
               description={listing.description}
-              seller={listing.profile || { id: listing.user_id, first_name: 'Unknown', last_name: 'User', avatar_url: null }}
+              seller={listing.profile || { full_name: 'Unknown User' }}
               timeAgo={new Date(listing.created_at).toLocaleDateString()}
               onFavoriteToggle={() => handleFavoriteToggle(listing.id, listing.isFavorited)}
             />
@@ -173,7 +187,6 @@ export default function Marketplace() {
           onCategoryChange={setSelectedCategory}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          listings={listings}
         />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

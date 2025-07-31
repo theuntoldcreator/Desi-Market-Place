@@ -1,17 +1,11 @@
 import { useState } from 'react';
-import { Heart, MapPin, MessageSquare, ChevronLeft, ChevronRight, Trash2, Pencil, Loader2 } from 'lucide-react';
+import { Heart, MapPin, Phone, ChevronLeft, ChevronRight, Trash2, Pencil } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { cn, formatFullName } from '@/lib/utils';
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { Profile } from '@/types';
-
-type SellerProfile = Pick<Profile, 'id' | 'first_name' | 'last_name' | 'avatar_url'>;
+import { cn } from '@/lib/utils';
 
 interface ListingCardProps {
   id: string;
@@ -20,7 +14,11 @@ interface ListingCardProps {
   price: number;
   image_urls: string[];
   location: string;
-  seller: SellerProfile;
+  contact: string;
+  seller: {
+    full_name: string;
+    avatar_url?: string;
+  };
   category: string;
   timeAgo: string;
   isFavorited?: boolean;
@@ -31,57 +29,17 @@ interface ListingCardProps {
 }
 
 export function ListingCard({
-  id, title, description, price, image_urls, location, seller, category, timeAgo,
-  isFavorited = false, isOwner: isOwnerProp, onFavoriteToggle, onDelete, onEdit
+  id, title, description, price, image_urls, location, contact, seller, category, timeAgo,
+  isFavorited = false, isOwner = false, onFavoriteToggle, onDelete, onEdit
 }: ListingCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [isPinging, setIsPinging] = useState(false);
-
-  const session = useSession();
-  const supabase = useSupabaseClient();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  // The card can now determine if it's the owner, even if not explicitly told.
-  const isOwner = isOwnerProp !== undefined ? isOwnerProp : (session?.user?.id === seller.id);
 
   const nextImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % image_urls.length); };
   const prevImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + image_urls.length) % image_urls.length); };
 
-  const handlePingSeller = async () => {
-    setIsPinging(true);
-    if (!session) {
-      toast({ title: "Authentication required", description: "Please log in to ping the seller.", variant: "destructive" });
-      setIsPinging(false);
-      return;
-    }
-    if (session.user.id === seller.id) {
-      toast({ title: "This is your listing", description: "You cannot start a chat on your own item.", variant: "destructive" });
-      setIsPinging(false);
-      return;
-    }
-
-    try {
-      const { data: existingChat } = await supabase.from('chats').select('id, status').eq('listing_id', id).eq('buyer_id', session.user.id).single();
-      if (existingChat) {
-        toast({ title: "Already Pinging or Active", description: "You already have a conversation for this item." });
-        navigate(`/messages/${existingChat.id}`);
-        return;
-      }
-
-      const { error } = await supabase.from('chats').insert({ listing_id: id, buyer_id: session.user.id, seller_id: seller.id });
-      if (error) throw error;
-
-      toast({ title: "Ping Sent!", description: "The seller has been notified. You can see the request in your messages." });
-    } catch (error: any) {
-      if (error.code !== 'PGRST116') { // Ignore "No rows found" which is expected
-        toast({ title: "Error Sending Ping", description: error.message, variant: "destructive" });
-      }
-    } finally {
-      setIsPinging(false);
-    }
-  };
+  const cleanedContact = contact.replace(/\D/g, '');
+  const whatsappUrl = `https://wa.me/${cleanedContact}`;
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white overflow-hidden transform hover:-translate-y-1 flex flex-col">
@@ -107,15 +65,23 @@ export function ListingCard({
         </div>
         <div className="p-4 space-y-3 flex flex-col flex-grow">
           <div className="space-y-1">
-            <h3 className="font-semibold text-lg truncate group-hover:text-primary" title={title}>{title}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 h-10">{description || 'No description provided.'}</p>
+            <h3 className="font-semibold text-lg truncate group-hover:text-primary" title={title}>
+              {title}
+            </h3>
+            <p className="text-sm text-muted-foreground line-clamp-2 h-10">
+              {description || 'No description provided.'}
+            </p>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold text-marketplace-price-text">${price.toLocaleString()}</span>
             <span className="text-sm text-muted-foreground">{timeAgo}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="w-4 h-4" /> <span className="truncate">{location}</span></div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="w-4 h-4" /> <span className="truncate">{location}</span>
+          </div>
+          
           <div className="flex-grow" />
+
           {isOwner ? (
             <div className="flex items-center gap-2 pt-2 border-t">
               <Button onClick={onEdit} size="sm" variant="outline"><Pencil className="w-3 h-3 mr-1" /> Edit</Button>
@@ -123,16 +89,22 @@ export function ListingCard({
             </div>
           ) : (
             <div className="flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-2 min-w-0"><Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url ?? ''} /><AvatarFallback>{seller.first_name?.[0]}</AvatarFallback></Avatar><span className="text-sm font-medium truncate">{formatFullName(seller)}</span></div>
-              <Button onClick={handlePingSeller} size="sm" disabled={isPinging}>
-                {isPinging ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <MessageSquare className="w-3 h-3 mr-1" />}
-                Ping Seller
+              <div className="flex items-center gap-2 min-w-0">
+                <Avatar className="w-8 h-8"><AvatarImage src={seller.avatar_url} /><AvatarFallback>{seller.full_name?.[0]}</AvatarFallback></Avatar>
+                <span className="text-sm font-medium truncate">{seller.full_name}</span>
+              </div>
+              <Button asChild size="sm">
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                  <Phone className="w-3 h-3 mr-1" /> Contact
+                </a>
               </Button>
             </div>
           )}
         </div>
       </CardContent>
-      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}><DialogContent className="max-w-4xl p-0"><img src={image_urls[currentImageIndex]} alt={title} className="w-full h-auto max-h-[80vh] object-contain rounded-lg" /></DialogContent></Dialog>
+      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent className="max-w-4xl p-0"><img src={image_urls[currentImageIndex]} alt={title} className="w-full h-auto max-h-[80vh] object-contain rounded-lg" /></DialogContent>
+      </Dialog>
     </Card>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, Laptop, BookOpen, Home, Car, Shirt, Gamepad2, Heart, Menu } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,6 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
 
 const categories = [
   { id: 'all', name: 'All Items', icon: ShoppingBag },
@@ -23,58 +22,33 @@ interface MarketplaceSidebarProps {
   onCategoryChange: (category: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  listings: any[];
 }
 
-const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick, listings }: MarketplaceSidebarProps & { onLinkClick?: () => void }) => {
-  const categoryCounts = useMemo(() => {
-    const counts: { [key: string]: number } = {};
-    for (const listing of listings) {
-      if (listing.category) {
-        const categoryKey = listing.category.toLowerCase();
-        counts[categoryKey] = (counts[categoryKey] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [listings]);
-
-  const getCategoryCount = (categoryId: string) => {
-    if (categoryId === 'all') {
-      return listings.length;
-    }
-    return categoryCounts[categoryId] || 0;
-  };
-
-  return (
-    <div className="p-4 space-y-6">
-      <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="pl-10" />
-        </div>
-      </div>
-      <Separator />
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wide">Categories</h3>
-        {categories.map((cat) => (
-          <button key={cat.id} onClick={() => { onCategoryChange(cat.id); onLinkClick?.(); }} className={cn("w-full flex items-center justify-between p-2 rounded-lg text-left", selectedCategory === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-accent/50')}>
-            <div className="flex items-center gap-3">
-              <cat.icon className="w-4 h-4" />
-              <span>{cat.name}</span>
-            </div>
-            <Badge variant={selectedCategory === cat.id ? 'default' : 'secondary'} className="px-2 py-0.5 text-xs font-medium">{getCategoryCount(cat.id)}</Badge>
-          </button>
-        ))}
-      </div>
-      <Separator />
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wide">My Account</h3>
-        <Link to="/my-listings" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><ShoppingBag className="w-4 h-4" /><span>My Listings</span></div></Link>
-        <Link to="/favorites" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><Heart className="w-4 h-4" /><span>Favorites</span></div></Link>
+const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick }: Omit<MarketplaceSidebarProps, 'onCreateListing'> & { onLinkClick?: () => void }) => (
+  <div className="p-4 space-y-6">
+    <div className="space-y-4">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="pl-10" />
       </div>
     </div>
-  );
-};
+    <Separator />
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold uppercase tracking-wide">Categories</h3>
+      {categories.map((cat) => (
+        <button key={cat.id} onClick={() => { onCategoryChange(cat.id); onLinkClick?.(); }} className={cn("w-full flex items-center gap-3 p-2 rounded-lg text-left", selectedCategory === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-accent/50')}>
+          <cat.icon className="w-4 h-4" /><span>{cat.name}</span>
+        </button>
+      ))}
+    </div>
+    <Separator />
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold uppercase tracking-wide">My Account</h3>
+      <Link to="/my-listings" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><ShoppingBag className="w-4 h-4" /><span>My Listings</span></div></Link>
+      <Link to="/favorites" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><Heart className="w-4 h-4" /><span>Favorites</span></div></Link>
+    </div>
+  </div>
+);
 
 export function MarketplaceSidebar(props: MarketplaceSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
