@@ -25,14 +25,32 @@ const fetchFavoriteListings = async (userId: string) => {
   // Step 2: Fetch the listings for those IDs
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles(full_name, avatar_url)')
-    .in('id', listingIds)
-    .order('created_at', { ascending: false });
+    .select('*')
+    .in('id', listingIds);
 
   if (listingsError) throw new Error(listingsError.message);
-  
-  // All fetched listings are favorites by definition
-  return (listings || []).map(l => ({ ...l, isFavorited: true }));
+  if (!listings || listings.length === 0) return [];
+
+  // Step 3: Fetch profiles for the fetched listings
+  const userIds = [...new Set(listings.map(l => l.user_id))];
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, full_name, avatar_url')
+    .in('id', userIds);
+
+  if (profilesError) throw new Error(profilesError.message);
+
+  const profilesById = profiles.reduce((acc, p) => {
+    acc[p.id] = p;
+    return acc;
+  }, {} as Record<string, { id: string; full_name: string | null; avatar_url: string | null; }>);
+
+  // Step 4: Combine listings with their profiles
+  return listings.map(listing => ({
+    ...listing,
+    profile: profilesById[listing.user_id] || { full_name: 'Unknown User', avatar_url: null },
+    isFavorited: true,
+  }));
 };
 
 export default function Favorites() {
@@ -50,12 +68,12 @@ export default function Favorites() {
   const favoriteMutation = useMutation({
     mutationFn: async ({ listingId, isFavorited }: { listingId: string, isFavorited: boolean }) => {
       if (!session) throw new Error("You must be logged in to favorite items.");
-      if (isFavorited) { // In this context, the only action is to UN-favorite
+      if (isFavorited) {
         const { error } = await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
         if (error) throw error;
       }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
       toast({ title: 'Removed from favorites' });

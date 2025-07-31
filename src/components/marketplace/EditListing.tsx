@@ -64,8 +64,10 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
       // 1. Delete images marked for removal from storage
       if (imagesToDelete.length > 0) {
-        const imagePaths = imagesToDelete.map(url => url.substring(url.lastIndexOf('/') + 1)).map(fileName => `${session.user.id}/${fileName}`);
-        await supabase.storage.from('listing_images').remove(imagePaths);
+        const fileNames = imagesToDelete.map(url => url.substring(url.lastIndexOf('/') + 1));
+        const imagePaths = fileNames.map(fileName => `${session.user.id}/${fileName}`);
+        const { error: deleteError } = await supabase.storage.from('listing_images').remove(imagePaths);
+        if (deleteError) console.error("Error deleting images:", deleteError.message);
       }
 
       // 2. Upload new images to storage
@@ -122,7 +124,6 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
           <DialogDescription>Update the details and images for your item.</DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
-          {/* Image Management */}
           <div className="space-y-3">
             <Label className="text-base font-medium">Images</Label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -148,7 +149,6 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
               </div>
             }
           </div>
-          {/* Form Fields */}
           <div className="space-y-4">
             <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="Listing Title *" />
             <Textarea id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Description" rows={3} />
