@@ -142,7 +142,7 @@ export default function Marketplace() {
         return;
     }
 
-    const { data: newChat, error } = await supabase
+    const { data: newChat, error: chatError } = await supabase
         .from('chats')
         .insert({
             listing_id: listing.id,
@@ -153,12 +153,25 @@ export default function Marketplace() {
         .select('id')
         .single();
 
-    if (error) {
-        toast({ title: "Error", description: `Could not start chat: ${error.message}`, variant: "destructive" });
+    if (chatError) {
+        toast({ title: "Error", description: `Could not start chat: ${chatError.message}`, variant: "destructive" });
         return;
     }
 
     if (newChat) {
+        const initialMessage = `Hi, I'm interested in your listing: "${listing.title}". Is it still available?`;
+        const { error: messageError } = await supabase.from('messages').insert({
+            chat_id: newChat.id,
+            sender_id: session.user.id,
+            receiver_id: listing.user_id,
+            content: initialMessage,
+        });
+
+        if (messageError) {
+            toast({ title: "Error", description: `Could not start chat: ${messageError.message}`, variant: "destructive" });
+            return;
+        }
+
         queryClient.invalidateQueries({ queryKey: ['chats'] });
         navigate(`/chats/${newChat.id}`);
     }
