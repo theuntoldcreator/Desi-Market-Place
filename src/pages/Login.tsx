@@ -12,9 +12,7 @@ const Login = () => {
         {/* Left side - Welcome content */}
         <div className="space-y-6 text-center lg:text-left">
           <div className="flex items-center justify-center lg:justify-start gap-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-lg">
-              <img src={logo} alt="Eagle Market Place Logo" className="w-10 h-10" />
-            </div>
+            <img src={logo} alt="Eagle Market Place Logo" className="w-12 h-12 rounded-lg" />
             <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#00853E] to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
               Eagle Market Place
             </h1>

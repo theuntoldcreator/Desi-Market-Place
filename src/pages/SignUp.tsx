@@ -66,7 +66,7 @@ export default function SignUp() {
     <div className="min-h-screen bg-marketplace-bg flex items-center justify-center p-4">
       <Card className="w-full max-w-lg mx-auto shadow-xl border-0 bg-gradient-card">
         <CardHeader className="text-center space-y-2">
-          <img src={logo} alt="Logo" className="w-12 h-12 mx-auto" />
+          <img src={logo} alt="Logo" className="w-12 h-12 mx-auto rounded-lg" />
           <CardTitle className="text-2xl font-bold">Create an Account</CardTitle>
           <CardDescription className="text-base">Join our community to start buying and selling!</CardDescription>
         </CardHeader>
