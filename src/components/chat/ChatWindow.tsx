@@ -128,14 +128,12 @@ export function ChatWindow({ chatId }: { chatId: string }) {
     onSettled: () => setIsDeleteDialogOpen(false)
   });
 
+  // This useEffect now only runs when the chat window is opened, breaking the loop.
   useEffect(() => {
-    if (chatId && session && messages.length > 0) {
-      const unreadMessagesExist = messages.some(m => !m.is_read && m.receiver_id === session.user.id);
-      if (unreadMessagesExist) {
-        markAsReadMutation.mutate();
-      }
+    if (chatId && session?.user?.id) {
+      markAsReadMutation.mutate();
     }
-  }, [chatId, session, messages, markAsReadMutation]);
+  }, [chatId, session?.user?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -149,7 +147,13 @@ export function ChatWindow({ chatId }: { chatId: string }) {
     if (!chatId) return;
     const realtimeChannel = supabase.channel(`chat:${chatId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
-        () => queryClient.invalidateQueries({ queryKey: ['messages', chatId] })
+        (payload) => {
+          queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
+          // If the new message is not from the current user, mark it as read
+          if (payload.new && (payload.new as any).sender_id !== session?.user.id) {
+            markAsReadMutation.mutate();
+          }
+        }
       )
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
         if (payload.senderId !== session?.user.id) {
