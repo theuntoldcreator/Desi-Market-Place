@@ -58,11 +58,11 @@ export function MarketplaceSidebar(props: MarketplaceSidebarProps) {
   return (
     <>
       {/* Desktop */}
-      <div className="hidden sm:block w-72 border-r bg-white h-screen sticky top-16 shrink-0">
+      <div className="hidden lg:block w-72 border-r bg-white h-screen sticky top-16 shrink-0">
         <SidebarContent {...props} />
       </div>
       {/* Mobile */}
-      <div className="sm:hidden fixed bottom-4 right-4 z-40">
+      <div className="lg:hidden fixed bottom-4 right-4 z-40">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild><Button size="icon" className="rounded-full shadow-lg h-14 w-14"><Menu className="h-6 w-6" /></Button></SheetTrigger>
           <SheetContent side="left" className="w-80 p-0 bg-white">
