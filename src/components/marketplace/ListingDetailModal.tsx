@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Trash2, Clock, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ListingDetailModalProps {
   listing: any;
@@ -28,6 +29,7 @@ export function ListingDetailModal({
   onDelete,
 }: ListingDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const isMobile = useIsMobile();
 
   if (!listing) return null;
 
@@ -58,7 +60,10 @@ export function ListingDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-4xl p-0 gap-0 rounded-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className={cn(
+        "w-[95vw] max-w-4xl p-0 gap-0 rounded-lg max-h-[90vh] overflow-y-auto",
+        isMobile && "hide-scrollbar"
+      )}>
         <div className="grid grid-cols-1 md:grid-cols-2">
           <div className="relative bg-black flex items-center justify-center md:rounded-l-lg overflow-hidden aspect-[4/3] md:aspect-square">
             <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain" />
