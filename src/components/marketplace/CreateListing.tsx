@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, Phone, MapPin, Loader2, Info } from 'lucide-react';
+import { Upload, X, Phone, MapPin, Loader2, Info, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { countries } from '@/lib/countries';
@@ -91,7 +91,12 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index));
 
   const validateForm = () => {
-    return formData.title && formData.price && formData.category && formData.location && formData.phoneNumber && formData.condition;
+    const requiredFields = ['title', 'price', 'category', 'location', 'phoneNumber', 'condition'];
+    if (formData.price === '0') {
+        const freeRequired = ['title', 'price', 'location', 'phoneNumber', 'condition'];
+        return freeRequired.every(field => !!(formData as any)[field]);
+    }
+    return requiredFields.every(field => !!(formData as any)[field]);
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,104 +114,119 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && (resetForm(), onClose())}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Create New Listing</DialogTitle>
-          <DialogDescription>
-            A great listing has a clear title, a detailed description, and good photos!
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-6 py-4">
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Listings are active for 20 days and will automatically expire.
-            </AlertDescription>
-          </Alert>
-          <Alert className="bg-blue-50 border-blue-200 text-blue-800">
-            <Info className="h-4 w-4 text-current" />
-            <AlertDescription>
-              <strong>Pro Tip:</strong> Write a detailed description covering the item's condition, age, and any special features or flaws. This helps buyers make a confident decision!
-            </AlertDescription>
-          </Alert>
-          {/* Image Upload */}
-          <div className="space-y-3">
-            <Label className="text-base font-medium">Images (1-5) *</Label>
-            <div 
-              className={cn("border-2 border-dashed rounded-lg p-6 text-center transition-all", dragActive && "border-primary bg-primary/5")}
-              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
-              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); }}
-              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); if (e.dataTransfer.files) handleImageUpload(e.dataTransfer.files); }}
-            >
-              <input type="file" multiple accept="image/*" onChange={(e) => e.target.files && handleImageUpload(e.target.files)} className="hidden" id="image-upload" disabled={images.length >= 5} />
-              <label htmlFor="image-upload" className={cn("cursor-pointer", images.length >= 5 && "cursor-not-allowed opacity-50")}>
-                <div className="flex flex-col items-center gap-3">
-                  <Upload className="w-6 h-6 text-primary" />
-                  <p className="font-medium">Click or drag to upload</p>
-                  <p className="text-sm text-muted-foreground">({images.length}/5)</p>
-                </div>
-              </label>
-            </div>
-            {images.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                {images.map((image, index) => (
-                  <div key={index} className="relative group aspect-square">
-                    <img src={URL.createObjectURL(image)} alt={`Upload ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
-                    <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6 opacity-0 group-hover:opacity-100" onClick={() => removeImage(index)}>
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+      <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-2xl sm:h-auto sm:max-h-[95vh] sm:rounded-lg flex flex-col overflow-hidden [&>button]:hidden">
+        
+        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-4">
+          <div className="space-y-1">
+            <DialogTitle className="text-xl">Create New Listing</DialogTitle>
+            <DialogDescription>Fill in the details to sell your item.</DialogDescription>
           </div>
-          {/* Form Fields */}
-          <div className="space-y-4">
-            <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="Listing Title *" />
-            <Textarea id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Description" rows={3} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input id="price" type="number" value={formData.price} onChange={handlePriceChange} placeholder="Price ($) *" min="0" />
-              <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))} disabled={formData.price === '0'}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select Category *">
-                        {formData.price === '0' ? 'Free Stuff' : undefined}
-                    </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        <div className="flex-grow overflow-y-auto hide-scrollbar">
+          <div className="p-4 space-y-6">
+            {/* Image Upload Section */}
+            <div className="space-y-3">
+              <Label className="font-semibold">Images (up to 5) *</Label>
+              {images.length > 0 && (
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                  {images.map((image, index) => (
+                    <div key={index} className="relative group aspect-square">
+                      <img src={URL.createObjectURL(image)} alt={`Upload ${index + 1}`} className="w-full h-full object-cover rounded-lg border" />
+                      <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  {images.length < 5 && (
+                    <label htmlFor="image-upload" className="cursor-pointer flex items-center justify-center border-2 border-dashed rounded-lg aspect-square text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+                      <Upload className="w-6 h-6" />
+                    </label>
+                  )}
+                </div>
+              )}
+              {images.length === 0 && (
+                <div 
+                  className={cn("border-2 border-dashed rounded-lg p-6 text-center transition-all", dragActive && "border-primary bg-primary/5")}
+                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); }}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); if (e.dataTransfer.files) handleImageUpload(e.dataTransfer.files); }}
+                >
+                  <input type="file" multiple accept="image/*" onChange={(e) => e.target.files && handleImageUpload(e.target.files)} className="hidden" id="image-upload" disabled={images.length >= 5} />
+                  <label htmlFor="image-upload" className={cn("cursor-pointer", images.length >= 5 && "cursor-not-allowed opacity-50")}>
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <ImageIcon className="w-8 h-8" />
+                      <p className="font-medium text-primary">Click or drag to upload</p>
+                      <p className="text-sm">Add up to 5 photos.</p>
+                    </div>
+                  </label>
+                </div>
+              )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input id="location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))} placeholder="Location (e.g., Dallas) *" className="pl-10" />
+
+            {/* Form Fields Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="font-semibold">Listing Details *</Label>
+              <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="What are you selling?" />
+              <Textarea id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Describe your item (optional)" rows={4} />
+              <div className="grid grid-cols-2 gap-4">
+                <Input id="price" type="number" value={formData.price} onChange={handlePriceChange} placeholder="Price ($)" min="0" />
+                <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))} disabled={formData.price === '0'}>
+                  <SelectTrigger>
+                      <SelectValue placeholder="Category">
+                          {formData.price === '0' ? 'Free Stuff' : undefined}
+                      </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>{categories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
-              <Select value={formData.condition} onValueChange={(value) => setFormData(prev => ({ ...prev, condition: value }))}>
-                <SelectTrigger><SelectValue placeholder="Select Condition *" /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="like_new">Like New</SelectItem>
-                    <SelectItem value="used">Used</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Select value={formData.countryCode} onValueChange={(value) => setFormData(prev => ({ ...prev, countryCode: value }))}>
-                <SelectTrigger className="w-[80px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code}</SelectItem>)}</SelectContent>
-              </Select>
-              <div className="relative flex-1">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input id="contact" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} placeholder="Contact Number *" className="pl-10" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input id="location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))} placeholder="Location" className="pl-10" />
+                </div>
+                <Select value={formData.condition} onValueChange={(value) => setFormData(prev => ({ ...prev, condition: value }))}>
+                  <SelectTrigger><SelectValue placeholder="Condition" /></SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="like_new">Like New</SelectItem>
+                      <SelectItem value="used">Used</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+
+            {/* Contact Info Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="font-semibold">Contact Info *</Label>
+              <div className="flex items-center gap-2">
+                <Select value={formData.countryCode} onValueChange={(value) => setFormData(prev => ({ ...prev, countryCode: value }))}>
+                  <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>{countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{`${c.code} ${c.dial_code}`}</SelectItem>)}</SelectContent>
+                </Select>
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input id="contact" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} placeholder="Phone Number" className="pl-10" />
+                </div>
+              </div>
+            </div>
+            
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Listings are active for 20 days. You can manage them from 'My Listings'.
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
-        <DialogFooter className="pt-4">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => createListingMutation.mutate()} disabled={createListingMutation.isPending}>
+
+        <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4">
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
+          <Button onClick={() => createListingMutation.mutate()} disabled={createListingMutation.isPending || !validateForm()} className="w-full sm:w-auto">
             {createListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Publish Listing
           </Button>
