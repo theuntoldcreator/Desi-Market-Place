@@ -109,14 +109,14 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && (resetForm(), onClose())}>
-      <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-2xl sm:h-auto sm:max-h-[95vh] sm:rounded-lg flex flex-col">
-        <DialogHeader className="p-6 pb-4 border-b sticky top-0 bg-background z-10 pt-[calc(env(safe-area-inset-top)+1.5rem)] sm:pt-6">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] overflow-y-auto">
+        <DialogHeader>
           <DialogTitle className="text-2xl">Create New Listing</DialogTitle>
           <DialogDescription>
             A great listing has a clear title, a detailed description, and good photos!
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-grow overflow-y-auto p-6 space-y-6">
+        <div className="space-y-6 py-4">
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
@@ -204,7 +204,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
             </div>
           </div>
         </div>
-        <DialogFooter className="p-6 pt-4 border-t sticky bottom-0 bg-background z-10 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:pb-6">
+        <DialogFooter className="pt-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => createListingMutation.mutate()} disabled={createListingMutation.isPending}>
             {createListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
