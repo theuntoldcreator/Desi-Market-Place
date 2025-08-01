@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 const categories = [
   { id: 'all', name: 'All Items', icon: ShoppingBag },
@@ -24,38 +25,47 @@ interface MarketplaceSidebarProps {
   onSearchChange: (query: string) => void;
 }
 
-const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick }: Omit<MarketplaceSidebarProps, 'onCreateListing'> & { onLinkClick?: () => void }) => (
-  <div className="p-4 space-y-6">
-    <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="pl-10" />
+const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick }: Omit<MarketplaceSidebarProps, 'onCreateListing'> & { onLinkClick?: () => void }) => {
+  const unreadCount = useUnreadMessages();
+
+  return (
+    <div className="p-4 space-y-6">
+      <div className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="pl-10" />
+        </div>
+      </div>
+      <Separator />
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold uppercase tracking-wide">Inbox</h3>
+        <Link to="/chats" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50">
+          <div className="flex items-center gap-3"><MessageSquare className="w-4 h-4" /><span>Chats</span></div>
+          {unreadCount > 0 && (
+            <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </Link>
+      </div>
+      <Separator />
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold uppercase tracking-wide">Categories</h3>
+        {categories.map((cat) => (
+          <button key={cat.id} onClick={() => { onCategoryChange(cat.id); onLinkClick?.(); }} className={cn("w-full flex items-center gap-3 p-2 rounded-lg text-left", selectedCategory === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-accent/50')}>
+            <cat.icon className="w-4 h-4" /><span>{cat.name}</span>
+          </button>
+        ))}
+      </div>
+      <Separator />
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold uppercase tracking-wide">My Account</h3>
+        <Link to="/my-listings" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><ShoppingBag className="w-4 h-4" /><span>My Listings</span></div></Link>
+        <Link to="/favorites" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><Heart className="w-4 h-4" /><span>Favorites</span></div></Link>
       </div>
     </div>
-    <Separator />
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold uppercase tracking-wide">Inbox</h3>
-      <Link to="/chats" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50">
-        <div className="flex items-center gap-3"><MessageSquare className="w-4 h-4" /><span>Chats</span></div>
-      </Link>
-    </div>
-    <Separator />
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold uppercase tracking-wide">Categories</h3>
-      {categories.map((cat) => (
-        <button key={cat.id} onClick={() => { onCategoryChange(cat.id); onLinkClick?.(); }} className={cn("w-full flex items-center gap-3 p-2 rounded-lg text-left", selectedCategory === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-accent/50')}>
-          <cat.icon className="w-4 h-4" /><span>{cat.name}</span>
-        </button>
-      ))}
-    </div>
-    <Separator />
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold uppercase tracking-wide">My Account</h3>
-      <Link to="/my-listings" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><ShoppingBag className="w-4 h-4" /><span>My Listings</span></div></Link>
-      <Link to="/favorites" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><Heart className="w-4 h-4" /><span>Favorites</span></div></Link>
-    </div>
-  </div>
-);
+  );
+};
 
 export function MarketplaceSidebar(props: MarketplaceSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
