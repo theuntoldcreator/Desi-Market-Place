@@ -140,7 +140,7 @@ export default function Marketplace() {
       return;
     }
 
-    const message = `Hey! I'm interested in your listing "${listing.title}" on Desi Market Place.`;
+    const message = `Hey! I'm interested in your listing "${listing.title}" on Eagle Market Place.`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');

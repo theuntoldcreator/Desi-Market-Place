@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'og.png'],
       manifest: {
-        name: 'Desi Market Place',
-        short_name: 'DesiMarket',
-        description: 'Your go-to platform to buy and sell anything locally. Find great deals on furniture, electronics, and more from the Desi community.',
+        name: 'Eagle Market Place',
+        short_name: 'EagleMarket',
+        description: 'Your go-to platform to buy and sell anything locally. Find great deals on furniture, electronics, and more from the Eagle community.',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
