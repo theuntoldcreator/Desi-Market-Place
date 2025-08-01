@@ -18,7 +18,7 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
               <img src={logo} alt="Desi Market Place Logo" className="w-6 h-6" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
                 Desi Market Place
               </h1>
             </div>
