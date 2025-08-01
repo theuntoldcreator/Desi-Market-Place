@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, Loader2, Upload, X, MapPin } from 'lucide-react';
+import { Phone, Loader2, Upload, X, MapPin, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { countries } from '@/lib/countries';
+import { Alert, AlertDescription } from '../ui/alert';
 
 interface EditListingProps {
   isOpen: boolean;
@@ -136,9 +137,17 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
       <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Edit Listing</DialogTitle>
-          <DialogDescription>Update the details and images for your item.</DialogDescription>
+          <DialogDescription>
+            Update the details and images for your item. A clear description helps sell your item faster!
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
+          <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+            <Info className="h-4 w-4 text-current" />
+            <AlertDescription>
+              <strong>Pro Tip:</strong> Write a detailed description covering the item's condition, age, and any special features or flaws. This helps buyers make a confident decision!
+            </AlertDescription>
+          </Alert>
           <div className="space-y-3">
             <Label className="text-base font-medium">Images</Label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

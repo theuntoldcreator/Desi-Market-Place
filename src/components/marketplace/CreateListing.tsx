@@ -112,13 +112,21 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
       <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Create New Listing</DialogTitle>
-          <DialogDescription>Fill in the details to publish your item.</DialogDescription>
+          <DialogDescription>
+            A great listing has a clear title, a detailed description, and good photos!
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
               Listings are active for 20 days and will automatically expire.
+            </AlertDescription>
+          </Alert>
+          <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+            <Info className="h-4 w-4 text-current" />
+            <AlertDescription>
+              <strong>Pro Tip:</strong> Write a detailed description covering the item's condition, age, and any special features or flaws. This helps buyers make a confident decision!
             </AlertDescription>
           </Alert>
           {/* Image Upload */}
