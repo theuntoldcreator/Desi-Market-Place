@@ -2,13 +2,11 @@ import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, Clock, MapPin, Check, Trash2, Share2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, MapPin, Check, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '../ui/separator';
-import { useToast } from '@/hooks/use-toast';
 
 interface ListingDetailModalProps {
   listing: any;
@@ -34,7 +32,6 @@ export function ListingDetailModal({
   onDelete,
 }: ListingDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const { toast } = useToast();
 
   if (!listing) return null;
 
@@ -45,24 +42,6 @@ export function ListingDetailModal({
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev - 1 + listing.image_urls.length) % listing.image_urls.length);
-  };
-
-  const handleShare = async () => {
-    const shareData = {
-      title: listing.title,
-      text: `Check out this listing on Eagle Market Place: ${listing.title}`,
-      url: window.location.href,
-    };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        throw new Error("Web Share API not supported");
-      }
-    } catch (err) {
-      navigator.clipboard.writeText(window.location.href);
-      toast({ title: 'Link copied to clipboard!' });
-    }
   };
 
   const fullName = `${listing.seller?.first_name || ''} ${listing.seller?.last_name || ''}`.trim() || 'Unknown User';
@@ -86,8 +65,8 @@ export function ListingDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-screen h-screen max-w-full p-0 gap-0 rounded-none sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-2xl flex flex-col">
-        <div className="flex-grow overflow-y-auto">
+      <DialogContent className="w-screen h-screen max-w-full p-0 gap-0 rounded-none sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-2xl flex flex-col overflow-hidden">
+        <div className="flex-grow overflow-y-auto hide-scrollbar">
           <div className="relative bg-muted flex items-center justify-center aspect-square">
             {listing.status === 'sold' && <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">SOLD</div>}
             <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain z-10" />
@@ -97,9 +76,7 @@ export function ListingDetailModal({
                 <Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={nextImage}><ChevronRight /></Button>
               </>
             )}
-            {/* Mobile-only close button (top-left) */}
             <Button variant="ghost" size="icon" className="absolute top-4 left-4 z-20 sm:hidden bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}><X className="h-5 w-5" /></Button>
-            {/* Desktop-only close button (top-right) */}
             <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-20 hidden sm:inline-flex bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}><X className="h-5 w-5" /></Button>
           </div>
 
@@ -139,15 +116,12 @@ export function ListingDetailModal({
               </div>
             ) : (
               listing.status !== 'sold' && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <Button className="w-full" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
-                      <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
-                      {listing.isFavorited ? 'Saved' : 'Save'}
-                    </Button>
-                    <Button variant="outline" onClick={handleShare}><Share2 className="w-4 h-4 mr-2" />Share</Button>
-                  </div>
+                  <Button variant="outline" className="w-full" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
+                    <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
+                    {listing.isFavorited ? 'Saved' : 'Save'}
+                  </Button>
                 </div>
               )
             )}
