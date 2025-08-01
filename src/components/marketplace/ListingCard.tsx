@@ -1,6 +1,9 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { MapPin } from 'lucide-react';
+import { useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface ListingCardProps {
   title: string;
@@ -12,6 +15,8 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ title, price, image_urls, location, onClick, status }: ListingCardProps) {
+  const [isImageLoading, setIsImageLoading] = useState(true);
+
   return (
     <Card
       onClick={onClick}
@@ -24,11 +29,17 @@ export function ListingCard({ title, price, image_urls, location, onClick, statu
       )}
       <CardContent className="p-3 space-y-3">
         <AspectRatio ratio={1 / 1} className="bg-muted rounded-md overflow-hidden">
+          {isImageLoading && <Skeleton className="w-full h-full" />}
           <img
             src={image_urls[0]}
             alt={title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className={cn(
+              "w-full h-full object-cover transition-transform duration-300 group-hover:scale-105",
+              isImageLoading && "hidden"
+            )}
             loading="lazy"
+            onLoad={() => setIsImageLoading(false)}
+            onError={() => setIsImageLoading(false)}
           />
         </AspectRatio>
         

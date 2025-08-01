@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '../ui/separator';
+import { Skeleton } from '../ui/skeleton';
 
 interface ListingDetailModalProps {
   listing: any;
@@ -32,6 +33,11 @@ export function ListingDetailModal({
   onDelete,
 }: ListingDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isImageLoading, setIsImageLoading] = useState(true);
+
+  useEffect(() => {
+    setIsImageLoading(true);
+  }, [currentImageIndex, listing.image_urls]);
 
   if (!listing) return null;
 
@@ -68,8 +74,15 @@ export function ListingDetailModal({
       <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-2xl flex flex-col overflow-hidden [&>button]:hidden">
         <div className="flex-grow overflow-y-auto hide-scrollbar pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-0 sm:pb-0">
           <div className="relative bg-muted flex items-center justify-center aspect-square">
+            {isImageLoading && <Skeleton className="absolute inset-0 w-full h-full z-10" />}
             {listing.status === 'sold' && <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">SOLD</div>}
-            <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain z-10" />
+            <img
+              src={listing.image_urls[currentImageIndex]}
+              alt={listing.title}
+              className={cn("w-full h-full object-contain z-10", isImageLoading && "invisible")}
+              onLoad={() => setIsImageLoading(false)}
+              onError={() => setIsImageLoading(false)}
+            />
             {listing.image_urls.length > 1 && (
               <>
                 <Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button>
