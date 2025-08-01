@@ -161,3 +161,8 @@ html {
         @apply bg-background text-foreground;
     }
 }
+
+/* Hide default Supabase Auth UI Sign Up link */
+a[href="#auth-sign-up"] {
+  display: none;
+}
