@@ -152,13 +152,13 @@ export default function Marketplace() {
     .sort((a, b) => sortBy === 'price-low' ? a.price - b.price : sortBy === 'price-high' ? b.price - a.price : 0);
 
   const renderContent = () => {
-    if (isLoading) return <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">{Array.from({ length: 8 }).map((_, i) => <Card key={i} className="p-0"><div className="h-96 bg-muted animate-pulse rounded-lg"></div></Card>)}</div>;
+    if (isLoading) return <div className="grid grid-cols-2 md:grid-cols-5 gap-6">{Array.from({ length: 8 }).map((_, i) => <Card key={i} className="p-0"><div className="h-96 bg-muted animate-pulse rounded-lg"></div></Card>)}</div>;
     if (isError) return <div className="text-center py-16 text-destructive">Failed to load listings.</div>;
     if (filteredListings.length === 0) return <div className="text-center py-16"><h3 className="text-xl font-semibold">No listings found</h3><p className="text-muted-foreground">Try adjusting your search.</p></div>;
 
     return (
       <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           {filteredListings.slice(0, visibleCount).map((listing) => (
             <ListingCard
               key={listing.id}
