@@ -15,10 +15,10 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
         <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/" className="flex items-center sm:space-x-3">
             <div className="hidden sm:flex w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-lg items-center justify-center shadow-md flex-shrink-0">
-              <img src={logo} alt="Desi Market Place Logo" className="w-6 h-6" />
+              <img src={logo} alt="UNT Market Place Logo" className="w-6 h-6" />
             </div>
             <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
-              Desi Market Place
+              UNT Market Place
             </h1>
           </Link>
         </div>
