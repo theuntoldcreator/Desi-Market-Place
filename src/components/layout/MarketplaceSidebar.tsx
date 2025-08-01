@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ShoppingBag, Laptop, BookOpen, Home, Car, Shirt, Gamepad2, Heart, Menu, MessageSquare } from 'lucide-react';
+import { Search, ShoppingBag, Laptop, BookOpen, Home, Car, Shirt, Gamepad2, Heart, Menu, MessageSquare, Gift } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -10,6 +10,7 @@ import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 const categories = [
   { id: 'all', name: 'All Items', icon: ShoppingBag },
+  { id: 'free', name: 'Free Stuff', icon: Gift },
   { id: 'electronics', name: 'Electronics', icon: Laptop },
   { id: 'books', name: 'Books & Study', icon: BookOpen },
   { id: 'furniture', name: 'Furniture', icon: Home },

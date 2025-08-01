@@ -116,6 +116,16 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
     setImagesToDelete(prev => [...prev, url]);
   };
 
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPrice = e.target.value;
+    if (newPrice === '0') {
+        setFormData(prev => ({ ...prev, price: newPrice, category: 'free' }));
+    } else {
+        const newCategory = prev.category === 'free' ? '' : prev.category;
+        setFormData(prev => ({ ...prev, price: newPrice, category: newCategory }));
+    }
+  };
+
   if (!listing) return null;
 
   return (
@@ -155,8 +165,14 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
             <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="Listing Title *" />
             <Textarea id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Description" rows={3} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input id="price" type="number" value={formData.price} onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))} placeholder="Price ($) *" min="1" />
-              <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}><SelectTrigger><SelectValue placeholder="Select Category *" /></SelectTrigger><SelectContent>{categories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select>
+              <Input id="price" type="number" value={formData.price} onChange={handlePriceChange} placeholder="Price ($) *" min="0" />
+              <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))} disabled={formData.price === '0'}>
+                <SelectTrigger><SelectValue placeholder="Select Category *" /></SelectTrigger>
+                <SelectContent>
+                  {formData.category === 'free' && <SelectItem value="free">Free Stuff</SelectItem>}
+                  {categories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="relative">
