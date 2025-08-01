@@ -35,6 +35,7 @@ export default function MyListings() {
   const [listingToMarkAsSold, setListingToMarkAsSold] = useState<any>(null);
   const [listingToEdit, setListingToEdit] = useState<any>(null);
   const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [listingToDelete, setListingToDelete] = useState<any>(null);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['my-listings', session?.user?.id],
@@ -54,6 +55,28 @@ export default function MyListings() {
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
     onSettled: () => setListingToMarkAsSold(null)
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (listing: any) => {
+      if (!session || session.user.id !== listing.user_id) throw new Error("Unauthorized");
+      
+      if (listing.image_urls && listing.image_urls.length > 0) {
+        const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]).filter(Boolean);
+        if (imagePaths.length > 0) {
+          await supabase.storage.from('listing_images').remove(imagePaths);
+        }
+      }
+
+      const { error: dbError } = await supabase.from('listings').delete().eq('id', listing.id);
+      if (dbError) throw dbError;
+    },
+    onSuccess: () => {
+      toast({ title: "Success!", description: "Listing permanently deleted." });
+      queryClient.invalidateQueries({ queryKey: ['my-listings'] });
+    },
+    onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
+    onSettled: () => setListingToDelete(null)
   });
 
   const renderContent = () => {
@@ -104,6 +127,15 @@ export default function MyListings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <AlertDialog open={!!listingToDelete} onOpenChange={() => setListingToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your listing and all its data. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteMutation.mutate(listingToDelete)} disabled={deleteMutation.isPending} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {selectedListing && (
         <ListingDetailModal
           listing={{ ...selectedListing, seller: selectedListing.profile || {}, timeAgo: new Date(selectedListing.created_at).toLocaleDateString() }}
@@ -112,6 +144,7 @@ export default function MyListings() {
           onClose={() => setSelectedListing(null)}
           onEdit={() => { setSelectedListing(null); setListingToEdit(selectedListing); }}
           onMarkAsSold={() => { setSelectedListing(null); setListingToMarkAsSold(selectedListing); }}
+          onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
         />
       )}
       <FloatingHomeButton />

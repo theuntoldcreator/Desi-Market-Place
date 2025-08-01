@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, Clock, MapPin, Check } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, Clock, MapPin, Check, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -16,6 +16,7 @@ interface ListingDetailModalProps {
   onSendMessage?: () => void;
   onEdit?: () => void;
   onMarkAsSold?: () => void;
+  onDelete?: () => void;
 }
 
 export function ListingDetailModal({
@@ -27,6 +28,7 @@ export function ListingDetailModal({
   onSendMessage,
   onEdit,
   onMarkAsSold,
+  onDelete,
 }: ListingDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const isMobile = useIsMobile();
@@ -136,11 +138,19 @@ export function ListingDetailModal({
               
               <div className="grid grid-cols-1 gap-2">
                 {isOwner ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" onClick={onEdit} disabled={listing.status === 'sold'}><Pencil className="w-4 h-4 mr-2" />Edit</Button>
-                    <Button variant={listing.status === 'sold' ? "secondary" : "destructive"} onClick={onMarkAsSold} disabled={listing.status === 'sold'}>
-                      {listing.status === 'sold' ? <><Check className="w-4 h-4 mr-2" />Sold</> : <><Tag className="w-4 h-4 mr-2" />Mark as Sold</>}
-                    </Button>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" onClick={onEdit} disabled={listing.status === 'sold'}><Pencil className="w-4 h-4 mr-2" />Edit</Button>
+                      <Button variant={listing.status === 'sold' ? "secondary" : "destructive"} onClick={onMarkAsSold} disabled={listing.status === 'sold'}>
+                        {listing.status === 'sold' ? <><Check className="w-4 h-4 mr-2" />Sold</> : <><Tag className="w-4 h-4 mr-2" />Mark as Sold</>}
+                      </Button>
+                    </div>
+                    {listing.status === 'sold' && (
+                      <Button variant="ghost" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={onDelete}>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Listing Permanently
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   listing.status === 'sold' ? (
