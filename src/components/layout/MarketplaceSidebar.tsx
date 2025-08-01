@@ -34,15 +34,6 @@ const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSea
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="pl-10" />
         </div>
-        <div className="flex justify-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
-            </span>
-            <span>{onlineCount > 0 ? `${onlineCount} Online` : 'Connecting...'}</span>
-          </div>
-        </div>
       </div>
       <Separator />
       <div className="space-y-2">
@@ -58,6 +49,16 @@ const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSea
         <h3 className="text-sm font-semibold uppercase tracking-wide">My Account</h3>
         <Link to="/my-listings" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><ShoppingBag className="w-4 h-4" /><span>My Listings</span></div></Link>
         <Link to="/favorites" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><Heart className="w-4 h-4" /><span>Favorites</span></div></Link>
+      </div>
+      <Separator />
+      <div className="flex justify-center">
+        <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
+          </span>
+          <span>{onlineCount > 0 ? `${onlineCount} Online` : 'Connecting...'}</span>
+        </div>
       </div>
     </div>
   );
