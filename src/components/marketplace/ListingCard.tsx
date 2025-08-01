@@ -1,114 +1,39 @@
-import { useState } from 'react';
-import { Heart, MapPin, Phone, ChevronLeft, ChevronRight, Trash2, Pencil } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { MapPin } from 'lucide-react';
 
 interface ListingCardProps {
-  id: string;
   title: string;
-  description: string | null;
   price: number;
   image_urls: string[];
   location: string;
-  contact: string;
-  seller: {
-    first_name?: string | null;
-    last_name?: string | null;
-    avatar_url?: string | null;
-  };
-  category: string;
-  timeAgo: string;
-  isFavorited?: boolean;
-  isOwner?: boolean;
-  onFavoriteToggle?: (id: string, isFavorited: boolean) => void;
-  onDelete?: () => void;
-  onEdit?: () => void;
+  onClick: () => void;
 }
 
-export function ListingCard({
-  id, title, description, price, image_urls, location, contact, seller, category, timeAgo,
-  isFavorited = false, isOwner = false, onFavoriteToggle, onDelete, onEdit
-}: ListingCardProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-
-  const nextImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % image_urls.length); };
-  const prevImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + image_urls.length) % image_urls.length); };
-
-  const cleanedContact = contact.replace(/\D/g, '');
-  const whatsappUrl = `https://wa.me/${cleanedContact}`;
-
-  const fullName = `${seller?.first_name || ''} ${seller?.last_name || ''}`.trim() || 'Unknown User';
-  const fallback = fullName?.[0]?.toUpperCase();
-
+export function ListingCard({ title, price, image_urls, location, onClick }: ListingCardProps) {
   return (
-    <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white overflow-hidden transform hover:-translate-y-1 flex flex-col">
-      <CardContent className="p-0 flex flex-col flex-grow">
-        <div className="relative h-52 bg-muted overflow-hidden" onClick={() => setIsImageModalOpen(true)}>
-          {image_urls.length > 0 ? (
-            <>
-              <img src={image_urls[currentImageIndex]} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-              {image_urls.length > 1 && (
-                <>
-                  <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white h-8 w-8" onClick={prevImage}><ChevronLeft className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white h-8 w-8" onClick={nextImage}><ChevronRight className="w-4 h-4" /></Button>
-                </>
-              )}
-            </>
-          ) : <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>}
-          {!isOwner && (
-            <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-white/20 hover:bg-white/40 backdrop-blur-sm h-8 w-8" onClick={(e) => { e.stopPropagation(); onFavoriteToggle?.(id, isFavorited); }}>
-              <Heart className={cn("w-4 h-4 transition-all", isFavorited ? 'fill-red-500 text-red-500' : 'text-white')} />
-            </Button>
-          )}
-          <Badge variant="secondary" className="absolute top-2 left-2 bg-white/90">{category}</Badge>
-        </div>
-        <div className="p-4 space-y-3 flex flex-col flex-grow">
-          <div className="space-y-1">
-            <h3 className="font-semibold text-lg truncate group-hover:text-primary" title={title}>
-              {title}
-            </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 h-10">
-              {description || 'No description provided.'}
-            </p>
+    <Card
+      onClick={onClick}
+      className="group overflow-hidden rounded-lg border bg-card shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
+    >
+      <CardContent className="p-0">
+        <AspectRatio ratio={1 / 1} className="bg-muted">
+          <img
+            src={image_urls[0]}
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        </AspectRatio>
+        <div className="p-3 space-y-1">
+          <p className="font-bold text-lg text-primary">${price.toLocaleString()}</p>
+          <h3 className="font-semibold truncate" title={title}>{title}</h3>
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="truncate">{location}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-marketplace-price-text">${price.toLocaleString()}</span>
-            <span className="text-sm text-muted-foreground">{timeAgo}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="w-4 h-4" /> <span className="truncate">{location}</span>
-          </div>
-          
-          <div className="flex-grow" />
-
-          {isOwner ? (
-            <div className="flex items-center gap-2 pt-2 border-t">
-              <Button onClick={onEdit} size="sm" variant="outline"><Pencil className="w-3 h-3 mr-1" /> Edit</Button>
-              <Button onClick={onDelete} size="sm" variant="destructive"><Trash2 className="w-3 h-3 mr-1" /> Delete</Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-2 min-w-0">
-                <Avatar className="w-8 h-8"><AvatarImage src={seller?.avatar_url || undefined} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
-                <span className="text-sm font-medium truncate">{fullName}</span>
-              </div>
-              <Button asChild size="sm">
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                  <Phone className="w-3 h-3 mr-1" /> Contact
-                </a>
-              </Button>
-            </div>
-          )}
         </div>
       </CardContent>
-      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
-        <DialogContent className="max-w-4xl p-0"><img src={image_urls[currentImageIndex]} alt={title} className="w-full h-auto max-h-[80vh] object-contain rounded-lg" /></DialogContent>
-      </Dialog>
     </Card>
   );
 }

@@ -9,43 +9,22 @@ import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 
 const fetchFavoriteListings = async (userId: string) => {
-  // Step 1: Fetch favorite listing IDs
-  const { data: favorites, error: favError } = await supabase
-    .from('favorites')
-    .select('listing_id')
-    .eq('user_id', userId);
-
+  const { data: favorites, error: favError } = await supabase.from('favorites').select('listing_id').eq('user_id', userId);
   if (favError) throw new Error(favError.message);
   if (!favorites || favorites.length === 0) return [];
 
   const listingIds = favorites.map(f => f.listing_id);
-
-  // Step 2: Fetch the listings for those IDs
-  const { data: listings, error: listingsError } = await supabase
-    .from('listings')
-    .select('*')
-    .in('id', listingIds);
-
+  const { data: listings, error: listingsError } = await supabase.from('listings').select('*').in('id', listingIds);
   if (listingsError) throw new Error(listingsError.message);
   if (!listings || listings.length === 0) return [];
 
-  // Step 3: Fetch profiles for the fetched listings
   const userIds = [...new Set(listings.map(l => l.user_id))];
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, avatar_url')
-    .in('id', userIds);
+  const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url').in('id', userIds);
+  const profilesById = profiles?.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as any) || {};
 
-  if (profilesError) throw new Error(profilesError.message);
-
-  const profilesById = profiles.reduce((acc, p) => {
-    acc[p.id] = p;
-    return acc;
-  }, {} as Record<string, { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null; }>);
-
-  // Step 4: Combine listings with their profiles
   return listings.map(listing => ({
     ...listing,
     profile: profilesById[listing.user_id] || null,
@@ -58,6 +37,7 @@ export default function Favorites() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<any>(null);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['favorites', session?.user?.id],
@@ -66,52 +46,40 @@ export default function Favorites() {
   });
 
   const favoriteMutation = useMutation({
-    mutationFn: async ({ listingId, isFavorited }: { listingId: string, isFavorited: boolean }) => {
-      if (!session) throw new Error("You must be logged in to favorite items.");
-      if (isFavorited) {
-        const { error } = await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
-        if (error) throw error;
-      }
+    mutationFn: async ({ listingId }: { listingId: string }) => {
+      if (!session) throw new Error("You must be logged in.");
+      await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
       toast({ title: 'Removed from favorites' });
+      setSelectedListing(null); // Close modal on unfavorite
     },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
+    onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
   });
 
   const renderContent = () => {
-    if (isLoading) {
-      return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-    }
-    if (isError) {
-      return <div className="text-center py-16 text-destructive">Failed to load your favorites.</div>;
-    }
-    if (listings.length === 0) {
-      return (
-        <div className="text-center py-16 border-2 border-dashed rounded-lg">
-          <Heart className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-xl font-semibold">No favorites yet</h3>
-          <p className="mt-2 text-muted-foreground">Browse the marketplace and click the heart to save items.</p>
-          <Button asChild className="mt-6">
-            <Link to="/">Browse Listings</Link>
-          </Button>
-        </div>
-      );
-    }
+    if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    if (isError) return <div className="text-center py-16 text-destructive">Failed to load favorites.</div>;
+    if (listings.length === 0) return (
+      <div className="text-center py-16 border-2 border-dashed rounded-lg">
+        <Heart className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h3 className="mt-4 text-xl font-semibold">No favorites yet</h3>
+        <p className="mt-2">Browse the marketplace and click the heart to save items.</p>
+        <Button asChild className="mt-6"><Link to="/">Browse Listings</Link></Button>
+      </div>
+    );
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
         {listings.map((listing) => (
           <ListingCard
             key={listing.id}
-            {...listing}
-            description={listing.description}
-            seller={listing.profile || {}}
-            timeAgo={new Date(listing.created_at).toLocaleDateString()}
-            onFavoriteToggle={() => favoriteMutation.mutate({ listingId: listing.id, isFavorited: true })}
+            title={listing.title}
+            price={listing.price}
+            image_urls={listing.image_urls}
+            location={listing.location}
+            onClick={() => setSelectedListing(listing)}
           />
         ))}
       </div>
@@ -123,12 +91,21 @@ export default function Favorites() {
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">My Favorites</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold">My Favorites</h2>
           <p className="text-muted-foreground mt-1">{listings.length} items saved</p>
         </div>
         {renderContent()}
       </main>
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
+      {selectedListing && (
+        <ListingDetailModal
+          listing={{ ...selectedListing, seller: selectedListing.profile || {}, timeAgo: new Date(selectedListing.created_at).toLocaleDateString() }}
+          isOpen={!!selectedListing}
+          isOwner={false}
+          onClose={() => setSelectedListing(null)}
+          onFavoriteToggle={(id) => favoriteMutation.mutate({ listingId: id })}
+        />
+      )}
     </div>
   );
 }

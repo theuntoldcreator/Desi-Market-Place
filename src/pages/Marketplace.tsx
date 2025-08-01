@@ -11,9 +11,9 @@ import { Card } from '@/components/ui/card';
 import { ChevronDown, SortAsc } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
+import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 
 const fetchListings = async (userId: string | undefined) => {
-  // Step 1: Fetch all listings
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
     .select('*')
@@ -22,7 +22,6 @@ const fetchListings = async (userId: string | undefined) => {
   if (listingsError) throw new Error(listingsError.message);
   if (!listings) return [];
 
-  // Step 2: Fetch profiles for the fetched listings
   const userIds = [...new Set(listings.map(l => l.user_id))];
   const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds);
   const profilesById = profiles?.reduce((acc, p) => {
@@ -30,13 +29,11 @@ const fetchListings = async (userId: string | undefined) => {
     return acc;
   }, {} as any) || {};
 
-  // Step 3: Combine listings with their profiles
   const listingsWithProfiles = listings.map(l => ({
     ...l,
     profile: profilesById[l.user_id] || null,
   }));
 
-  // Step 4: If user is logged in, determine which are favorited
   if (!userId) {
     return listingsWithProfiles.map(l => ({ ...l, isFavorited: false }));
   }
@@ -65,23 +62,21 @@ export default function Marketplace() {
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
   const [sortBy, setSortBy] = useState('newest');
+  const [selectedListing, setSelectedListing] = useState<any>(null);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['listings', session?.user?.id],
     queryFn: () => fetchListings(session?.user?.id),
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 1000 * 60,
   });
 
   const favoriteMutation = useMutation({
     mutationFn: async ({ listingId, isFavorited }: { listingId: string, isFavorited: boolean }) => {
       if (!session) throw new Error("You must be logged in to favorite items.");
-
       if (isFavorited) {
-        const { error } = await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
-        if (error) throw error;
+        await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
       } else {
-        const { error } = await supabase.from('favorites').insert({ user_id: session.user.id, listing_id: listingId });
-        if (error) throw error;
+        await supabase.from('favorites').insert({ user_id: session.user.id, listing_id: listingId });
       }
     },
     onSuccess: (_, variables) => {
@@ -94,64 +89,23 @@ export default function Marketplace() {
           description: listing.title,
         });
       }
+      // Update the selected listing in the modal as well
+      if (selectedListing && selectedListing.id === variables.listingId) {
+        setSelectedListing({ ...selectedListing, isFavorited: !variables.isFavorited });
+      }
     },
-    onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
+    onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
   });
 
-  const handleFavoriteToggle = (id: string, isFavorited: boolean) => {
-    favoriteMutation.mutate({ listingId: id, isFavorited });
-  };
-
   const filteredListings = listings
-    .filter(listing => {
-      if (selectedCategory !== 'all' && listing.category.toLowerCase() !== selectedCategory) {
-        return false;
-      }
-      if (searchQuery.trim() && !listing.title.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'price-low': return a.price - b.price;
-        case 'price-high': return b.price - a.price;
-        default: return 0; // Already sorted by newest from query
-      }
-    });
-
-  const loadMore = () => setVisibleCount(prev => prev + 12);
+    .filter(l => (selectedCategory === 'all' || l.category.toLowerCase() === selectedCategory) &&
+                 (!searchQuery.trim() || l.title.toLowerCase().includes(searchQuery.toLowerCase())))
+    .sort((a, b) => sortBy === 'price-low' ? a.price - b.price : sortBy === 'price-high' ? b.price - a.price : 0);
 
   const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Card key={i} className="p-0"><div className="h-96 bg-muted animate-pulse"></div></Card>
-          ))}
-        </div>
-      );
-    }
-
-    if (isError) {
-      return <div className="text-center py-16 text-destructive">Failed to load listings. Please try again.</div>;
-    }
-
-    if (filteredListings.length === 0) {
-      return (
-        <div className="text-center py-16">
-          <div className="max-w-md mx-auto">
-            <h3 className="text-xl font-semibold mb-2">No listings found</h3>
-            <p className="text-muted-foreground mb-6">Try adjusting your search or browse different categories.</p>
-            <Button onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }} variant="outline" size="lg">
-              Clear Filters
-            </Button>
-          </div>
-        </div>
-      );
-    }
+    if (isLoading) return <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">{Array.from({ length: 8 }).map((_, i) => <Card key={i} className="p-0"><div className="h-96 bg-muted animate-pulse rounded-lg"></div></Card>)}</div>;
+    if (isError) return <div className="text-center py-16 text-destructive">Failed to load listings.</div>;
+    if (filteredListings.length === 0) return <div className="text-center py-16"><h3 className="text-xl font-semibold">No listings found</h3><p className="text-muted-foreground">Try adjusting your search.</p></div>;
 
     return (
       <>
@@ -159,21 +113,15 @@ export default function Marketplace() {
           {filteredListings.slice(0, visibleCount).map((listing) => (
             <ListingCard
               key={listing.id}
-              {...listing}
-              description={listing.description}
-              seller={listing.profile || {}}
-              timeAgo={new Date(listing.created_at).toLocaleDateString()}
-              onFavoriteToggle={() => handleFavoriteToggle(listing.id, listing.isFavorited)}
+              title={listing.title}
+              price={listing.price}
+              image_urls={listing.image_urls}
+              location={listing.location}
+              onClick={() => setSelectedListing(listing)}
             />
           ))}
         </div>
-        {visibleCount < filteredListings.length && (
-          <div className="text-center mt-8">
-            <Button onClick={loadMore} variant="outline" size="lg" className="gap-2 hover:bg-primary hover:text-white transition-colors">
-              Load More <ChevronDown className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
+        {visibleCount < filteredListings.length && <div className="text-center mt-8"><Button onClick={() => setVisibleCount(p => p + 12)} variant="outline" size="lg">Load More <ChevronDown className="w-4 h-4 ml-2" /></Button></div>}
       </>
     );
   };
@@ -182,45 +130,29 @@ export default function Marketplace() {
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <div className="flex">
-        <MarketplaceSidebar
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: setSelectedCategory, searchQuery, onSearchChange: setSearchQuery }} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-                {selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
-              </h2>
-              <p className="text-muted-foreground mt-1">
-                {filteredListings.length} items found
-                {searchQuery && ` for "${searchQuery}"`}
-              </p>
+              <h2 className="text-2xl sm:text-3xl font-bold">{selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
+              <p className="text-muted-foreground mt-1">{filteredListings.length} items found</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSortBy(sortBy === 'newest' ? 'price-low' : sortBy === 'price-low' ? 'price-high' : 'newest')}
-                className="gap-2"
-              >
-                <SortAsc className="w-4 h-4" />
-                {sortBy === 'newest' && 'Newest First'}
-                {sortBy === 'price-low' && 'Price: Low to High'}
-                {sortBy === 'price-high' && 'Price: High to Low'}
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={() => setSortBy(s => s === 'newest' ? 'price-low' : s === 'price-low' ? 'price-high' : 'newest')} className="gap-2"><SortAsc className="w-4 h-4" />{sortBy === 'newest' ? 'Newest' : sortBy === 'price-low' ? 'Price: Low-High' : 'Price: High-Low'}</Button>
           </div>
           {renderContent()}
           <DisclaimerSection />
         </main>
       </div>
-      <CreateListing
-        isOpen={showCreateListing}
-        onClose={() => setShowCreateListing(false)}
-      />
+      <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
+      {selectedListing && (
+        <ListingDetailModal
+          listing={{ ...selectedListing, seller: selectedListing.profile || {}, timeAgo: new Date(selectedListing.created_at).toLocaleDateString() }}
+          isOpen={!!selectedListing}
+          isOwner={session?.user?.id === selectedListing.user_id}
+          onClose={() => setSelectedListing(null)}
+          onFavoriteToggle={(id, isFav) => favoriteMutation.mutate({ listingId: id, isFavorited: isFav })}
+        />
+      )}
     </div>
   );
 }
