@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, Clock, MapPin, Check, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { addDays, differenceInDays, formatDistanceToNow } from 'date-fns';
+import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ListingDetailModalProps {
   listing: any;
@@ -108,10 +109,17 @@ export function ListingDetailModal({
 
   const Actions = () => (
     <>
-      <div className="flex items-center justify-center gap-1.5 text-amber-600 font-medium text-xs mb-3">
-        <Clock className="w-3 h-3" />
-        <span>{expirationText}</span>
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center justify-center gap-1.5 text-amber-600 font-medium text-xs mb-3 cursor-default">
+            <Clock className="w-3 h-3" />
+            <span>{expirationText}</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Expires on {format(expirationDate, 'PPP')}</p>
+        </TooltipContent>
+      </Tooltip>
       {isOwner ? (
         <div className="space-y-2">
           {listing.status !== 'sold' ? (
@@ -132,12 +140,7 @@ export function ListingDetailModal({
         listing.status === 'sold' ? (
           <Button disabled className="w-full">Item is Sold</Button>
         ) : (
-          <div className="flex items-stretch gap-2">
-            <Button className="flex-grow" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
-            <Button variant="outline" size="icon" className="aspect-square h-auto" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
-              <Heart className={cn("w-5 h-5", listing.isFavorited && "fill-destructive text-destructive")} />
-            </Button>
-          </div>
+          <Button className="w-full" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
         )
       )}
     </>
@@ -152,19 +155,33 @@ export function ListingDetailModal({
 
         <div className="flex-grow overflow-y-auto">
           <div className="md:grid md:grid-cols-2">
-            <div className="relative bg-black flex items-center justify-center md:rounded-l-2xl overflow-hidden aspect-square md:aspect-auto">
+            <div className="relative bg-muted flex items-center justify-center md:rounded-l-2xl overflow-hidden aspect-square md:aspect-auto">
               {listing.status === 'sold' && (
                 <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">
                   SOLD
                 </div>
               )}
+              
+              {!isOwner && listing.status !== 'sold' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-3 right-3 bg-black/30 hover:bg-black/50 text-white rounded-full z-20"
+                  onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}
+                >
+                  <Heart className={cn("w-5 h-5", listing.isFavorited && "fill-destructive text-destructive")} />
+                </Button>
+              )}
+
               <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain z-10" />
+              
               {listing.image_urls.length > 1 && (
                 <>
                   <Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button>
                   <Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={nextImage}><ChevronRight /></Button>
                 </>
               )}
+              
               <Button variant="ghost" size="icon" className="absolute top-3 left-3 z-20 md:hidden bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}>
                 <X className="h-5 w-5" />
               </Button>
