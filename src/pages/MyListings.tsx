@@ -16,15 +16,12 @@ import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
 
 const fetchMyListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
-  const oneHourAgo = new Date(new Date().getTime() - (60 * 60 * 1000)).toISOString();
-
   const { data: listings, error } = await supabase
     .from('listings')
     .select('*')
     .eq('user_id', userId)
-    .or(`and(status.eq.active,created_at.gte.${twentyDaysAgo}),and(status.eq.sold,updated_at.gte.${oneHourAgo})`)
+    .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
-    
   if (error) throw new Error(error.message);
   const { data: profile } = await supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', userId).single();
   return listings.map(listing => ({ ...listing, profile: profile || null }));
