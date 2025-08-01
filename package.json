@@ -62,6 +62,7 @@
         "preview": "vite preview"
     },
     "devDependencies": {
+        "@dyad-sh/react-vite-component-tagger": "^0.8.0",
         "@eslint/js": "^9.9.0",
         "@tailwindcss/typography": "^0.5.16",
         "@types/node": "^22.5.5",

@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
+import dyadComponentTagger from '@dyad-sh/react-vite-component-tagger';
 
 // Required in ESM to get __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -15,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  plugins: [
+  plugins: [dyadComponentTagger(), 
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
