@@ -11,7 +11,7 @@ interface MarketplaceHeaderProps {
 export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-white/95 backdrop-blur-sm">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 max-w-screen-2xl">
+      <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/" className="flex items-center sm:space-x-3">
             <img src={logo} alt="Eagle Market Place Logo" className="hidden sm:block w-8 h-8 rounded-lg" />
