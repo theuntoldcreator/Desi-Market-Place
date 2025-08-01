@@ -2,7 +2,7 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import logo from '/logofile.png';
+import logo from '@/assets/logofile.png';
 import { Link } from 'react-router-dom';
 
 const Login = () => {

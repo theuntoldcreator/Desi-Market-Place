@@ -2,7 +2,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { Link } from 'react-router-dom';
-import logo from '/logofile.png';
+import logo from '@/assets/logofile.png';
 
 interface MarketplaceHeaderProps {
   onCreateListing: () => void;
