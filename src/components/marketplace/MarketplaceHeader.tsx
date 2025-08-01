@@ -11,13 +11,13 @@ interface MarketplaceHeaderProps {
 export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-white/95 backdrop-blur-sm">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 max-w-screen-2xl">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-screen-2xl">
         <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/" className="flex items-center sm:space-x-3">
             <div className="hidden sm:flex w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-lg items-center justify-center shadow-md flex-shrink-0">
               <img src={logo} alt="Desi Market Place Logo" className="w-6 h-6" />
             </div>
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
               Desi Market Place
             </h1>
           </Link>
