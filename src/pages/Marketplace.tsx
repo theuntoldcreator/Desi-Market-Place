@@ -22,6 +22,7 @@ const fetchListings = async (userId: string | undefined) => {
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
     .select('*')
+    .eq('status', 'active')
     .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
 
@@ -71,7 +72,7 @@ export default function Marketplace() {
   const [sortBy, setSortBy] = useState('newest');
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [listingToEdit, setListingToEdit] = useState<any>(null);
-  const [listingToDelete, setListingToDelete] = useState<any>(null);
+  const [listingToMarkAsSold, setListingToMarkAsSold] = useState<any>(null);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['listings', session?.user?.id],
@@ -105,22 +106,19 @@ export default function Marketplace() {
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
   });
 
-  const deleteMutation = useMutation({
+  const markAsSoldMutation = useMutation({
     mutationFn: async (listing: any) => {
       if (!session || session.user.id !== listing.user_id) throw new Error("Unauthorized");
-      const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]);
-      if (imagePaths.length > 0) {
-        await supabase.storage.from('listing_images').remove(imagePaths);
-      }
-      await supabase.from('listings').delete().eq('id', listing.id);
+      const { error } = await supabase.from('listings').update({ status: 'sold' }).eq('id', listing.id);
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Success!", description: "Listing deleted." });
+      toast({ title: "Success!", description: "Listing marked as sold." });
       queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['my-listings', session?.user?.id] });
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
-    onSettled: () => setListingToDelete(null)
+    onSettled: () => setListingToMarkAsSold(null)
   });
 
   const handleSendMessage = (listing: any) => {
@@ -218,16 +216,16 @@ export default function Marketplace() {
           onFavoriteToggle={(id, isFav) => favoriteMutation.mutate({ listingId: id, isFavorited: isFav })}
           onSendMessage={() => handleSendMessage(selectedListing)}
           onEdit={() => { setSelectedListing(null); setListingToEdit(selectedListing); }}
-          onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
+          onMarkAsSold={() => { setSelectedListing(null); setListingToMarkAsSold(selectedListing); }}
         />
       )}
       {listingToEdit && <EditListing isOpen={!!listingToEdit} onClose={() => setListingToEdit(null)} listing={listingToEdit} />}
-      <AlertDialog open={!!listingToDelete} onOpenChange={() => setListingToDelete(null)}>
+      <AlertDialog open={!!listingToMarkAsSold} onOpenChange={() => setListingToMarkAsSold(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your listing.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will mark the listing as sold and hide it from the marketplace. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteMutation.mutate(listingToDelete)} disabled={deleteMutation.isPending}>Continue</AlertDialogAction>
+            <AlertDialogAction onClick={() => markAsSoldMutation.mutate(listingToMarkAsSold)} disabled={markAsSoldMutation.isPending}>Mark as Sold</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

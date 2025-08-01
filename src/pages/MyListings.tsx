@@ -32,7 +32,7 @@ export default function MyListings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
-  const [listingToDelete, setListingToDelete] = useState<any>(null);
+  const [listingToMarkAsSold, setListingToMarkAsSold] = useState<any>(null);
   const [listingToEdit, setListingToEdit] = useState<any>(null);
   const [selectedListing, setSelectedListing] = useState<any>(null);
 
@@ -42,21 +42,18 @@ export default function MyListings() {
     enabled: !!session,
   });
 
-  const deleteMutation = useMutation({
+  const markAsSoldMutation = useMutation({
     mutationFn: async (listing: any) => {
-      const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]);
-      if (imagePaths.length > 0) {
-        await supabase.storage.from('listing_images').remove(imagePaths);
-      }
-      await supabase.from('listings').delete().eq('id', listing.id);
+      const { error } = await supabase.from('listings').update({ status: 'sold' }).eq('id', listing.id);
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Success!", description: "Listing deleted." });
+      toast({ title: "Success!", description: "Listing marked as sold." });
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
-    onSettled: () => setListingToDelete(null)
+    onSettled: () => setListingToMarkAsSold(null)
   });
 
   const renderContent = () => {
@@ -78,6 +75,7 @@ export default function MyListings() {
             price={listing.price}
             image_urls={listing.image_urls}
             location={listing.location}
+            status={listing.status}
             onClick={() => setSelectedListing(listing)}
           />
         ))}
@@ -97,12 +95,12 @@ export default function MyListings() {
       </main>
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
       {listingToEdit && <EditListing isOpen={!!listingToEdit} onClose={() => setListingToEdit(null)} listing={listingToEdit} />}
-      <AlertDialog open={!!listingToDelete} onOpenChange={() => setListingToDelete(null)}>
+      <AlertDialog open={!!listingToMarkAsSold} onOpenChange={() => setListingToMarkAsSold(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your listing.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will mark the listing as sold and hide it from the marketplace. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteMutation.mutate(listingToDelete)} disabled={deleteMutation.isPending}>Continue</AlertDialogAction>
+            <AlertDialogAction onClick={() => markAsSoldMutation.mutate(listingToMarkAsSold)} disabled={markAsSoldMutation.isPending}>Mark as Sold</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -113,7 +111,7 @@ export default function MyListings() {
           isOwner={true}
           onClose={() => setSelectedListing(null)}
           onEdit={() => { setSelectedListing(null); setListingToEdit(selectedListing); }}
-          onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
+          onMarkAsSold={() => { setSelectedListing(null); setListingToMarkAsSold(selectedListing); }}
         />
       )}
       <FloatingHomeButton />

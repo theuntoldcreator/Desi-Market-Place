@@ -34,13 +34,13 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
-    title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: ''
+    title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: ''
   });
   const [images, setImages] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
 
   const resetForm = () => {
-    setFormData({ title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '' });
+    setFormData({ title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: '' });
     setImages([]);
   };
 
@@ -60,9 +60,9 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         })
       );
 
-      const { title, description, price, category, location, countryCode, phoneNumber } = formData;
+      const { title, description, price, category, location, countryCode, phoneNumber, condition } = formData;
       const { error: insertError } = await supabase.from('listings').insert({
-        title, description, category, location,
+        title, description, category, location, condition,
         price: parseFloat(price),
         image_urls: imageUrls,
         user_id: session.user.id,
@@ -91,7 +91,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index));
 
   const validateForm = () => {
-    return formData.title && formData.price && formData.category && formData.location && formData.phoneNumber;
+    return formData.title && formData.price && formData.category && formData.location && formData.phoneNumber && formData.condition;
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,15 +183,23 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input id="location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))} placeholder="Location (e.g., Dallas) *" className="pl-10" />
               </div>
-              <div className="flex items-center gap-2">
-                <Select value={formData.countryCode} onValueChange={(value) => setFormData(prev => ({ ...prev, countryCode: value }))}>
-                  <SelectTrigger className="w-[80px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code}</SelectItem>)}</SelectContent>
-                </Select>
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="contact" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} placeholder="Contact Number *" className="pl-10" />
-                </div>
+              <Select value={formData.condition} onValueChange={(value) => setFormData(prev => ({ ...prev, condition: value }))}>
+                <SelectTrigger><SelectValue placeholder="Select Condition *" /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="like_new">Like New</SelectItem>
+                    <SelectItem value="used">Used</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={formData.countryCode} onValueChange={(value) => setFormData(prev => ({ ...prev, countryCode: value }))}>
+                <SelectTrigger className="w-[80px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code}</SelectItem>)}</SelectContent>
+              </Select>
+              <div className="relative flex-1">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="contact" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} placeholder="Contact Number *" className="pl-10" />
               </div>
             </div>
           </div>

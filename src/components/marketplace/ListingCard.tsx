@@ -8,14 +8,20 @@ interface ListingCardProps {
   image_urls: string[];
   location: string;
   onClick: () => void;
+  status?: string;
 }
 
-export function ListingCard({ title, price, image_urls, location, onClick }: ListingCardProps) {
+export function ListingCard({ title, price, image_urls, location, onClick, status }: ListingCardProps) {
   return (
     <Card
       onClick={onClick}
-      className="overflow-hidden rounded-lg border bg-card shadow-sm cursor-pointer"
+      className="overflow-hidden rounded-lg border bg-card shadow-sm cursor-pointer relative"
     >
+      {status === 'sold' && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+          <span className="text-white text-2xl font-bold bg-destructive/80 px-4 py-2 rounded">SOLD</span>
+        </div>
+      )}
       <CardContent className="p-0">
         <AspectRatio ratio={1 / 1} className="bg-muted">
           <img
