@@ -146,6 +146,11 @@ export default function Marketplace() {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setSearchQuery('');
+  };
+
   const normalizedSearchQuery = searchQuery.toLowerCase().trim();
   const filteredListings = listings
     .filter(l => {
@@ -190,7 +195,7 @@ export default function Marketplace() {
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <div className="flex">
-        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: setSelectedCategory, searchQuery, onSearchChange: setSearchQuery }} />
+        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: handleCategoryChange, searchQuery, onSearchChange: setSearchQuery }} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
