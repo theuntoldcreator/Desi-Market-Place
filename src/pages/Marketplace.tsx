@@ -12,6 +12,8 @@ import { ChevronDown, SortAsc } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
+import { EditListing } from '@/components/marketplace/EditListing';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const fetchListings = async (userId: string | undefined) => {
   const { data: listings, error: listingsError } = await supabase
@@ -63,6 +65,8 @@ export default function Marketplace() {
   const [visibleCount, setVisibleCount] = useState(12);
   const [sortBy, setSortBy] = useState('newest');
   const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [listingToEdit, setListingToEdit] = useState<any>(null);
+  const [listingToDelete, setListingToDelete] = useState<any>(null);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['listings', session?.user?.id],
@@ -80,8 +84,8 @@ export default function Marketplace() {
       }
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
-      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['favorites', session?.user?.id] });
       const listing = listings.find(l => l.id === variables.listingId);
       if (listing) {
         toast({
@@ -89,12 +93,29 @@ export default function Marketplace() {
           description: listing.title,
         });
       }
-      // Update the selected listing in the modal as well
       if (selectedListing && selectedListing.id === variables.listingId) {
         setSelectedListing({ ...selectedListing, isFavorited: !variables.isFavorited });
       }
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (listing: any) => {
+      if (!session || session.user.id !== listing.user_id) throw new Error("Unauthorized");
+      const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]);
+      if (imagePaths.length > 0) {
+        await supabase.storage.from('listing_images').remove(imagePaths);
+      }
+      await supabase.from('listings').delete().eq('id', listing.id);
+    },
+    onSuccess: () => {
+      toast({ title: "Success!", description: "Listing deleted." });
+      queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['my-listings', session?.user?.id] });
+    },
+    onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
+    onSettled: () => setListingToDelete(null)
   });
 
   const filteredListings = listings
@@ -137,7 +158,7 @@ export default function Marketplace() {
               <h2 className="text-2xl sm:text-3xl font-bold">{selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
               <p className="text-muted-foreground mt-1">{filteredListings.length} items found</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setSortBy(s => s === 'newest' ? 'price-low' : s === 'price-low' ? 'price-high' : 'newest')} className="gap-2"><SortAsc className="w-4 h-4" />{sortBy === 'newest' ? 'Newest' : sortBy === 'price-low' ? 'Price: Low-High' : 'Price: High-Low'}</Button>
+            <Button variant="outline" size="sm" onClick={() => setSortBy(s => s === 'newest' ? 'price-low' : s === 'price-high' ? 'newest')} className="gap-2"><SortAsc className="w-4 h-4" />{sortBy === 'newest' ? 'Newest' : sortBy === 'price-low' ? 'Price: Low-High' : 'Price: High-Low'}</Button>
           </div>
           {renderContent()}
           <DisclaimerSection />
@@ -151,8 +172,20 @@ export default function Marketplace() {
           isOwner={session?.user?.id === selectedListing.user_id}
           onClose={() => setSelectedListing(null)}
           onFavoriteToggle={(id, isFav) => favoriteMutation.mutate({ listingId: id, isFavorited: isFav })}
+          onEdit={() => { setSelectedListing(null); setListingToEdit(selectedListing); }}
+          onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
         />
       )}
+      {listingToEdit && <EditListing isOpen={!!listingToEdit} onClose={() => setListingToEdit(null)} listing={listingToEdit} />}
+      <AlertDialog open={!!listingToDelete} onOpenChange={() => setListingToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your listing.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteMutation.mutate(listingToDelete)} disabled={deleteMutation.isPending}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
