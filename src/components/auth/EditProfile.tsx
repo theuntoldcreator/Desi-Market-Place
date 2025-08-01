@@ -12,6 +12,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DobPicker } from './DobPicker';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -19,6 +20,7 @@ const profileSchema = z.object({
   phoneNumber: z.string().min(10, "Please enter a valid phone number").optional().or(z.literal('')),
   dob: z.date().optional(),
   avatarFile: z.instanceof(File).optional(),
+  gender: z.enum(['male', 'female']).optional(),
 });
 
 interface EditProfileProps {
@@ -41,6 +43,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
       lastName: profile.last_name || '',
       phoneNumber: profile.phone_number || '',
       dob: profile.dob ? new Date(profile.dob) : undefined,
+      gender: profile.gender,
     },
   });
 
@@ -91,6 +94,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
           phone_number: values.phoneNumber,
           dob: values.dob?.toISOString().split('T')[0],
           avatar_url: avatar_url,
+          gender: values.gender,
         })
         .eq('id', session.user.id);
 
@@ -133,19 +137,42 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
               <FormField name="lastName" control={form.control} render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
             <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="123-456-7890" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField
-              name="dob"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date of Birth</FormLabel>
-                  <FormControl>
-                    <DobPicker value={field.value} onChange={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                name="dob"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date of Birth</FormLabel>
+                    <FormControl>
+                      <DobPicker value={field.value} onChange={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="gender"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={updateProfileMutation.isPending}>
