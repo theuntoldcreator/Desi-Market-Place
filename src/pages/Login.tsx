@@ -3,7 +3,6 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import logo from '@/assets/logofile.png';
-import { Link } from 'react-router-dom';
 
 const Login = () => {
   return (
@@ -50,12 +49,6 @@ const Login = () => {
               view="sign_in"
               theme="light"
             />
-            <p className="text-center text-sm text-muted-foreground mt-4">
-              Don't have an account?{' '}
-              <Link to="/signup" className="font-semibold text-primary hover:underline">
-                Sign Up
-              </Link>
-            </p>
           </CardContent>
         </Card>
       </div>
