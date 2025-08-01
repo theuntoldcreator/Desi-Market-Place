@@ -15,11 +15,14 @@ import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal'
 import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useNavigate } from 'react-router-dom';
+import { subDays } from 'date-fns';
 
 const fetchListings = async (userId: string | undefined) => {
+  const twentyDaysAgo = subDays(new Date(), 20).toISOString();
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
     .select('*')
+    .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
 
   if (listingsError) throw new Error(listingsError.message);

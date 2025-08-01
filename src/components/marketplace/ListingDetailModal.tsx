@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, MoreHorizontal, Pencil, Trash2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { addDays, differenceInDays } from 'date-fns';
 
 interface ListingDetailModalProps {
   listing: any;
@@ -42,6 +43,19 @@ export function ListingDetailModal({
   const fullName = `${listing.seller?.first_name || ''} ${listing.seller?.last_name || ''}`.trim() || 'Unknown User';
   const fallback = fullName?.[0]?.toUpperCase();
 
+  const creationDate = new Date(listing.created_at);
+  const expirationDate = addDays(creationDate, 20);
+  const daysRemaining = differenceInDays(expirationDate, new Date());
+
+  let expirationText = '';
+  if (daysRemaining < 0) {
+    expirationText = 'Expired';
+  } else if (daysRemaining === 0) {
+    expirationText = 'Expires today';
+  } else {
+    expirationText = `Expires in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`;
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-full p-0 gap-0 grid grid-cols-1 md:grid-cols-2 rounded-lg">
@@ -68,6 +82,10 @@ export function ListingDetailModal({
             <p className="text-sm text-muted-foreground">
               Listed {listing.timeAgo} in {listing.location}
             </p>
+            <div className="flex items-center gap-1.5 text-sm text-amber-600">
+              <Clock className="w-4 h-4" />
+              <span>{expirationText}</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 my-4">

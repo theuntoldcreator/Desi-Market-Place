@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, Phone, MapPin, Loader2 } from 'lucide-react';
+import { Upload, X, Phone, MapPin, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { countries } from '@/lib/countries';
+import { Alert, AlertDescription } from '../ui/alert';
 
 interface CreateListingProps {
   isOpen: boolean;
@@ -114,6 +115,12 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
           <DialogDescription>Fill in the details to publish your item.</DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Listings are active for 20 days and will automatically expire.
+            </AlertDescription>
+          </Alert>
           {/* Image Upload */}
           <div className="space-y-3">
             <Label className="text-base font-medium">Images (1-5) *</Label>
