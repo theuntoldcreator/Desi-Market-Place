@@ -31,13 +31,12 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const { data: messages = [], isLoading } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ['messages', chatId],
     queryFn: () => fetchMessages(chatId),
-    staleTime: Infinity,
   });
 
-  const { data: chatDetails } = useQuery({
+  const { data: chatDetails, isLoading: chatDetailsLoading } = useQuery({
     queryKey: ['chatDetails', chatId],
     queryFn: async () => {
       const { data, error } = await supabase.from('chats').select('*, buyer:profiles!chats_buyer_id_fkey(*), seller:profiles!chats_seller_id_fkey(*)').eq('id', chatId).single();
@@ -46,16 +45,6 @@ export function ChatWindow({ chatId }: { chatId: string }) {
     },
   });
   const otherUser = session?.user.id === chatDetails?.buyer_id ? chatDetails?.seller : chatDetails?.buyer;
-
-  const { data: sessionProfile } = useQuery({
-    queryKey: ['profile', session?.user?.id],
-    queryFn: async () => {
-      if (!session) return null;
-      const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-      return data;
-    },
-    enabled: !!session,
-  });
 
   const markAsReadMutation = useMutation({
     mutationFn: async () => {
@@ -67,38 +56,18 @@ export function ChatWindow({ chatId }: { chatId: string }) {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      if (!session || !chatDetails) throw new Error("Not authenticated or chat not found");
+      if (!session || !chatDetails) throw new Error("Chat is not ready. Please wait a moment.");
       const receiverId = session.user.id === chatDetails.buyer_id ? chatDetails.seller_id : chatDetails.buyer_id;
-      const { data, error } = await supabase.from('messages').insert({ chat_id: parseInt(chatId), sender_id: session.user.id, receiver_id: receiverId, content }).select().single();
+      const { error } = await supabase.from('messages').insert({ chat_id: parseInt(chatId), sender_id: session.user.id, receiver_id: receiverId, content });
       if (error) throw new Error(error.message);
-      return data;
     },
-    onMutate: async (content: string) => {
-      await queryClient.cancelQueries({ queryKey: ['messages', chatId] });
-      const previousMessages = queryClient.getQueryData(['messages', chatId]);
-      
-      const optimisticMessage = {
-        id: `optimistic-${Date.now()}`,
-        created_at: new Date().toISOString(),
-        content,
-        chat_id: parseInt(chatId),
-        sender_id: session!.user.id,
-        receiver_id: otherUser!.id,
-        is_read: false,
-        sender: sessionProfile,
-      };
-
-      queryClient.setQueryData(['messages', chatId], (old: any[] | undefined) => old ? [...old, optimisticMessage] : [optimisticMessage]);
+    onSuccess: () => {
       setNewMessage('');
-      return { previousMessages };
-    },
-    onError: (err, _, context) => {
-      queryClient.setQueryData(['messages', chatId], context?.previousMessages);
-      toast({ title: "Error", description: "Message failed to send.", variant: "destructive" });
-    },
-    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
     },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: `Message failed to send: ${error.message}`, variant: "destructive" });
+    }
   });
 
   const deleteMessageMutation = useMutation({
@@ -109,7 +78,9 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   });
 
   useEffect(() => {
-    if (chatId && session) markAsReadMutation.mutate();
+    if (chatId && session && messages.length > 0) {
+      markAsReadMutation.mutate();
+    }
   }, [chatId, session, messages.length, markAsReadMutation]);
 
   useEffect(() => {
@@ -139,10 +110,13 @@ export function ChatWindow({ chatId }: { chatId: string }) {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim()) sendMessageMutation.mutate(newMessage.trim());
+    if (newMessage.trim() && !sendMessageMutation.isPending) {
+      sendMessageMutation.mutate(newMessage.trim());
+    }
   };
 
-  if (isLoading) return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  const isComponentLoading = messagesLoading || chatDetailsLoading;
+  if (isComponentLoading) return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
 
   return (
     <div className="flex-1 flex flex-col bg-white h-full">
@@ -158,7 +132,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
 
           return (
             <div key={message.id} className={cn("flex items-end gap-2 group", isSender ? "justify-end" : "justify-start")} onMouseEnter={() => setHoveredMessageId(message.id)} onMouseLeave={() => setHoveredMessageId(null)}>
-              {isSender && hoveredMessageId === message.id && typeof message.id === 'number' && <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-50 hover:opacity-100" onClick={() => deleteMessageMutation.mutate(message.id as number)}><Trash2 className="h-4 w-4" /></Button>}
+              {isSender && hoveredMessageId === message.id && <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-50 hover:opacity-100" onClick={() => deleteMessageMutation.mutate(message.id as number)}><Trash2 className="h-4 w-4" /></Button>}
               <div className={cn("flex items-end gap-2", isSender && "flex-row-reverse")}>
                 <Avatar className={cn("w-8 h-8", !showAvatar && "invisible")}><AvatarImage src={message.sender?.avatar_url} /><AvatarFallback>{message.sender?.first_name?.[0]}</AvatarFallback></Avatar>
                 <div className={cn("max-w-xs md:max-w-md p-3 rounded-2xl", isSender ? "bg-primary text-primary-foreground" : "bg-muted", isFirstInGroup && (isSender ? 'rounded-tr-md' : 'rounded-tl-md'), isLastInGroup && (isSender ? 'rounded-br-md' : 'rounded-bl-md'))}>
@@ -181,7 +155,9 @@ export function ChatWindow({ chatId }: { chatId: string }) {
       <div className="p-4 border-t bg-white">
         <form onSubmit={handleSend} className="flex items-center gap-2">
           <Input value={newMessage} onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }} placeholder="Type a message..." autoComplete="off" />
-          <Button type="submit" size="icon" disabled={sendMessageMutation.isPending}><Send className="w-4 h-4" /></Button>
+          <Button type="submit" size="icon" disabled={sendMessageMutation.isPending || !newMessage.trim()}>
+            {sendMessageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </Button>
         </form>
       </div>
     </div>
