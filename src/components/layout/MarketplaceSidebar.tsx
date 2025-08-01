@@ -23,12 +23,20 @@ interface MarketplaceSidebarProps {
   onCategoryChange: (category: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onlineCount: number;
 }
 
-const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick }: Omit<MarketplaceSidebarProps, 'onCreateListing'> & { onLinkClick?: () => void }) => {
+const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick, onlineCount }: MarketplaceSidebarProps & { onLinkClick?: () => void }) => {
   return (
     <div className="p-4 space-y-6">
       <div className="space-y-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+          </span>
+          <span>{onlineCount > 0 ? `${onlineCount} Online` : 'Connecting...'}</span>
+        </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="pl-10" />

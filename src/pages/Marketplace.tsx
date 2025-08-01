@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,6 +73,42 @@ export default function Marketplace() {
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [listingToEdit, setListingToEdit] = useState<any>(null);
   const [listingToMarkAsSold, setListingToMarkAsSold] = useState<any>(null);
+  const [onlineCount, setOnlineCount] = useState(0);
+
+  useEffect(() => {
+    if (!session) {
+      setOnlineCount(0);
+      return;
+    }
+
+    const channel = supabase.channel(`online-users`, {
+      config: {
+        presence: {
+          key: session.user.id,
+        },
+      },
+    });
+
+    const handlePresence = () => {
+      const presenceState = channel.presenceState();
+      const count = Object.keys(presenceState).length;
+      setOnlineCount(count);
+    };
+
+    channel
+      .on('presence', { event: 'sync' }, handlePresence)
+      .on('presence', { event: 'join' }, handlePresence)
+      .on('presence', { event: 'leave' }, handlePresence)
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session]);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['listings', session?.user?.id],
@@ -193,7 +229,7 @@ export default function Marketplace() {
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <div className="flex">
-        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: handleCategoryChange, searchQuery, onSearchChange: setSearchQuery }} />
+        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: handleCategoryChange, searchQuery, onSearchChange: setSearchQuery, onlineCount }} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
