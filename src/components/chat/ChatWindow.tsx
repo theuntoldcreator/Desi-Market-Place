@@ -8,11 +8,13 @@ import { Send, Loader2, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useDebouncedCallback } from 'use-debounce';
+import { ChatHeader } from './ChatHeader';
+import { useToast } from '@/hooks/use-toast';
 
 const fetchMessages = async (chatId: string) => {
   const { data, error } = await supabase
     .from('messages')
-    .select('*, sender:profiles(first_name, last_name, avatar_url)')
+    .select('*, sender:profiles(id, first_name, last_name, avatar_url)')
     .eq('chat_id', chatId)
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
@@ -22,15 +24,17 @@ const fetchMessages = async (chatId: string) => {
 export function ChatWindow({ chatId }: { chatId: string }) {
   const session = useSession();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['messages', chatId],
     queryFn: () => fetchMessages(chatId),
+    staleTime: Infinity,
   });
 
   const { data: chatDetails } = useQuery({
@@ -42,6 +46,16 @@ export function ChatWindow({ chatId }: { chatId: string }) {
     },
   });
   const otherUser = session?.user.id === chatDetails?.buyer_id ? chatDetails?.seller : chatDetails?.buyer;
+
+  const { data: sessionProfile } = useQuery({
+    queryKey: ['profile', session?.user?.id],
+    queryFn: async () => {
+      if (!session) return null;
+      const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      return data;
+    },
+    enabled: !!session,
+  });
 
   const markAsReadMutation = useMutation({
     mutationFn: async () => {
@@ -55,9 +69,36 @@ export function ChatWindow({ chatId }: { chatId: string }) {
     mutationFn: async (content: string) => {
       if (!session || !chatDetails) throw new Error("Not authenticated or chat not found");
       const receiverId = session.user.id === chatDetails.buyer_id ? chatDetails.seller_id : chatDetails.buyer_id;
-      await supabase.from('messages').insert({ chat_id: parseInt(chatId), sender_id: session.user.id, receiver_id: receiverId, content });
+      const { data, error } = await supabase.from('messages').insert({ chat_id: parseInt(chatId), sender_id: session.user.id, receiver_id: receiverId, content }).select().single();
+      if (error) throw new Error(error.message);
+      return data;
     },
-    onSuccess: () => setNewMessage(''),
+    onMutate: async (content: string) => {
+      await queryClient.cancelQueries({ queryKey: ['messages', chatId] });
+      const previousMessages = queryClient.getQueryData(['messages', chatId]);
+      
+      const optimisticMessage = {
+        id: `optimistic-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        content,
+        chat_id: parseInt(chatId),
+        sender_id: session!.user.id,
+        receiver_id: otherUser!.id,
+        is_read: false,
+        sender: sessionProfile,
+      };
+
+      queryClient.setQueryData(['messages', chatId], (old: any[] | undefined) => old ? [...old, optimisticMessage] : [optimisticMessage]);
+      setNewMessage('');
+      return { previousMessages };
+    },
+    onError: (err, _, context) => {
+      queryClient.setQueryData(['messages', chatId], context?.previousMessages);
+      toast({ title: "Error", description: "Message failed to send.", variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
+    },
   });
 
   const deleteMessageMutation = useMutation({
@@ -72,7 +113,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   }, [chatId, session, messages.length, markAsReadMutation]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView();
   }, [messages]);
 
   const broadcastTyping = useDebouncedCallback(() => {
@@ -104,21 +145,23 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   if (isLoading) return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="flex-1 flex flex-col bg-white h-full">
+      <ChatHeader user={otherUser} />
       <div className="flex-1 p-4 space-y-1 overflow-y-auto">
         {messages.map((message, index) => {
           const isSender = message.sender_id === session?.user.id;
           const prevMessage = messages[index - 1];
-          const showAvatar = !isSender && (!prevMessage || prevMessage.sender_id !== message.sender_id);
-          const senderProfile = message.sender as any;
-          const fullName = `${senderProfile?.first_name || ''} ${senderProfile?.last_name || ''}`.trim();
-          const fallback = fullName ? fullName[0].toUpperCase() : '?';
+          const nextMessage = messages[index + 1];
+          const isFirstInGroup = !prevMessage || prevMessage.sender_id !== message.sender_id;
+          const isLastInGroup = !nextMessage || nextMessage.sender_id !== message.sender_id;
+          const showAvatar = !isSender && isLastInGroup;
+
           return (
-            <div key={message.id} className={cn("flex items-end gap-2 group", isSender && "justify-end")} onMouseEnter={() => setHoveredMessageId(message.id)} onMouseLeave={() => setHoveredMessageId(null)}>
-              {isSender && hoveredMessageId === message.id && <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-50 hover:opacity-100" onClick={() => deleteMessageMutation.mutate(message.id)}><Trash2 className="h-4 w-4" /></Button>}
+            <div key={message.id} className={cn("flex items-end gap-2 group", isSender ? "justify-end" : "justify-start")} onMouseEnter={() => setHoveredMessageId(message.id)} onMouseLeave={() => setHoveredMessageId(null)}>
+              {isSender && hoveredMessageId === message.id && typeof message.id === 'number' && <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-50 hover:opacity-100" onClick={() => deleteMessageMutation.mutate(message.id as number)}><Trash2 className="h-4 w-4" /></Button>}
               <div className={cn("flex items-end gap-2", isSender && "flex-row-reverse")}>
-                <Avatar className={cn("w-8 h-8", !showAvatar && "invisible")}><AvatarImage src={senderProfile?.avatar_url} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
-                <div className={cn("max-w-xs md:max-w-md p-3 rounded-lg", isSender ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                <Avatar className={cn("w-8 h-8", !showAvatar && "invisible")}><AvatarImage src={message.sender?.avatar_url} /><AvatarFallback>{message.sender?.first_name?.[0]}</AvatarFallback></Avatar>
+                <div className={cn("max-w-xs md:max-w-md p-3 rounded-2xl", isSender ? "bg-primary text-primary-foreground" : "bg-muted", isFirstInGroup && (isSender ? 'rounded-tr-md' : 'rounded-tl-md'), isLastInGroup && (isSender ? 'rounded-br-md' : 'rounded-bl-md'))}>
                   <p className="text-sm">{message.content}</p>
                 </div>
               </div>
