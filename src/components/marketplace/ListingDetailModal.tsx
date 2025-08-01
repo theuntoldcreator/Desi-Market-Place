@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Trash2, Clock, MapPin } from 'lucide-react';
@@ -64,6 +64,9 @@ export function ListingDetailModal({
         "w-[95vw] max-w-4xl p-0 gap-0 rounded-lg max-h-[90vh] overflow-y-auto",
         isMobile && "hide-scrollbar"
       )}>
+        <DialogHeader className="sr-only">
+          <DialogTitle>{listing.title}</DialogTitle>
+        </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2">
           <div className="relative bg-black flex items-center justify-center md:rounded-l-lg overflow-hidden aspect-[4/3] md:aspect-square">
             <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain" />
