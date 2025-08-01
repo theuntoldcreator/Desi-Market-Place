@@ -128,7 +128,6 @@ export function ChatWindow({ chatId }: { chatId: string }) {
     onSettled: () => setIsDeleteDialogOpen(false)
   });
 
-  // This useEffect now only runs when the chat window is opened, breaking the loop.
   useEffect(() => {
     if (chatId && session?.user?.id) {
       markAsReadMutation.mutate();
@@ -149,7 +148,6 @@ export function ChatWindow({ chatId }: { chatId: string }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
         (payload) => {
           queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
-          // If the new message is not from the current user, mark it as read
           if (payload.new && (payload.new as any).sender_id !== session?.user.id) {
             markAsReadMutation.mutate();
           }
@@ -164,7 +162,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
       .subscribe();
     channelRef.current = realtimeChannel;
     return () => { supabase.removeChannel(realtimeChannel); };
-  }, [chatId, queryClient, session?.user.id]);
+  }, [chatId, queryClient, session?.user?.id]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,8 +176,8 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   return (
     <>
       <div className="flex flex-col h-full">
-        <div className="flex items-center p-3 border-b">
-            <Link to="/chats" className="md:hidden mr-2"><Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button></Link>
+        <div className="flex items-center">
+            <Link to="/chats" className="md:hidden mr-2 p-3"><Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button></Link>
             <ChatHeader user={otherUser} onDeleteChat={() => setIsDeleteDialogOpen(true)} />
         </div>
         <div className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -198,7 +196,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
                         <p className="text-sm">{message.content}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground px-2 pt-1">{format(new Date(message.created_at), 'p')}</p>
+                    {hoveredMessageId === message.id && <p className="text-xs text-muted-foreground px-2 pt-1">{format(new Date(message.created_at), 'p')}</p>}
                   </div>
                 </div>
               );
