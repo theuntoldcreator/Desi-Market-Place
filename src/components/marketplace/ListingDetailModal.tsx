@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, MoreHorizontal, Pencil, Trash2, Clock } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Trash2, Clock, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays } from 'date-fns';
 
@@ -69,7 +69,7 @@ export function ListingDetailModal({
         </Button>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
-          <div className="relative bg-black flex items-center justify-center md:rounded-l-lg overflow-hidden aspect-square">
+          <div className="relative bg-black flex items-center justify-center md:rounded-l-lg overflow-hidden aspect-[4/3] md:aspect-square">
             <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain" />
             {listing.image_urls.length > 1 && (
               <>
@@ -79,53 +79,56 @@ export function ListingDetailModal({
             )}
           </div>
 
-          <div className="flex flex-col p-6">
-            <div className="space-y-3">
-              <h1 className="text-2xl font-bold">{listing.title}</h1>
-              <p className="text-3xl font-bold text-primary">
-                {listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Listed {listing.timeAgo} in {listing.location}
-              </p>
-              <div className="flex items-center gap-1.5 text-sm text-amber-600">
-                <Clock className="w-4 h-4" />
-                <span>{expirationText}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 my-4">
-              {isOwner ? (
-                <>
-                  <Button className="flex-1" variant="outline" onClick={onEdit}><Pencil className="w-4 h-4 mr-2" /> Edit</Button>
-                  <Button className="flex-1" variant="destructive" onClick={onDelete}><Trash2 className="w-4 h-4 mr-2" /> Delete</Button>
-                </>
-              ) : (
-                <>
-                  <Button className="flex-1" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" /> Chat on WhatsApp</Button>
-                  <Button variant="outline" size="icon" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
-                    <Heart className={cn("w-4 h-4", listing.isFavorited && "fill-red-500 text-red-500")} />
-                  </Button>
-                  <Button variant="outline" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
-                </>
-              )}
-            </div>
-
-            <hr className="my-2" />
-
+          <div className="flex flex-col p-6 md:p-8">
             <div className="flex-grow space-y-4">
-              <div>
-                <h2 className="font-semibold mb-2">Description</h2>
-                <p className="text-sm text-foreground/80 whitespace-pre-wrap">{listing.description || 'No description provided.'}</p>
-              </div>
-              <div className="mt-auto pt-4">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <Avatar className="w-12 h-12"><AvatarImage src={listing.seller?.avatar_url} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
-                  <div>
-                    <p className="font-semibold">{fullName}</p>
-                    <p className="text-sm text-muted-foreground">Seller</p>
-                  </div>
+              <div className="flex items-center gap-3">
+                <Avatar className="w-12 h-12"><AvatarImage src={listing.seller?.avatar_url} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
+                <div>
+                  <p className="font-semibold text-lg">{fullName}</p>
+                  <p className="text-sm text-muted-foreground">Seller</p>
                 </div>
+              </div>
+
+              <h1 className="text-3xl font-bold tracking-tight">{listing.title}</h1>
+              
+              <div className="space-y-2">
+                <p className="text-4xl font-bold text-primary">
+                  {listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}
+                </p>
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <MapPin className="w-4 h-4" />
+                  <span>{listing.location}</span>
+                </div>
+              </div>
+
+              <article className="prose prose-sm max-w-none text-foreground/90">
+                <p>{listing.description || 'No description provided.'}</p>
+              </article>
+            </div>
+
+            <div className="mt-6 pt-6 border-t">
+              <div className="flex items-center justify-between text-sm mb-4">
+                <div className="flex items-center gap-1.5 text-amber-600 font-medium">
+                  <Clock className="w-4 h-4" />
+                  <span>{expirationText}</span>
+                </div>
+                <p className="text-muted-foreground">Posted {listing.timeAgo}</p>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-2">
+                {isOwner ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" onClick={onEdit}><Pencil className="w-4 h-4 mr-2" />Edit</Button>
+                    <Button variant="destructive" onClick={onDelete}><Trash2 className="w-4 h-4 mr-2" />Delete</Button>
+                  </div>
+                ) : (
+                  <div className="flex items-stretch gap-2">
+                    <Button className="flex-grow" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
+                    <Button variant="outline" size="icon" className="aspect-square h-auto" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
+                      <Heart className={cn("w-5 h-5", listing.isFavorited && "fill-destructive text-destructive")} />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
