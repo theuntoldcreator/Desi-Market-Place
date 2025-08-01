@@ -148,14 +148,14 @@ export function ListingDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-4xl p-0 gap-0 rounded-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl p-0 gap-0 rounded-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{listing.title}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-grow overflow-y-auto">
           <div className="md:grid md:grid-cols-2">
-            <div className="relative bg-muted flex items-center justify-center md:rounded-l-2xl overflow-hidden aspect-square md:aspect-auto">
+            <div className="relative bg-muted flex items-center justify-center rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none overflow-hidden aspect-square md:aspect-auto">
               {listing.status === 'sold' && (
                 <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">
                   SOLD
@@ -187,7 +187,7 @@ export function ListingDetailModal({
               </Button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4">
               <DetailsContent />
               <div className="hidden md:block pt-4 border-t mt-4">
                 <Actions />
