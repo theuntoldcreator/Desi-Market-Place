@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, MoreHorizontal, Pencil, Trash2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { addMinutes, differenceInSeconds } from 'date-fns';
+import { addDays, differenceInDays } from 'date-fns';
 
 interface ListingDetailModalProps {
   listing: any;
@@ -44,16 +44,16 @@ export function ListingDetailModal({
   const fallback = fullName?.[0]?.toUpperCase();
 
   const creationDate = new Date(listing.created_at);
-  const expirationDate = addMinutes(creationDate, 1);
-  const secondsRemaining = differenceInSeconds(expirationDate, new Date());
+  const expirationDate = addDays(creationDate, 20);
+  const daysRemaining = differenceInDays(expirationDate, new Date());
 
   let expirationText = '';
-  if (secondsRemaining <= 0) {
+  if (daysRemaining < 0) {
     expirationText = 'Expired';
-  } else if (secondsRemaining < 60) {
-    expirationText = `Expires in ${secondsRemaining} second${secondsRemaining === 1 ? '' : 's'}`;
+  } else if (daysRemaining === 0) {
+    expirationText = 'Expires today';
   } else {
-    expirationText = `Expires in 1 minute`;
+    expirationText = `Expires in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`;
   }
 
   return (
