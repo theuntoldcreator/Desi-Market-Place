@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +7,7 @@ import { ListingCard } from '@/components/marketplace/ListingCard';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { DisclaimerSection } from '@/components/marketplace/DisclaimerSection';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ChevronDown, SortAsc } from 'lucide-react';
+import { ChevronDown, SortAsc, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
@@ -22,7 +21,6 @@ const fetchListings = async (userId: string | undefined) => {
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
     .select('*')
-    .eq('status', 'active')
     .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
 
@@ -59,14 +57,6 @@ const fetchListings = async (userId: string | undefined) => {
   }));
 };
 
-const fetchTotalUsers = async () => {
-  const { count, error } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true });
-  if (error) throw new Error(error.message);
-  return count ?? 0;
-};
-
 export default function Marketplace() {
   const session = useSession();
   const queryClient = useQueryClient();
@@ -80,54 +70,12 @@ export default function Marketplace() {
   const [sortBy, setSortBy] = useState('newest');
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [listingToEdit, setListingToEdit] = useState<any>(null);
-  const [listingToMarkAsSold, setListingToMarkAsSold] = useState<any>(null);
-  const [onlineCount, setOnlineCount] = useState(0);
-
-  useEffect(() => {
-    if (!session) {
-      setOnlineCount(0);
-      return;
-    }
-
-    const channel = supabase.channel(`online-users`, {
-      config: {
-        presence: {
-          key: session.user.id,
-        },
-      },
-    });
-
-    const handlePresence = () => {
-      const presenceState = channel.presenceState();
-      const count = Object.keys(presenceState).length;
-      setOnlineCount(count);
-    };
-
-    channel
-      .on('presence', { event: 'sync' }, handlePresence)
-      .on('presence', { event: 'join' }, handlePresence)
-      .on('presence', { event: 'leave' }, handlePresence)
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ online_at: new Date().toISOString() });
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [session]);
+  const [listingToDelete, setListingToDelete] = useState<any>(null);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['listings', session?.user?.id],
     queryFn: () => fetchListings(session?.user?.id),
     staleTime: 1000 * 60,
-  });
-
-  const { data: totalUsersCount } = useQuery({
-    queryKey: ['totalUsers'],
-    queryFn: fetchTotalUsers,
-    staleTime: 1000 * 60 * 5, // Stale for 5 minutes
   });
 
   const favoriteMutation = useMutation({
@@ -156,19 +104,22 @@ export default function Marketplace() {
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
   });
 
-  const markAsSoldMutation = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: async (listing: any) => {
       if (!session || session.user.id !== listing.user_id) throw new Error("Unauthorized");
-      const { error } = await supabase.from('listings').update({ status: 'sold' }).eq('id', listing.id);
-      if (error) throw error;
+      const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]);
+      if (imagePaths.length > 0) {
+        await supabase.storage.from('listing_images').remove(imagePaths);
+      }
+      await supabase.from('listings').delete().eq('id', listing.id);
     },
     onSuccess: () => {
-      toast({ title: "Success!", description: "Listing marked as sold." });
+      toast({ title: "Success!", description: "Listing deleted." });
       queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['my-listings', session?.user?.id] });
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
-    onSettled: () => setListingToMarkAsSold(null)
+    onSettled: () => setListingToDelete(null)
   });
 
   const handleSendMessage = (listing: any) => {
@@ -188,15 +139,10 @@ export default function Marketplace() {
       return;
     }
 
-    const message = `Hey! I'm interested in your listing "${listing.title}" on Eagle Market Place.`;
+    const message = `Hey! I'm interested in your listing "${listing.title}" on Desi Market Place.`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    setSearchQuery('');
   };
 
   const normalizedSearchQuery = searchQuery.toLowerCase().trim();
@@ -216,7 +162,7 @@ export default function Marketplace() {
     .sort((a, b) => sortBy === 'price-low' ? a.price - b.price : sortBy === 'price-high' ? b.price - a.price : 0);
 
   const renderContent = () => {
-    if (isLoading) return <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">{Array.from({ length: 10 }).map((_, i) => <Card key={i} className="p-0"><div className="h-72 bg-muted animate-pulse rounded-lg"></div></Card>)}</div>;
+    if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (isError) return <div className="text-center py-16 text-destructive">Failed to load listings.</div>;
     if (filteredListings.length === 0) return <div className="text-center py-16"><h3 className="text-xl font-semibold">No listings found</h3><p className="text-muted-foreground">Try adjusting your search.</p></div>;
 
@@ -243,7 +189,7 @@ export default function Marketplace() {
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <div className="flex">
-        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: handleCategoryChange, searchQuery, onSearchChange: setSearchQuery, onlineCount, totalUsersCount }} />
+        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: setSelectedCategory, searchQuery, onSearchChange: setSearchQuery }} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -266,16 +212,16 @@ export default function Marketplace() {
           onFavoriteToggle={(id, isFav) => favoriteMutation.mutate({ listingId: id, isFavorited: isFav })}
           onSendMessage={() => handleSendMessage(selectedListing)}
           onEdit={() => { setSelectedListing(null); setListingToEdit(selectedListing); }}
-          onMarkAsSold={() => { setSelectedListing(null); setListingToMarkAsSold(selectedListing); }}
+          onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
         />
       )}
       {listingToEdit && <EditListing isOpen={!!listingToEdit} onClose={() => setListingToEdit(null)} listing={listingToEdit} />}
-      <AlertDialog open={!!listingToMarkAsSold} onOpenChange={() => setListingToMarkAsSold(null)}>
+      <AlertDialog open={!!listingToDelete} onOpenChange={() => setListingToDelete(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will mark the listing as sold and hide it from the marketplace. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your listing.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => markAsSoldMutation.mutate(listingToMarkAsSold)} disabled={markAsSoldMutation.isPending}>Mark as Sold</AlertDialogAction>
+            <AlertDialogAction onClick={() => deleteMutation.mutate(listingToDelete)} disabled={deleteMutation.isPending}>Continue</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
