@@ -23,9 +23,11 @@ interface MarketplaceSidebarProps {
   onCategoryChange: (category: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onlineCount: number;
+  totalUsersCount?: number;
 }
 
-const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick }: MarketplaceSidebarProps & { onLinkClick?: () => void }) => {
+const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick, onlineCount, totalUsersCount }: MarketplaceSidebarProps & { onLinkClick?: () => void }) => {
   return (
     <div className="p-4 space-y-6">
       <div className="space-y-4">
@@ -42,6 +44,26 @@ const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSea
             <cat.icon className="w-4 h-4" /><span>{cat.name}</span>
           </button>
         ))}
+      </div>
+      <Separator />
+      <div className="p-3 rounded-lg bg-muted/50 border text-sm space-y-2">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Users className="w-4 h-4" />
+            <span>Total Users</span>
+          </div>
+          <span className="font-semibold">{totalUsersCount ?? '...'}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <span className="relative flex h-2.5 w-2.5 ml-1 mr-0.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
+            </span>
+            <span>Online Now</span>
+          </div>
+          <span className="font-semibold">{onlineCount}</span>
+        </div>
       </div>
     </div>
   );
