@@ -10,10 +10,10 @@ import { CreateListing } from '@/components/marketplace/CreateListing';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
-import { subDays } from 'date-fns';
+import { subMinutes } from 'date-fns';
 
 const fetchFavoriteListings = async (userId: string) => {
-  const twentyDaysAgo = subDays(new Date(), 20).toISOString();
+  const oneMinuteAgo = subMinutes(new Date(), 1).toISOString();
   const { data: favorites, error: favError } = await supabase.from('favorites').select('listing_id').eq('user_id', userId);
   if (favError) throw new Error(favError.message);
   if (!favorites || favorites.length === 0) return [];
@@ -23,7 +23,7 @@ const fetchFavoriteListings = async (userId: string) => {
     .from('listings')
     .select('*')
     .in('id', listingIds)
-    .gte('created_at', twentyDaysAgo);
+    .gte('created_at', oneMinuteAgo);
   if (listingsError) throw new Error(listingsError.message);
   if (!listings || listings.length === 0) return [];
 

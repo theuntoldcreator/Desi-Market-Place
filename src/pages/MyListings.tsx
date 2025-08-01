@@ -11,15 +11,15 @@ import { CreateListing } from '@/components/marketplace/CreateListing';
 import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
-import { subDays } from 'date-fns';
+import { subMinutes } from 'date-fns';
 
 const fetchMyListings = async (userId: string) => {
-  const twentyDaysAgo = subDays(new Date(), 20).toISOString();
+  const oneMinuteAgo = subMinutes(new Date(), 1).toISOString();
   const { data: listings, error } = await supabase
     .from('listings')
     .select('*')
     .eq('user_id', userId)
-    .gte('created_at', twentyDaysAgo)
+    .gte('created_at', oneMinuteAgo)
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   const { data: profile } = await supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', userId).single();
