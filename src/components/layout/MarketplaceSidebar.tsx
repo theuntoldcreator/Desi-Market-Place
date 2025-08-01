@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ShoppingBag, Laptop, BookOpen, Home, Car, Shirt, Gamepad2, Heart, Menu, Gift } from 'lucide-react';
+import { Search, ShoppingBag, Laptop, BookOpen, Home, Car, Shirt, Gamepad2, Heart, Menu, Gift, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -24,9 +24,10 @@ interface MarketplaceSidebarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onlineCount: number;
+  totalUsersCount?: number;
 }
 
-const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick, onlineCount }: MarketplaceSidebarProps & { onLinkClick?: () => void }) => {
+const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick, onlineCount, totalUsersCount }: MarketplaceSidebarProps & { onLinkClick?: () => void }) => {
   return (
     <div className="p-4 space-y-6">
       <div className="space-y-4">
@@ -51,13 +52,23 @@ const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSea
         <Link to="/favorites" onClick={onLinkClick} className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-accent/50"><div className="flex items-center gap-3"><Heart className="w-4 h-4" /><span>Favorites</span></div></Link>
       </div>
       <Separator />
-      <div className="flex justify-center">
-        <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
-          </span>
-          <span>{onlineCount > 0 ? `${onlineCount} Online` : 'Connecting...'}</span>
+      <div className="p-3 rounded-lg bg-muted/50 border text-sm space-y-2">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Users className="w-4 h-4" />
+            <span>Total Users</span>
+          </div>
+          <span className="font-semibold">{totalUsersCount ?? '...'}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <span className="relative flex h-2.5 w-2.5 ml-1 mr-0.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
+            </span>
+            <span>Online Now</span>
+          </div>
+          <span className="font-semibold">{onlineCount}</span>
         </div>
       </div>
     </div>

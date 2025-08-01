@@ -59,6 +59,14 @@ const fetchListings = async (userId: string | undefined) => {
   }));
 };
 
+const fetchTotalUsers = async () => {
+  const { count, error } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true });
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+};
+
 export default function Marketplace() {
   const session = useSession();
   const queryClient = useQueryClient();
@@ -114,6 +122,12 @@ export default function Marketplace() {
     queryKey: ['listings', session?.user?.id],
     queryFn: () => fetchListings(session?.user?.id),
     staleTime: 1000 * 60,
+  });
+
+  const { data: totalUsersCount } = useQuery({
+    queryKey: ['totalUsers'],
+    queryFn: fetchTotalUsers,
+    staleTime: 1000 * 60 * 5, // Stale for 5 minutes
   });
 
   const favoriteMutation = useMutation({
@@ -229,7 +243,7 @@ export default function Marketplace() {
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <div className="flex">
-        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: handleCategoryChange, searchQuery, onSearchChange: setSearchQuery, onlineCount }} />
+        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: handleCategoryChange, searchQuery, onSearchChange: setSearchQuery, onlineCount, totalUsersCount }} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
