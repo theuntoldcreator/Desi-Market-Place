@@ -14,14 +14,14 @@ export function ListingCard({ title, price, image_urls, location, onClick }: Lis
   return (
     <Card
       onClick={onClick}
-      className="group overflow-hidden rounded-lg border bg-card shadow-sm cursor-pointer"
+      className="group overflow-hidden rounded-lg border bg-card shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
     >
       <CardContent className="p-0">
         <AspectRatio ratio={1 / 1} className="bg-muted">
           <img
             src={image_urls[0]}
             alt={title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
         </AspectRatio>
