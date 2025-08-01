@@ -140,7 +140,12 @@ export function ListingDetailModal({
         listing.status === 'sold' ? (
           <Button disabled className="w-full">Item is Sold</Button>
         ) : (
-          <Button className="w-full" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
+          <div className="flex items-stretch gap-2">
+            <Button className="flex-grow" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
+            <Button variant="outline" size="icon" className="aspect-square h-auto" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
+              <Heart className={cn("w-5 h-5", listing.isFavorited && "fill-destructive text-destructive")} />
+            </Button>
+          </div>
         )
       )}
     </>
@@ -162,17 +167,6 @@ export function ListingDetailModal({
                 </div>
               )}
               
-              {!isOwner && listing.status !== 'sold' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-3 right-3 bg-black/30 hover:bg-black/50 text-white rounded-full z-20"
-                  onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}
-                >
-                  <Heart className={cn("w-5 h-5", listing.isFavorited && "fill-destructive text-destructive")} />
-                </Button>
-              )}
-
               <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain z-10" />
               
               {listing.image_urls.length > 1 && (
@@ -182,9 +176,6 @@ export function ListingDetailModal({
                 </>
               )}
               
-              <Button variant="ghost" size="icon" className="absolute top-3 left-3 z-20 md:hidden bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}>
-                <X className="h-5 w-5" />
-              </Button>
             </div>
 
             <div className="p-4 md:p-6 space-y-4">
