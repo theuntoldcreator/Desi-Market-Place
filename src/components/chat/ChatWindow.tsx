@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { useDebouncedCallback } from 'use-debounce';
 import { ChatHeader } from './ChatHeader';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const fetchMessages = async (chatId: string) => {
   const { data, error } = await supabase
@@ -25,9 +27,11 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   const session = useSession();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -77,6 +81,22 @@ export function ChatWindow({ chatId }: { chatId: string }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['messages', chatId] })
   });
 
+  const deleteChatMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.functions.invoke('delete-chat', { body: { chatId } });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast({ title: "Chat Deleted", description: "The conversation has been removed." });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      navigate('/chats');
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: `Could not delete chat: ${error.message}`, variant: "destructive" });
+    },
+    onSettled: () => setIsDeleteDialogOpen(false)
+  });
+
   useEffect(() => {
     if (chatId && session && messages.length > 0) {
       markAsReadMutation.mutate();
@@ -119,47 +139,66 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   if (isComponentLoading) return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
 
   return (
-    <div className="flex-1 flex flex-col bg-white h-full">
-      <ChatHeader user={otherUser} />
-      <div className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {messages.map((message, index) => {
-          const isSender = message.sender_id === session?.user.id;
-          const prevMessage = messages[index - 1];
-          const nextMessage = messages[index + 1];
-          const isFirstInGroup = !prevMessage || prevMessage.sender_id !== message.sender_id;
-          const isLastInGroup = !nextMessage || nextMessage.sender_id !== message.sender_id;
-          const showAvatar = !isSender && isLastInGroup;
+    <>
+      <div className="flex-1 flex flex-col bg-white h-full">
+        <ChatHeader user={otherUser} onDeleteChat={() => setIsDeleteDialogOpen(true)} />
+        <div className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {messages.map((message, index) => {
+            const isSender = message.sender_id === session?.user.id;
+            const prevMessage = messages[index - 1];
+            const nextMessage = messages[index + 1];
+            const isFirstInGroup = !prevMessage || prevMessage.sender_id !== message.sender_id;
+            const isLastInGroup = !nextMessage || nextMessage.sender_id !== message.sender_id;
+            const showAvatar = !isSender && isLastInGroup;
 
-          return (
-            <div key={message.id} className={cn("flex items-end gap-2 group", isSender ? "justify-end" : "justify-start")} onMouseEnter={() => setHoveredMessageId(message.id)} onMouseLeave={() => setHoveredMessageId(null)}>
-              {isSender && hoveredMessageId === message.id && <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-50 hover:opacity-100" onClick={() => deleteMessageMutation.mutate(message.id as number)}><Trash2 className="h-4 w-4" /></Button>}
-              <div className={cn("flex items-end gap-2", isSender && "flex-row-reverse")}>
-                <Avatar className={cn("w-8 h-8", !showAvatar && "invisible")}><AvatarImage src={message.sender?.avatar_url} /><AvatarFallback>{message.sender?.first_name?.[0]}</AvatarFallback></Avatar>
-                <div className={cn("max-w-xs md:max-w-md p-3 rounded-2xl", isSender ? "bg-primary text-primary-foreground" : "bg-muted", isFirstInGroup && (isSender ? 'rounded-tr-md' : 'rounded-tl-md'), isLastInGroup && (isSender ? 'rounded-br-md' : 'rounded-bl-md'))}>
-                  <p className="text-sm">{message.content}</p>
+            return (
+              <div key={message.id} className={cn("flex items-end gap-2 group", isSender ? "justify-end" : "justify-start")} onMouseEnter={() => setHoveredMessageId(message.id)} onMouseLeave={() => setHoveredMessageId(null)}>
+                {isSender && hoveredMessageId === message.id && <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-50 hover:opacity-100" onClick={() => deleteMessageMutation.mutate(message.id as number)}><Trash2 className="h-4 w-4" /></Button>}
+                <div className={cn("flex items-end gap-2", isSender && "flex-row-reverse")}>
+                  <Avatar className={cn("w-8 h-8", !showAvatar && "invisible")}><AvatarImage src={message.sender?.avatar_url} /><AvatarFallback>{message.sender?.first_name?.[0]}</AvatarFallback></Avatar>
+                  <div className={cn("max-w-xs md:max-w-md p-3 rounded-2xl", isSender ? "bg-primary text-primary-foreground" : "bg-muted", isFirstInGroup && (isSender ? 'rounded-tr-md' : 'rounded-tl-md'), isLastInGroup && (isSender ? 'rounded-br-md' : 'rounded-bl-md'))}>
+                    <p className="text-sm">{message.content}</p>
+                  </div>
                 </div>
               </div>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+        <div className="h-8 px-4">
+          {isTyping && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Avatar className="w-8 h-8"><AvatarImage src={otherUser?.avatar_url} /><AvatarFallback>{otherUser?.first_name?.[0]}</AvatarFallback></Avatar>
+              <div className="bg-muted px-4 py-2 rounded-full"><div className="typing-indicator"><span /><span /><span /></div></div>
             </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
+          )}
+        </div>
+        <div className="p-4 border-t bg-white">
+          <form onSubmit={handleSend} className="flex items-center gap-2">
+            <Input value={newMessage} onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }} placeholder="Type a message..." autoComplete="off" />
+            <Button type="submit" size="icon" disabled={sendMessageMutation.isPending || !newMessage.trim()}>
+              {sendMessageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          </form>
+        </div>
       </div>
-      <div className="h-8 px-4">
-        {isTyping && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Avatar className="w-8 h-8"><AvatarImage src={otherUser?.avatar_url} /><AvatarFallback>{otherUser?.first_name?.[0]}</AvatarFallback></Avatar>
-            <div className="bg-muted px-4 py-2 rounded-full"><div className="typing-indicator"><span /><span /><span /></div></div>
-          </div>
-        )}
-      </div>
-      <div className="p-4 border-t bg-white">
-        <form onSubmit={handleSend} className="flex items-center gap-2">
-          <Input value={newMessage} onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }} placeholder="Type a message..." autoComplete="off" />
-          <Button type="submit" size="icon" disabled={sendMessageMutation.isPending || !newMessage.trim()}>
-            {sendMessageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </Button>
-        </form>
-      </div>
-    </div>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this chat permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The entire conversation will be deleted for you and the other user.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteChatMutation.mutate()} disabled={deleteChatMutation.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleteChatMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete Chat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
