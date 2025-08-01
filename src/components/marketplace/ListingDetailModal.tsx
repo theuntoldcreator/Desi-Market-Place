@@ -62,8 +62,9 @@ export function ListingDetailModal({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-3 right-3 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full h-9 w-9"
+          className="absolute top-3 right-3 z-50 bg-black/60 hover:bg-black/70 text-white rounded-full h-9 w-9"
           onClick={onClose}
+          data-testid="modal-close-button"
         >
           <X className="w-5 h-5" />
         </Button>
