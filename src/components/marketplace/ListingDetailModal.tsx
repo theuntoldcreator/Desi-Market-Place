@@ -65,8 +65,8 @@ export function ListingDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-screen h-screen max-w-full p-0 gap-0 rounded-none sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-2xl flex flex-col overflow-hidden">
-        <div className="flex-grow overflow-y-auto hide-scrollbar">
+      <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-2xl flex flex-col overflow-hidden">
+        <div className="flex-grow overflow-y-auto hide-scrollbar pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-0 sm:pb-0">
           <div className="relative bg-muted flex items-center justify-center aspect-square">
             {listing.status === 'sold' && <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">SOLD</div>}
             <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain z-10" />
