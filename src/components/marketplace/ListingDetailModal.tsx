@@ -88,7 +88,7 @@ export function ListingDetailModal({
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 flex-grow overflow-hidden">
           {/* Image Section */}
-          <div className="relative bg-muted flex items-center justify-center md:rounded-l-lg overflow-hidden aspect-video md:aspect-auto">
+          <div className="relative bg-black flex items-center justify-center md:rounded-l-lg overflow-hidden aspect-video md:aspect-auto">
             {listing.status === 'sold' && (
               <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">
                 SOLD
