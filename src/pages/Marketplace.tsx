@@ -120,61 +120,25 @@ export default function Marketplace() {
     onSettled: () => setListingToDelete(null)
   });
 
-  const handleSendMessage = async (listing: any) => {
+  const handleSendMessage = (listing: any) => {
     if (!session) {
-        toast({ title: "Please log in", description: "You need to be logged in to send a message.", variant: "destructive" });
-        return;
+      toast({ title: "Please log in", description: "You need to be logged in to send a message.", variant: "destructive" });
+      return;
     }
-    if (session.user.id === listing.user_id) {
-        toast({ title: "This is your listing", description: "You cannot send a message to yourself.", variant: "destructive" });
-        return;
+    if (!listing.contact) {
+      toast({ title: "Contact information not available", description: "The seller has not provided a contact number.", variant: "destructive" });
+      return;
     }
-
-    const { data: existingChat } = await supabase
-        .from('chats')
-        .select('id')
-        .eq('listing_id', listing.id)
-        .eq('buyer_id', session.user.id)
-        .single();
-
-    if (existingChat) {
-        navigate(`/chats/${existingChat.id}`);
-        return;
+    
+    const cleanedNumber = listing.contact.replace(/\D/g, '');
+    
+    if (!cleanedNumber) {
+      toast({ title: "Invalid contact number", variant: "destructive" });
+      return;
     }
 
-    const { data: newChat, error: chatError } = await supabase
-        .from('chats')
-        .insert({
-            listing_id: listing.id,
-            buyer_id: session.user.id,
-            seller_id: listing.user_id,
-            status: 'active'
-        })
-        .select('id')
-        .single();
-
-    if (chatError) {
-        toast({ title: "Error", description: `Could not start chat: ${chatError.message}`, variant: "destructive" });
-        return;
-    }
-
-    if (newChat) {
-        const initialMessage = `Hi, I'm interested in your listing: "${listing.title}". Is it still available?`;
-        const { error: messageError } = await supabase.from('messages').insert({
-            chat_id: newChat.id,
-            sender_id: session.user.id,
-            receiver_id: listing.user_id,
-            content: initialMessage,
-        });
-
-        if (messageError) {
-            toast({ title: "Error", description: `Could not start chat: ${messageError.message}`, variant: "destructive" });
-            return;
-        }
-
-        queryClient.invalidateQueries({ queryKey: ['chats'] });
-        navigate(`/chats/${newChat.id}`);
-    }
+    const whatsappUrl = `https://wa.me/${cleanedNumber}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
   const filteredListings = listings

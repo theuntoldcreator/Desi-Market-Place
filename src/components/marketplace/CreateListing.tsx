@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { countries } from '@/lib/countries';
 
 interface CreateListingProps {
   isOpen: boolean;
@@ -32,13 +33,13 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
-    title: '', description: '', price: '', category: '', location: '', contact: '',
+    title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: ''
   });
   const [images, setImages] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
 
   const resetForm = () => {
-    setFormData({ title: '', description: '', price: '', category: '', location: '', contact: '' });
+    setFormData({ title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '' });
     setImages([]);
   };
 
@@ -58,11 +59,13 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         })
       );
 
+      const { title, description, price, category, location, countryCode, phoneNumber } = formData;
       const { error: insertError } = await supabase.from('listings').insert({
-        ...formData,
-        price: parseFloat(formData.price),
+        title, description, category, location,
+        price: parseFloat(price),
         image_urls: imageUrls,
         user_id: session.user.id,
+        contact: `${countryCode}${phoneNumber.replace(/\D/g, '')}`,
       });
 
       if (insertError) throw new Error(`Failed to create listing: ${insertError.message}`);
@@ -87,7 +90,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index));
 
   const validateForm = () => {
-    return formData.title && formData.price && formData.category && formData.location && formData.contact;
+    return formData.title && formData.price && formData.category && formData.location && formData.phoneNumber;
   };
 
   return (
@@ -146,9 +149,15 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input id="location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))} placeholder="Location (e.g., Dallas) *" className="pl-10" />
               </div>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input id="contact" value={formData.contact} onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))} placeholder="Contact Number *" className="pl-10" />
+              <div className="flex items-center gap-2">
+                <Select value={formData.countryCode} onValueChange={(value) => setFormData(prev => ({ ...prev, countryCode: value }))}>
+                  <SelectTrigger className="w-[80px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>{countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code}</SelectItem>)}</SelectContent>
+                </Select>
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input id="contact" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} placeholder="Contact Number *" className="pl-10" />
+                </div>
               </div>
             </div>
           </div>
