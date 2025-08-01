@@ -2,15 +2,46 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import MyListings from "./pages/MyListings";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import SignUp from "./pages/SignUp";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
+
+const AppRoutes = () => {
+  const supabase = useSupabaseClient();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase, navigate]);
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/signup" element={<SignUp />} />
+      <Route path="/my-listings" element={<MyListings />} />
+      <Route path="/favorites" element={<Favorites />} />
+      <Route path="/profile" element={<Profile />} />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -18,15 +49,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/my-listings" element={<MyListings />} />
-          <Route path="/favorites" element={<Favorites />} />
-          <Route path="/profile" element={<Profile />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
