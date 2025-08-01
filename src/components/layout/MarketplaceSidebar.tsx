@@ -30,16 +30,18 @@ const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSea
   return (
     <div className="p-4 space-y-6">
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-          </span>
-          <span>{onlineCount > 0 ? `${onlineCount} Online` : 'Connecting...'}</span>
-        </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="pl-10" />
+        </div>
+        <div className="flex justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
+            </span>
+            <span>{onlineCount > 0 ? `${onlineCount} Online` : 'Connecting...'}</span>
+          </div>
         </div>
       </div>
       <Separator />
