@@ -137,7 +137,9 @@ export default function Marketplace() {
       return;
     }
 
-    const whatsappUrl = `https://wa.me/${cleanedNumber}`;
+    const message = `Hey! I'm interested in your listing "${listing.title}" on Desi Market Place.`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
