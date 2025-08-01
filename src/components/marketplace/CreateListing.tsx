@@ -213,6 +213,12 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                   <Input id="contact" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} placeholder="Phone Number" className="pl-10" />
                 </div>
               </div>
+              <Alert className="text-xs p-3">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Your number is used for WhatsApp chat. Be respectful and avoid sharing sensitive info.
+                </AlertDescription>
+              </Alert>
             </div>
             
             <Alert>
