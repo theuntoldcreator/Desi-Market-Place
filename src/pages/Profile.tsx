@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { format } from 'date-fns';
 import { EditProfile } from '@/components/auth/EditProfile';
+import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
 
 const fetchProfile = async (supabase: any, userId: string) => {
   const { data, error } = await supabase
@@ -100,6 +101,7 @@ export default function Profile() {
         {renderContent()}
       </main>
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
+      <FloatingHomeButton />
     </div>
   );
 }
