@@ -50,6 +50,16 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   });
   const otherUser = session?.user.id === chatDetails?.buyer_id ? chatDetails?.seller : chatDetails?.buyer;
 
+  const { data: sessionProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ['profile', session?.user?.id],
+    queryFn: async () => {
+      if (!session) return null;
+      const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      return data;
+    },
+    enabled: !!session,
+  });
+
   const markAsReadMutation = useMutation({
     mutationFn: async () => {
       if (!session) return;
@@ -60,18 +70,34 @@ export function ChatWindow({ chatId }: { chatId: string }) {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      if (!session || !chatDetails) throw new Error("Chat is not ready. Please wait a moment.");
-      const receiverId = session.user.id === chatDetails.buyer_id ? chatDetails.seller_id : chatDetails.buyer_id;
-      const { error } = await supabase.from('messages').insert({ chat_id: parseInt(chatId), sender_id: session.user.id, receiver_id: receiverId, content });
+      if (!session || !chatDetails || !otherUser) throw new Error("Chat is not ready.");
+      const { error } = await supabase.from('messages').insert({ chat_id: parseInt(chatId), sender_id: session.user.id, receiver_id: otherUser.id, content });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => {
+    onMutate: async (content: string) => {
+      await queryClient.cancelQueries({ queryKey: ['messages', chatId] });
+      const previousMessages = queryClient.getQueryData(['messages', chatId]);
+      const optimisticMessage = {
+        id: `optimistic-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        content,
+        chat_id: parseInt(chatId),
+        sender_id: session!.user.id,
+        receiver_id: otherUser!.id,
+        is_read: false,
+        sender: sessionProfile,
+      };
+      queryClient.setQueryData(['messages', chatId], (old: any[] | undefined) => old ? [...old, optimisticMessage] : [optimisticMessage]);
       setNewMessage('');
+      return { previousMessages };
+    },
+    onError: (err, _, context) => {
+      queryClient.setQueryData(['messages', chatId], context?.previousMessages);
+      toast({ title: "Error", description: "Message failed to send.", variant: "destructive" });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
     },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: `Message failed to send: ${error.message}`, variant: "destructive" });
-    }
   });
 
   const deleteMessageMutation = useMutation({
@@ -104,7 +130,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   }, [chatId, session, messages.length, markAsReadMutation]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const broadcastTyping = useDebouncedCallback(() => {
@@ -130,7 +156,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim() && !sendMessageMutation.isPending) {
+    if (newMessage.trim()) {
       sendMessageMutation.mutate(newMessage.trim());
     }
   };
@@ -153,7 +179,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
 
             return (
               <div key={message.id} className={cn("flex items-end gap-2 group", isSender ? "justify-end" : "justify-start")} onMouseEnter={() => setHoveredMessageId(message.id)} onMouseLeave={() => setHoveredMessageId(null)}>
-                {isSender && hoveredMessageId === message.id && <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-50 hover:opacity-100" onClick={() => deleteMessageMutation.mutate(message.id as number)}><Trash2 className="h-4 w-4" /></Button>}
+                {isSender && typeof message.id === 'number' && hoveredMessageId === message.id && <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-50 hover:opacity-100" onClick={() => deleteMessageMutation.mutate(message.id as number)}><Trash2 className="h-4 w-4" /></Button>}
                 <div className={cn("flex items-end gap-2", isSender && "flex-row-reverse")}>
                   <Avatar className={cn("w-8 h-8", !showAvatar && "invisible")}><AvatarImage src={message.sender?.avatar_url} /><AvatarFallback>{message.sender?.first_name?.[0]}</AvatarFallback></Avatar>
                   <div className={cn("max-w-xs md:max-w-md p-3 rounded-2xl", isSender ? "bg-primary text-primary-foreground" : "bg-muted", isFirstInGroup && (isSender ? 'rounded-tr-md' : 'rounded-tl-md'), isLastInGroup && (isSender ? 'rounded-br-md' : 'rounded-bl-md'))}>
@@ -176,7 +202,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
         <div className="p-4 border-t bg-white">
           <form onSubmit={handleSend} className="flex items-center gap-2">
             <Input value={newMessage} onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }} placeholder="Type a message..." autoComplete="off" />
-            <Button type="submit" size="icon" disabled={sendMessageMutation.isPending || !newMessage.trim()}>
+            <Button type="submit" size="icon" disabled={sendMessageMutation.isPending || !newMessage.trim() || chatDetailsLoading || profileLoading}>
               {sendMessageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </form>
