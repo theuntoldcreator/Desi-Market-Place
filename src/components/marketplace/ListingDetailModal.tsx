@@ -102,14 +102,6 @@ export function ListingDetailModal({
               </div>
             </div>
           </div>
-          
-          <hr className="my-4" />
-          <div>
-            <h2 className="font-semibold mb-2">Comments</h2>
-            <div className="text-center text-sm text-muted-foreground py-6 border-2 border-dashed rounded-lg">
-              <p>Comment section coming soon!</p>
-            </div>
-          </div>
         </div>
       </DialogContent>
     </Dialog>
