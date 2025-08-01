@@ -59,16 +59,6 @@ export function ListingDetailModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-4xl p-0 gap-0 rounded-lg max-h-[90vh] overflow-y-auto">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-3 right-3 z-50 bg-black/60 hover:bg-black/70 text-white rounded-full h-9 w-9"
-          onClick={onClose}
-          data-testid="modal-close-button"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-
         <div className="grid grid-cols-1 md:grid-cols-2">
           <div className="relative bg-black flex items-center justify-center md:rounded-l-lg overflow-hidden aspect-[4/3] md:aspect-square">
             <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain" />
