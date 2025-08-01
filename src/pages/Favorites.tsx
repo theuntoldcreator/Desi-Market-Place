@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
+import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
 
 const fetchFavoriteListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
@@ -112,6 +113,7 @@ export default function Favorites() {
           onFavoriteToggle={(id) => favoriteMutation.mutate({ listingId: id })}
         />
       )}
+      <FloatingHomeButton />
     </div>
   );
 }

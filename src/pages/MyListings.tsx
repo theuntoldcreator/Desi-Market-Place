@@ -12,6 +12,7 @@ import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
+import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
 
 const fetchMyListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
@@ -115,6 +116,7 @@ export default function MyListings() {
           onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
         />
       )}
+      <FloatingHomeButton />
     </div>
   );
 }
