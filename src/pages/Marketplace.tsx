@@ -14,6 +14,7 @@ import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useNavigate } from 'react-router-dom';
 
 const fetchListings = async (userId: string | undefined) => {
   const { data: listings, error: listingsError } = await supabase
@@ -58,6 +59,7 @@ export default function Marketplace() {
   const session = useSession();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -118,6 +120,50 @@ export default function Marketplace() {
     onSettled: () => setListingToDelete(null)
   });
 
+  const handleSendMessage = async (listing: any) => {
+    if (!session) {
+        toast({ title: "Please log in", description: "You need to be logged in to send a message.", variant: "destructive" });
+        return;
+    }
+    if (session.user.id === listing.user_id) {
+        toast({ title: "This is your listing", description: "You cannot send a message to yourself.", variant: "destructive" });
+        return;
+    }
+
+    const { data: existingChat } = await supabase
+        .from('chats')
+        .select('id')
+        .eq('listing_id', listing.id)
+        .eq('buyer_id', session.user.id)
+        .single();
+
+    if (existingChat) {
+        navigate(`/chats/${existingChat.id}`);
+        return;
+    }
+
+    const { data: newChat, error } = await supabase
+        .from('chats')
+        .insert({
+            listing_id: listing.id,
+            buyer_id: session.user.id,
+            seller_id: listing.user_id,
+            status: 'active'
+        })
+        .select('id')
+        .single();
+
+    if (error) {
+        toast({ title: "Error", description: `Could not start chat: ${error.message}`, variant: "destructive" });
+        return;
+    }
+
+    if (newChat) {
+        queryClient.invalidateQueries({ queryKey: ['chats'] });
+        navigate(`/chats/${newChat.id}`);
+    }
+  };
+
   const filteredListings = listings
     .filter(l => (selectedCategory === 'all' || l.category.toLowerCase() === selectedCategory) &&
                  (!searchQuery.trim() || l.title.toLowerCase().includes(searchQuery.toLowerCase())))
@@ -172,6 +218,7 @@ export default function Marketplace() {
           isOwner={session?.user?.id === selectedListing.user_id}
           onClose={() => setSelectedListing(null)}
           onFavoriteToggle={(id, isFav) => favoriteMutation.mutate({ listingId: id, isFavorited: isFav })}
+          onSendMessage={() => handleSendMessage(selectedListing)}
           onEdit={() => { setSelectedListing(null); setListingToEdit(selectedListing); }}
           onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
         />

@@ -76,7 +76,7 @@ export function ListingDetailModal({
               </>
             ) : (
               <>
-                <Button className="flex-1" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" /> Send Message</Button>
+                <Button className="flex-1" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" /> Message Seller</Button>
                 <Button variant="outline" size="icon" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
                   <Heart className={cn("w-4 h-4", listing.isFavorited && "fill-red-500 text-red-500")} />
                 </Button>
