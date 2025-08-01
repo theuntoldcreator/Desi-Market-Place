@@ -186,16 +186,34 @@ export function ChatWindow({ chatId }: { chatId: string }) {
               const isSender = message.sender_id === session?.user.id;
               const prevMessage = messages[index - 1];
               const isFirstInGroup = !prevMessage || prevMessage.sender_id !== message.sender_id;
+              const canDelete = isSender && typeof message.id === 'number';
+
               return (
                 <div
                   key={message.id}
                   className={cn(
-                    "flex w-full items-end gap-2",
+                    "flex w-full items-end gap-2 group",
                     isSender ? "justify-end" : "justify-start"
                   )}
                   onMouseEnter={() => setHoveredMessageId(message.id)}
                   onMouseLeave={() => setHoveredMessageId(null)}
                 >
+                  {/* Delete button for sender (on the left of their message) */}
+                  {isSender && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-7 w-7 text-muted-foreground transition-opacity",
+                        hoveredMessageId === message.id && canDelete ? "opacity-50 hover:opacity-100" : "opacity-0"
+                      )}
+                      disabled={!canDelete}
+                      onClick={() => canDelete && deleteMessageMutation.mutate(message.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+
                   {/* Avatar for receiver */}
                   {!isSender && (
                     <Avatar className={cn("h-8 w-8", !isFirstInGroup && "invisible")}>
@@ -221,21 +239,6 @@ export function ChatWindow({ chatId }: { chatId: string }) {
                       {format(new Date(message.created_at), 'p')}
                     </p>
                   </div>
-
-                  {/* Delete button for sender (on the right) */}
-                  {isSender && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "h-7 w-7 text-muted-foreground transition-opacity",
-                        hoveredMessageId === message.id ? "opacity-50 hover:opacity-100" : "opacity-0"
-                      )}
-                      onClick={() => deleteMessageMutation.mutate(message.id as number)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
                 </div>
               );
             })}
