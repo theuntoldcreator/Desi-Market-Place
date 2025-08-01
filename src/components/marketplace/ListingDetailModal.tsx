@@ -62,7 +62,9 @@ export function ListingDetailModal({
         <div className="flex flex-col p-6 overflow-y-auto max-h-[90vh]">
           <div className="space-y-3">
             <h1 className="text-2xl font-bold">{listing.title}</h1>
-            <p className="text-3xl font-bold text-primary">${listing.price.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-primary">
+              {listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}
+            </p>
             <p className="text-sm text-muted-foreground">
               Listed {listing.timeAgo} in {listing.location}
             </p>

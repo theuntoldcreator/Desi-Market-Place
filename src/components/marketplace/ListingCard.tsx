@@ -26,7 +26,9 @@ export function ListingCard({ title, price, image_urls, location, onClick }: Lis
           />
         </AspectRatio>
         <div className="p-3 space-y-1">
-          <p className="font-bold text-lg text-primary">${price.toLocaleString()}</p>
+          <p className="font-bold text-lg text-primary">
+            {price === 0 ? 'Free' : `$${price.toLocaleString()}`}
+          </p>
           <h3 className="font-semibold truncate" title={title}>{title}</h3>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="w-3.5 h-3.5" />

@@ -95,12 +95,15 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPrice = e.target.value;
-    if (newPrice === '0') {
-        setFormData(prev => ({ ...prev, price: newPrice, category: 'free' }));
-    } else {
-        const newCategory = prev.category === 'free' ? '' : prev.category;
-        setFormData(prev => ({ ...prev, price: newPrice, category: newCategory }));
-    }
+    setFormData(prev => {
+        if (newPrice === '0') {
+            return { ...prev, price: newPrice, category: 'free' };
+        }
+        if (prev.price === '0' && newPrice !== '0') {
+            return { ...prev, price: newPrice, category: '' };
+        }
+        return { ...prev, price: newPrice };
+    });
   };
 
   return (
@@ -150,9 +153,12 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input id="price" type="number" value={formData.price} onChange={handlePriceChange} placeholder="Price ($) *" min="0" />
               <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))} disabled={formData.price === '0'}>
-                <SelectTrigger><SelectValue placeholder="Select Category *" /></SelectTrigger>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select Category *">
+                        {formData.price === '0' ? 'Free Stuff' : undefined}
+                    </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
-                  {formData.category === 'free' && <SelectItem value="free">Free Stuff</SelectItem>}
                   {categories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
