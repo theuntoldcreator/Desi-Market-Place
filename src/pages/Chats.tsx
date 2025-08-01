@@ -7,7 +7,7 @@ export default function Chats() {
   const [showCreateListing, setShowCreateListing] = useState(false);
 
   return (
-    <div className="min-h-screen w-full bg-gray-50/50 flex flex-col">
+    <div className="h-screen w-full flex flex-col">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <main className="flex-1 flex overflow-hidden">
         <ChatLayout />
