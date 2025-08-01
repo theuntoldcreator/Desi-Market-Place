@@ -6,13 +6,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 
 const fetchChats = async (userId: string) => {
   const { data: chats, error: chatsError } = await supabase
-    .from('chats')
+    .from('chats_with_latest_message')
     .select('*, listings(title), buyer:profiles!chats_buyer_id_fkey(id, first_name, last_name, avatar_url), seller:profiles!chats_seller_id_fkey(id, first_name, last_name, avatar_url)')
     .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-    .order('created_at', { ascending: false });
+    .order('last_message_created_at', { ascending: false, nullsFirst: false });
 
   if (chatsError) throw new Error(chatsError.message);
   if (!chats) return [];
@@ -38,12 +39,15 @@ export function ChatList() {
     if (!session?.user?.id) return;
 
     const channel = supabase
-      .channel('public:chats')
+      .channel('public:messages')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'chats', filter: `or(buyer_id.eq.${session.user.id},seller_id.eq.${session.user.id})` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['chats', session.user.id] });
+        { event: '*', schema: 'public', table: 'messages' },
+        (payload: any) => {
+          const involvedInChat = chats?.some(c => c.id === payload.new?.chat_id || c.id === payload.old?.chat_id);
+          if (involvedInChat) {
+            queryClient.invalidateQueries({ queryKey: ['chats', session.user.id] });
+          }
         }
       )
       .subscribe();
@@ -51,10 +55,10 @@ export function ChatList() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session?.user?.id, queryClient]);
+  }, [session?.user?.id, queryClient, chats]);
 
   if (isLoading) {
-    return <div className="p-2 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>;
+    return <div className="p-2 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>;
   }
 
   if (!chats || chats.length === 0) {
@@ -66,6 +70,8 @@ export function ChatList() {
       {chats.map(chat => {
         const fullName = `${chat.other_user?.first_name || ''} ${chat.other_user?.last_name || ''}`.trim();
         const fallback = fullName ? fullName[0].toUpperCase() : '?';
+        const isUnread = !chat.last_message_is_read && chat.last_message_sender_id !== session?.user.id;
+
         return (
           <Link
             key={chat.id}
@@ -80,8 +86,17 @@ export function ChatList() {
               <AvatarFallback>{fallback}</AvatarFallback>
             </Avatar>
             <div className="flex-1 overflow-hidden">
-              <p className="font-semibold truncate text-sm">{fullName || "User"}</p>
-              <p className="text-xs text-muted-foreground truncate">Re: {chat.listings?.title}</p>
+              <div className="flex justify-between items-center">
+                <p className="font-semibold truncate text-sm">{fullName || "User"}</p>
+                {chat.last_message_created_at && (
+                  <p className="text-xs text-muted-foreground flex-shrink-0">
+                    {formatDistanceToNow(new Date(chat.last_message_created_at), { addSuffix: true })}
+                  </p>
+                )}
+              </div>
+              <p className={cn("text-xs text-muted-foreground truncate", isUnread && "font-bold text-foreground")}>
+                {chat.last_message_content || `Re: ${chat.listings?.title}`}
+              </p>
             </div>
           </Link>
         );

@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from '../ui/skeleton';
+import { format } from 'date-fns';
 
 const fetchMessages = async (chatId: string) => {
   const { data, error } = await supabase
@@ -66,7 +67,10 @@ export function ChatWindow({ chatId }: { chatId: string }) {
       if (!session) return;
       await supabase.from('messages').update({ is_read: true }).eq('chat_id', chatId).eq('receiver_id', session.user.id).eq('is_read', false);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['unreadMessagesCount', session?.user?.id] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['unreadMessagesCount', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['chats', session?.user?.id] });
+    }
   });
 
   const sendMessageMutation = useMutation({
@@ -144,7 +148,7 @@ export function ChatWindow({ chatId }: { chatId: string }) {
   useEffect(() => {
     if (!chatId) return;
     const realtimeChannel = supabase.channel(`chat:${chatId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
         () => queryClient.invalidateQueries({ queryKey: ['messages', chatId] })
       )
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
@@ -167,8 +171,6 @@ export function ChatWindow({ chatId }: { chatId: string }) {
 
   if (chatDetailsLoading) return <div className="flex h-full items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
 
-  const fullName = `${otherUser?.first_name || ''} ${otherUser?.last_name || ''}`.trim();
-
   return (
     <>
       <div className="flex flex-col h-full">
@@ -185,11 +187,14 @@ export function ChatWindow({ chatId }: { chatId: string }) {
               return (
                 <div key={message.id} className={cn("flex items-end gap-2 group", isSender ? "justify-end" : "justify-start")} onMouseEnter={() => setHoveredMessageId(message.id)} onMouseLeave={() => setHoveredMessageId(null)}>
                   {isSender && typeof message.id === 'number' && hoveredMessageId === message.id && <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-50 hover:opacity-100" onClick={() => deleteMessageMutation.mutate(message.id as number)}><Trash2 className="h-4 w-4" /></Button>}
-                  <div className={cn("flex items-end gap-2", isSender && "flex-row-reverse")}>
-                    {!isSender && <Avatar className={cn("w-8 h-8", !isFirstInGroup && "invisible")}><AvatarImage src={message.sender?.avatar_url} /><AvatarFallback>{message.sender?.first_name?.[0]}</AvatarFallback></Avatar>}
-                    <div className={cn("max-w-xs md:max-w-md p-3 rounded-2xl", isSender ? "bg-primary text-primary-foreground" : "bg-muted", isFirstInGroup && (isSender ? 'rounded-tr-md' : 'rounded-tl-md'))}>
-                      <p className="text-sm">{message.content}</p>
+                  <div className={cn("flex flex-col", isSender ? "items-end" : "items-start")}>
+                    <div className={cn("flex items-end gap-2", isSender && "flex-row-reverse")}>
+                      {!isSender && <Avatar className={cn("w-8 h-8", !isFirstInGroup && "invisible")}><AvatarImage src={message.sender?.avatar_url} /><AvatarFallback>{message.sender?.first_name?.[0]}</AvatarFallback></Avatar>}
+                      <div className={cn("max-w-xs md:max-w-md p-3 rounded-2xl", isSender ? "bg-primary text-primary-foreground" : "bg-muted", isFirstInGroup && (isSender ? 'rounded-tr-md' : 'rounded-tl-md'))}>
+                        <p className="text-sm">{message.content}</p>
+                      </div>
                     </div>
+                    <p className="text-xs text-muted-foreground px-2 pt-1">{format(new Date(message.created_at), 'p')}</p>
                   </div>
                 </div>
               );
