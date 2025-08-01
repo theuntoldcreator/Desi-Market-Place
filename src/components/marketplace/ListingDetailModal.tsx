@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, Clock, MapPin, Check, Trash2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, Clock, MapPin, Check, Trash2, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '../ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 interface ListingDetailModalProps {
   listing: any;
@@ -32,6 +34,7 @@ export function ListingDetailModal({
   onDelete,
 }: ListingDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { toast } = useToast();
 
   if (!listing) return null;
 
@@ -42,6 +45,24 @@ export function ListingDetailModal({
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev - 1 + listing.image_urls.length) % listing.image_urls.length);
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: listing.title,
+      text: `Check out this listing on Eagle Market Place: ${listing.title}`,
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        throw new Error("Web Share API not supported");
+      }
+    } catch (err) {
+      navigator.clipboard.writeText(window.location.href);
+      toast({ title: 'Link copied to clipboard!' });
+    }
   };
 
   const fullName = `${listing.seller?.first_name || ''} ${listing.seller?.last_name || ''}`.trim() || 'Unknown User';
@@ -60,135 +81,94 @@ export function ListingDetailModal({
     expirationText = `Expires in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`;
   }
 
-  const conditionMap: { [key: string]: string } = {
-    new: 'New',
-    like_new: 'Like New',
-    used: 'Used',
-  };
-
-  const categoryMap: { [key: string]: string } = {
-    electronics: 'Electronics',
-    books: 'Books & Study',
-    furniture: 'Furniture',
-    vehicles: 'Vehicles',
-    clothing: 'Clothing',
-    gaming: 'Gaming',
-    free: 'Free Stuff',
-  };
-
-  const DetailsContent = () => (
-    <>
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary" className="capitalize">{categoryMap[listing.category] || listing.category}</Badge>
-        {listing.condition && <Badge variant="outline">{conditionMap[listing.condition]}</Badge>}
-      </div>
-      <h1 className="text-2xl font-bold tracking-tight">{listing.title}</h1>
-      <p className="text-3xl font-bold text-primary">
-        {listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}
-      </p>
-      <div className="space-y-2 text-sm text-muted-foreground border-t pt-4">
-        <div className="flex items-center gap-2"><MapPin className="w-4 h-4" /><span>{listing.location}</span></div>
-        <div className="flex items-center gap-2"><Clock className="w-4 h-4" /><span>Posted {formatDistanceToNow(creationDate, { addSuffix: true })}</span></div>
-      </div>
-      <div className="pt-4 border-t">
-        <h2 className="font-semibold mb-2 text-sm">Description</h2>
-        <p className="text-sm text-foreground/80">{listing.description || 'No description provided.'}</p>
-      </div>
-      <div className="pt-4 border-t">
-        <h2 className="font-semibold mb-2 text-sm">Seller Information</h2>
-        <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10"><AvatarImage src={listing.seller?.avatar_url} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
-          <div>
-            <p className="font-medium">{fullName}</p>
-            <p className="text-sm text-muted-foreground">Member</p>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-
-  const Actions = () => (
-    <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center justify-center gap-1.5 text-amber-600 font-medium text-xs mb-3 cursor-default">
-            <Clock className="w-3 h-3" />
-            <span>{expirationText}</span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Expires on {format(expirationDate, 'PPP')}</p>
-        </TooltipContent>
-      </Tooltip>
-      {isOwner ? (
-        <div className="space-y-2">
-          {listing.status !== 'sold' ? (
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={onEdit}><Pencil className="w-4 h-4 mr-2" />Edit</Button>
-              <Button onClick={onMarkAsSold}><Tag className="w-4 h-4 mr-2" />Mark as Sold</Button>
-            </div>
-          ) : (
-            <>
-              <Button disabled className="w-full"><Check className="w-4 h-4 mr-2" />Item Sold</Button>
-              <Button variant="ghost" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={onDelete}>
-                <Trash2 className="w-4 h-4 mr-2" />Delete Listing Permanently
-              </Button>
-            </>
-          )}
-        </div>
-      ) : (
-        listing.status === 'sold' ? (
-          <Button disabled className="w-full">Item is Sold</Button>
-        ) : (
-          <div className="flex items-stretch gap-2">
-            <Button className="flex-grow" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
-            <Button variant="outline" size="icon" className="aspect-square h-auto" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
-              <Heart className={cn("w-5 h-5", listing.isFavorited && "fill-destructive text-destructive")} />
-            </Button>
-          </div>
-        )
-      )}
-    </>
-  );
+  const conditionMap: { [key: string]: string } = { new: 'New', like_new: 'Like New', used: 'Used' };
+  const categoryMap: { [key: string]: string } = { electronics: 'Electronics', books: 'Books & Study', furniture: 'Furniture', vehicles: 'Vehicles', clothing: 'Clothing', gaming: 'Gaming', free: 'Free Stuff' };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-4xl p-0 gap-0 rounded-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-        <DialogHeader className="sr-only">
-          <DialogTitle>{listing.title}</DialogTitle>
+      <DialogContent className="w-screen h-screen max-w-full p-0 gap-0 rounded-none sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-2xl flex flex-col">
+        <DialogHeader className="p-4 flex-row items-center justify-between border-b sm:hidden">
+          <DialogTitle className="text-lg font-semibold">Listing Details</DialogTitle>
+          <Button variant="ghost" size="icon" onClick={onClose}><X className="h-5 w-5" /></Button>
         </DialogHeader>
 
         <div className="flex-grow overflow-y-auto">
-          <div className="md:grid md:grid-cols-2">
-            <div className="relative bg-muted flex items-center justify-center rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none overflow-hidden aspect-square md:aspect-auto">
-              {listing.status === 'sold' && (
-                <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">
-                  SOLD
-                </div>
-              )}
-              
-              <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain z-10" />
-              
-              {listing.image_urls.length > 1 && (
-                <>
-                  <Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button>
-                  <Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={nextImage}><ChevronRight /></Button>
-                </>
-              )}
-              
-            </div>
+          <div className="relative bg-muted flex items-center justify-center aspect-square">
+            {listing.status === 'sold' && <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">SOLD</div>}
+            <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain z-10" />
+            {listing.image_urls.length > 1 && (
+              <>
+                <Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button>
+                <Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={nextImage}><ChevronRight /></Button>
+              </>
+            )}
+            <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-20 hidden sm:inline-flex bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}><X className="h-5 w-5" /></Button>
+          </div>
 
-            <div className="p-4 md:p-6 space-y-4">
-              <DetailsContent />
-              <div className="hidden md:block pt-4 border-t mt-4">
-                <Actions />
+          <div className="p-4 space-y-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-bold tracking-tight">{listing.title}</h1>
+              <p className="text-2xl font-bold">{listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}</p>
+              <div className="text-sm text-muted-foreground flex items-center gap-2 pt-1">
+                <MapPin className="w-4 h-4" />
+                <span>{listing.location}</span>
+                <span className="mx-1">&middot;</span>
+                <span>Posted {formatDistanceToNow(creationDate, { addSuffix: true })}</span>
               </div>
             </div>
+            <Separator />
+            <div className="flex items-center gap-3">
+              <Avatar className="w-12 h-12"><AvatarImage src={listing.seller?.avatar_url} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
+              <div>
+                <p className="font-semibold">{fullName}</p>
+                <p className="text-sm text-muted-foreground">Seller Information</p>
+              </div>
+            </div>
+            <Separator />
+            {isOwner ? (
+              <div className="space-y-2">
+                {listing.status !== 'sold' ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" onClick={onEdit}><Pencil className="w-4 h-4 mr-2" />Edit</Button>
+                    <Button onClick={onMarkAsSold}><Tag className="w-4 h-4 mr-2" />Mark as Sold</Button>
+                  </div>
+                ) : (
+                  <>
+                    <Button disabled className="w-full"><Check className="w-4 h-4 mr-2" />Item Sold</Button>
+                    <Button variant="ghost" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={onDelete}><Trash2 className="w-4 h-4 mr-2" />Delete Listing</Button>
+                  </>
+                )}
+              </div>
+            ) : (
+              listing.status !== 'sold' && (
+                <div className="space-y-3">
+                  <Button className="w-full" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
+                      <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
+                      {listing.isFavorited ? 'Saved' : 'Save'}
+                    </Button>
+                    <Button variant="outline" onClick={handleShare}><Share2 className="w-4 h-4 mr-2" />Share</Button>
+                  </div>
+                </div>
+              )
+            )}
+            <Separator />
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold">Details</h2>
+              <div className="text-sm space-y-2">
+                <div className="flex justify-between"><span>Category</span><span className="text-muted-foreground capitalize">{categoryMap[listing.category] || listing.category}</span></div>
+                {listing.condition && <div className="flex justify-between"><span>Condition</span><span className="text-muted-foreground">{conditionMap[listing.condition]}</span></div>}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex justify-between cursor-help"><span>Listing Status</span><span className="text-muted-foreground">{expirationText}</span></div>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Expires on {format(expirationDate, 'PPP')}</p></TooltipContent>
+                </Tooltip>
+              </div>
+              {listing.description && <p className="text-sm text-foreground/80 pt-2">{listing.description}</p>}
+            </div>
           </div>
-        </div>
-
-        <div className="p-4 bg-background border-t md:hidden">
-          <Actions />
         </div>
       </DialogContent>
     </Dialog>
