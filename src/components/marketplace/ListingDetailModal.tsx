@@ -58,7 +58,7 @@ export function ListingDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-full p-0 gap-0 grid grid-cols-1 md:grid-cols-2 rounded-lg">
+      <DialogContent className="w-[95vw] max-w-4xl p-0 gap-0 grid grid-cols-1 md:grid-cols-2 rounded-lg">
         <Button variant="ghost" size="icon" className="absolute top-2 right-2 z-50 bg-black/30 hover:bg-black/50 text-white rounded-full h-8 w-8" onClick={onClose}>
           <X className="w-4 h-4" />
         </Button>

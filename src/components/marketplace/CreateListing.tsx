@@ -109,7 +109,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && (resetForm(), onClose())}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Create New Listing</DialogTitle>
           <DialogDescription>

@@ -134,7 +134,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Edit Listing</DialogTitle>
           <DialogDescription>
