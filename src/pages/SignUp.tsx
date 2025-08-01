@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
-import logo from '@/assets/logofile.png';
+import logo from '@/assets/logomain.png';
 import { DobPicker } from '@/components/auth/DobPicker';
 
 const eighteenYearsAgo = new Date();
