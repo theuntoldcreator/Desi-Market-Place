@@ -94,7 +94,7 @@ export function ListingDetailModal({
                 SOLD
               </div>
             )}
-            <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-cover z-10" />
+            <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className="w-full h-full object-contain z-10" />
             {listing.image_urls.length > 1 && (
               <>
                 <Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button>
