@@ -49,6 +49,13 @@ const Login = () => {
               providers={[]}
               view="sign_in"
               theme="light"
+              localization={{
+                variables: {
+                  sign_in: {
+                    link_text: '',
+                  },
+                },
+              }}
             />
             <p className="text-center text-sm text-muted-foreground mt-4">
               Don't have an account?{' '}
