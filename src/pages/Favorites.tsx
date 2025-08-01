@@ -11,7 +11,6 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
-import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 
 const fetchFavoriteListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
@@ -45,8 +44,6 @@ export default function Favorites() {
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [selectedListing, setSelectedListing] = useState<any>(null);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['favorites', session?.user?.id],
@@ -68,11 +65,6 @@ export default function Favorites() {
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
   });
 
-  const filteredListings = listings.filter(listing =>
-    (selectedCategory === 'all' || listing.category.toLowerCase() === selectedCategory) &&
-    (!searchQuery.trim() || listing.title.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
   const renderContent = () => {
     if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (isError) return <div className="text-center py-16 text-destructive">Failed to load favorites.</div>;
@@ -84,12 +76,9 @@ export default function Favorites() {
         <Button asChild className="mt-6"><Link to="/">Browse Listings</Link></Button>
       </div>
     );
-    if (filteredListings.length === 0) return (
-        <div className="text-center py-16"><h3 className="text-xl font-semibold">No listings found</h3><p className="text-muted-foreground">Try adjusting your search or filters.</p></div>
-    );
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {filteredListings.map((listing) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+        {listings.map((listing) => (
           <ListingCard
             key={listing.id}
             title={listing.title}
@@ -106,16 +95,13 @@ export default function Favorites() {
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
-      <div className="flex">
-        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: setSelectedCategory, searchQuery, onSearchChange: setSearchQuery }} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold">My Favorites</h2>
-            <p className="text-muted-foreground mt-1">{filteredListings.length} items saved</p>
-          </div>
-          {renderContent()}
-        </main>
-      </div>
+      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold">My Favorites</h2>
+          <p className="text-muted-foreground mt-1">{listings.length} items saved</p>
+        </div>
+        {renderContent()}
+      </main>
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
       {selectedListing && (
         <ListingDetailModal
