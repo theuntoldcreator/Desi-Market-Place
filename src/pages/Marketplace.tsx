@@ -146,9 +146,20 @@ export default function Marketplace() {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const normalizedSearchQuery = searchQuery.toLowerCase().trim();
   const filteredListings = listings
-    .filter(l => (selectedCategory === 'all' || l.category.toLowerCase() === selectedCategory) &&
-                 (!searchQuery.trim() || l.title.toLowerCase().includes(searchQuery.toLowerCase())))
+    .filter(l => {
+      const categoryMatch = selectedCategory === 'all' || l.category.toLowerCase() === selectedCategory;
+      
+      if (!normalizedSearchQuery) {
+        return categoryMatch;
+      }
+
+      const searchMatch = l.title.toLowerCase().includes(normalizedSearchQuery) ||
+                          l.location.toLowerCase().includes(normalizedSearchQuery);
+
+      return categoryMatch && searchMatch;
+    })
     .sort((a, b) => sortBy === 'price-low' ? a.price - b.price : sortBy === 'price-high' ? b.price - a.price : 0);
 
   const renderContent = () => {
