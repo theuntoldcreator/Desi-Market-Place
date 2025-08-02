@@ -60,7 +60,6 @@ export function DobPicker({ value, onChange, className }: DobPickerProps) {
       <Select
         value={day?.toString()}
         onValueChange={(val) => setDay(parseInt(val))}
-        disabled={month === undefined || year === undefined}
       >
         <SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger>
         <SelectContent>
