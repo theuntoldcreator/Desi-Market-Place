@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'og.png'],
+      includeAssets: ['favicon.ico', 'eaglelogo.png'],
       manifest: {
         name: 'Eagle Market Place',
         short_name: 'EagleMarket',
@@ -33,25 +33,25 @@ export default defineConfig(({ mode }) => ({
         start_url: '/',
         icons: [
           {
-            src: 'favicon.ico',
-            sizes: '48x48',
-            type: 'image/x-icon',
-            purpose: 'any'
-          },
-          {
-            src: 'og.png',
+            src: 'eaglelogo.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'og.png',
+            src: 'eaglelogo.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'og.png',
+            src: 'eaglelogo.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'eaglelogo.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
