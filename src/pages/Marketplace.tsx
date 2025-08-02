@@ -21,6 +21,7 @@ const fetchListings = async (userId: string | undefined) => {
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
     .select('*')
+    .eq('status', 'active') // Only fetch active listings
     .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
 

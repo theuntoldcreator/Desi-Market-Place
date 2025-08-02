@@ -48,10 +48,12 @@ export default function MyListings() {
       const { error } = await supabase.from('listings').update({ status: 'sold' }).eq('id', listing.id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, listing) => {
       toast({ title: "Success!", description: "Listing marked as sold." });
-      queryClient.invalidateQueries({ queryKey: ['my-listings'] });
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.setQueryData(['my-listings', session?.user?.id], (oldData: any[] | undefined) =>
+        oldData ? oldData.map(item => item.id === listing.id ? { ...item, status: 'sold' } : item) : []
+      );
+      queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
     onSettled: () => setListingToMarkAsSold(null)
