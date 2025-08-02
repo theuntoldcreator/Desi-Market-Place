@@ -2,17 +2,17 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import logo from '@/assets/eaglelogo.png';
 import { Link } from 'react-router-dom';
 
 const Login = () => {
+  const logoUrl = 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png';
   return (
     <div className="min-h-screen bg-marketplace-bg flex items-center justify-center p-4">
       <div className="max-w-4xl w-full grid lg:grid-cols-2 gap-12 items-center">
         {/* Left side - Welcome content */}
         <div className="space-y-6 text-center lg:text-left">
           <div className="flex items-center justify-center lg:justify-start gap-4">
-            <img src={logo} alt="Eagle Market Place Logo" className="w-12 h-12 rounded-lg" />
+            <img src={logoUrl} alt="Eagle Market Place Logo" className="w-12 h-12 rounded-lg" />
             <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#00853E] to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
               Eagle Market Place
             </h1>
