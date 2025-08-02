@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { countries } from '@/lib/countries';
 import { Alert, AlertDescription } from '../ui/alert';
+import { useNsfwCheck } from '@/hooks/useNsfwCheck';
 
 interface CreateListingProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   });
   const [images, setImages] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
+  const [isCheckingImages, setIsCheckingImages] = useState(false);
+  const { checkImage, isModelLoading } = useNsfwCheck();
 
   const resetForm = () => {
     setFormData({ title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: '' });
@@ -83,9 +86,22 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     }
   });
 
-  const handleImageUpload = (files: FileList) => {
-    const newImages = Array.from(files).slice(0, 5 - images.length);
-    setImages(prev => [...prev, ...newImages]);
+  const handleImageUpload = async (files: FileList) => {
+    const newImagesToCheck = Array.from(files).slice(0, 5 - images.length);
+    if (newImagesToCheck.length === 0) return;
+
+    setIsCheckingImages(true);
+    const safeImages: File[] = [];
+
+    for (const file of newImagesToCheck) {
+      const isSafe = await checkImage(file);
+      if (isSafe) {
+        safeImages.push(file);
+      }
+    }
+    
+    setImages(prev => [...prev, ...safeImages]);
+    setIsCheckingImages(false);
   };
 
   const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index));
@@ -232,9 +248,9 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
         <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4">
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
-          <Button onClick={() => createListingMutation.mutate()} disabled={createListingMutation.isPending || !validateForm()} className="w-full sm:w-auto">
-            {createListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Publish Listing
+          <Button onClick={() => createListingMutation.mutate()} disabled={createListingMutation.isPending || !validateForm() || isCheckingImages || isModelLoading} className="w-full sm:w-auto">
+            {(createListingMutation.isPending || isCheckingImages || isModelLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isModelLoading ? 'Scanner loading...' : isCheckingImages ? 'Checking images...' : 'Publish Listing'}
           </Button>
         </DialogFooter>
       </DialogContent>
