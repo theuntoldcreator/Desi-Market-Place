@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import imageCompression from 'browser-image-compression';
 
 interface EditListingProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   useEffect(() => {
     if (listing) {
@@ -163,10 +165,40 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
     updateListingMutation.mutate();
   };
 
-  const handleImageUpload = (files: FileList) => {
+  const handleImageUpload = async (files: FileList) => {
     const newFiles = Array.from(files).slice(0, 5 - (existingImageUrls.length + newImages.length));
     if (newFiles.length === 0) return;
-    setNewImages(prev => [...prev, ...newFiles]);
+
+    setIsProcessingImages(true);
+    toast({ title: "Compressing images...", description: "This may take a moment." });
+
+    const options = {
+      maxSizeMB: 0.1,
+      maxWidthOrHeight: 1024,
+      useWebWorker: true,
+      fileType: 'image/webp',
+    };
+
+    try {
+      const compressedFiles = await Promise.all(
+        newFiles.map(async (file) => {
+          const compressedFile = await imageCompression(file, options);
+          const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+          return new File([compressedFile], `${originalName}.webp`, { type: 'image/webp' });
+        })
+      );
+      setNewImages(prev => [...prev, ...compressedFiles]);
+      toast({ title: "Success!", description: "Images are ready." });
+    } catch (error) {
+      console.error("Image compression error:", error);
+      toast({
+        title: "Image Processing Error",
+        description: "There was an issue compressing your images. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingImages(false);
+    }
   };
 
   const removeExistingImage = (url: string) => {
@@ -224,9 +256,11 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                   ))}
                   {(existingImageUrls.length + newImages.length) < 5 && (
                     <>
-                      <input type="file" multiple accept="image/*" onChange={(e) => e.target.files && handleImageUpload(e.target.files)} className="hidden" id="image-update-upload" />
-                      <label htmlFor="image-update-upload" className="cursor-pointer flex items-center justify-center border-2 border-dashed rounded-lg aspect-square text-muted-foreground hover:text-primary hover:border-primary transition-colors">
-                        <Upload className="w-6 h-6" />
+                      <input type="file" multiple accept="image/*" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="image-update-upload" disabled={isProcessingImages} />
+                      <label htmlFor="image-update-upload" className={cn("cursor-pointer", isProcessingImages && "cursor-not-allowed opacity-50")}>
+                        <div className="flex items-center justify-center border-2 border-dashed rounded-lg aspect-square text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+                          <Upload className="w-6 h-6" />
+                        </div>
                       </label>
                     </>
                   )}
@@ -287,16 +321,16 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
               type="button" 
               variant="destructive" 
               onClick={() => setShowDeleteConfirm(true)} 
-              disabled={updateListingMutation.isPending || deleteMutation.isPending}
+              disabled={updateListingMutation.isPending || deleteMutation.isPending || isProcessingImages}
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleSaveChanges} disabled={updateListingMutation.isPending || deleteMutation.isPending}>
-                {updateListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
+              <Button onClick={handleSaveChanges} disabled={updateListingMutation.isPending || deleteMutation.isPending || isProcessingImages}>
+                {(updateListingMutation.isPending || isProcessingImages) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isProcessingImages ? 'Processing...' : updateListingMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </DialogFooter>

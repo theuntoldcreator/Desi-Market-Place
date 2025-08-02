@@ -15,6 +15,7 @@ import { countries } from '@/lib/countries';
 import { Alert, AlertDescription } from '../ui/alert';
 import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
+import imageCompression from 'browser-image-compression';
 
 interface CreateListingProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const [images, setImages] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   const resetForm = () => {
     setFormData({ title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: '' });
@@ -104,10 +106,40 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     createListingMutation.mutate();
   };
 
-  const handleImageUpload = (files: FileList) => {
+  const handleImageUpload = async (files: FileList) => {
     const newImages = Array.from(files).slice(0, 5 - images.length);
     if (newImages.length === 0) return;
-    setImages(prev => [...prev, ...newImages]);
+
+    setIsProcessingImages(true);
+    toast({ title: "Compressing images...", description: "This may take a moment." });
+
+    const options = {
+      maxSizeMB: 0.1,
+      maxWidthOrHeight: 1024,
+      useWebWorker: true,
+      fileType: 'image/webp',
+    };
+
+    try {
+      const compressedFiles = await Promise.all(
+        newImages.map(async (file) => {
+          const compressedFile = await imageCompression(file, options);
+          const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+          return new File([compressedFile], `${originalName}.webp`, { type: 'image/webp' });
+        })
+      );
+      setImages(prev => [...prev, ...compressedFiles]);
+      toast({ title: "Success!", description: "Images are ready." });
+    } catch (error) {
+      console.error("Image compression error:", error);
+      toast({
+        title: "Image Processing Error",
+        description: "There was an issue compressing your images. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingImages(false);
+    }
   };
 
   const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index));
@@ -176,10 +208,10 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                   onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
                   onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); }}
                   onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); if (e.dataTransfer.files) handleImageUpload(e.dataTransfer.files); }}
+                  onDrop={async (e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); if (e.dataTransfer.files) await handleImageUpload(e.dataTransfer.files); }}
                 >
-                  <input type="file" multiple accept="image/*" onChange={(e) => e.target.files && handleImageUpload(e.target.files)} className="hidden" id="image-upload" disabled={images.length >= 5} />
-                  <label htmlFor="image-upload" className={cn("cursor-pointer", images.length >= 5 && "cursor-not-allowed opacity-50")}>
+                  <input type="file" multiple accept="image/*" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="image-upload" disabled={images.length >= 5 || isProcessingImages} />
+                  <label htmlFor="image-upload" className={cn("cursor-pointer", (images.length >= 5 || isProcessingImages) && "cursor-not-allowed opacity-50")}>
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <ImageIcon className="w-8 h-8" />
                       <p className="font-medium text-primary">Click or drag to upload</p>
@@ -254,9 +286,9 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
         <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4">
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
-          <Button onClick={handlePublish} disabled={createListingMutation.isPending || !validateForm()} className="w-full sm:w-auto">
-            {createListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Publish Listing
+          <Button onClick={handlePublish} disabled={createListingMutation.isPending || !validateForm() || isProcessingImages} className="w-full sm:w-auto">
+            {(isProcessingImages || createListingMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isProcessingImages ? 'Processing...' : createListingMutation.isPending ? 'Publishing...' : 'Publish Listing'}
           </Button>
         </DialogFooter>
         <ProfanityViolationModal 
