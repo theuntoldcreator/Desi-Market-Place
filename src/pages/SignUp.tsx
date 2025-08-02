@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Info, ShieldCheck } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { DobPicker } from '@/components/auth/DobPicker';
@@ -107,12 +107,6 @@ export default function SignUp() {
                   </FormItem>
                 )}
               />
-              <Alert className="p-3 text-xs">
-                <ShieldCheck className="h-4 w-4" />
-                <AlertDescription>
-                  You must be 18 or older to sign up. Your personal information is kept secure and is only used to enhance your experience on the platform.
-                </AlertDescription>
-              </Alert>
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign Up
