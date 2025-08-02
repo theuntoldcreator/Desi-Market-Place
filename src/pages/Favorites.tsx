@@ -24,6 +24,7 @@ const fetchFavoriteListings = async (userId: string) => {
     .from('listings')
     .select('*')
     .in('id', listingIds)
+    .eq('status', 'active') // Only fetch active listings
     .gte('created_at', twentyDaysAgo);
   if (listingsError) throw new Error(listingsError.message);
   if (!listings || listings.length === 0) return [];
