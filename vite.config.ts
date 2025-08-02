@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
       manifest: {
-        name: 'Eagle Market Place',
-        short_name: 'EagleMarket',
-        description: 'Your go-to platform to buy and sell anything locally. Find great deals on furniture, electronics, and more from the Eagle community.',
+        name: 'studentXchange',
+        short_name: 'studentXchange',
+        description: 'Your go-to platform to buy and sell anything locally. Find great deals on furniture, electronics, and more from the student community.',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',

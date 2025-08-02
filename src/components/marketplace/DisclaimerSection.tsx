@@ -42,7 +42,7 @@ export function DisclaimerSection() {
           
           <div className="pt-2 border-t">
             <p className="text-xs text-muted-foreground">
-              <strong>Disclaimer:</strong> Eagle Market Place is not responsible for transactions between users. 
+              <strong>Disclaimer:</strong> studentXchange is not responsible for transactions between users. 
               We provide a platform to connect buyers and sellers, but all dealings are at your own risk. 
               Please report suspicious activity to our support team.
             </p>
