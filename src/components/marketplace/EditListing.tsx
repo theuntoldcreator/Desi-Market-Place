@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { countries } from '@/lib/countries';
-import { useNsfwCheck } from '@/hooks/useNsfwCheck';
+import { useNsfwCheck } from '../../hooks/useNsfwCheck';
 import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
 
