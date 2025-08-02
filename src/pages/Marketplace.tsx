@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,12 +71,47 @@ export default function Marketplace() {
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [listingToEdit, setListingToEdit] = useState<any>(null);
   const [listingToDelete, setListingToDelete] = useState<any>(null);
+  const [onlineCount, setOnlineCount] = useState(0);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['listings', session?.user?.id],
     queryFn: () => fetchListings(session?.user?.id),
     staleTime: 1000 * 60,
   });
+
+  const { data: totalUsersCount } = useQuery({
+    queryKey: ['totalUsersCount'],
+    queryFn: async () => {
+      const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+      return count;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  useEffect(() => {
+    const channel = supabase.channel('online-users', {
+      config: {
+        presence: {
+          key: session?.user?.id,
+        },
+      },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = channel.presenceState();
+        setOnlineCount(Object.keys(presenceState).length);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && session) {
+          await channel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session]);
 
   const favoriteMutation = useMutation({
     mutationFn: async ({ listingId, isFavorited }: { listingId: string, isFavorited: boolean }) => {
@@ -189,7 +224,14 @@ export default function Marketplace() {
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <div className="flex">
-        <MarketplaceSidebar {...{ selectedCategory, onCategoryChange: setSelectedCategory, searchQuery, onSearchChange: setSearchQuery }} />
+        <MarketplaceSidebar 
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onlineCount={onlineCount}
+          totalUsersCount={totalUsersCount ?? undefined}
+        />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>

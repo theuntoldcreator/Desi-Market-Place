@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, Laptop, BookOpen, Home, Car, Shirt, Gamepad2, Menu, Gift, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
