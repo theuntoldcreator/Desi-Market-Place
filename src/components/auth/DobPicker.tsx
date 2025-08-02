@@ -15,7 +15,7 @@ const months = [
   { value: 9, label: 'October' }, { value: 10, label: 'November' }, { value: 11, label: 'December' }
 ];
 
-const endYear = new Date().getFullYear();
+const endYear = new Date().getFullYear() - 18; // Enforce 18+ age limit
 const startYear = 1900;
 const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i);
 

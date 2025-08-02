@@ -107,6 +107,12 @@ export default function SignUp() {
                   </FormItem>
                 )}
               />
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  You must be 18 or older to sign up. Your personal information is kept secure and is only used for verification purposes.
+                </AlertDescription>
+              </Alert>
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign Up
