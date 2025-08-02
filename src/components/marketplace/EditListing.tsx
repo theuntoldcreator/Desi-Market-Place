@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { countries } from '@/lib/countries';
+import { useNsfwCheck } from '@/hooks/useNsfwCheck';
 
 interface EditListingProps {
   isOpen: boolean;
@@ -37,6 +38,8 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [isCheckingImages, setIsCheckingImages] = useState(false);
+  const { checkImage, isModelLoading } = useNsfwCheck();
 
   useEffect(() => {
     if (listing) {
@@ -107,9 +110,22 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
     }
   });
 
-  const handleImageUpload = (files: FileList) => {
+  const handleImageUpload = async (files: FileList) => {
     const newFiles = Array.from(files).slice(0, 5 - (existingImageUrls.length + newImages.length));
-    setNewImages(prev => [...prev, ...newFiles]);
+    if (newFiles.length === 0) return;
+
+    setIsCheckingImages(true);
+    const safeImages: File[] = [];
+
+    for (const file of newFiles) {
+      const isSafe = await checkImage(file);
+      if (isSafe) {
+        safeImages.push(file);
+      }
+    }
+
+    setNewImages(prev => [...prev, ...safeImages]);
+    setIsCheckingImages(false);
   };
 
   const removeExistingImage = (url: string) => {
@@ -226,9 +242,9 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
         <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4">
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
-          <Button onClick={() => updateListingMutation.mutate()} disabled={updateListingMutation.isPending} className="w-full sm:w-auto">
-            {updateListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
+          <Button onClick={() => updateListingMutation.mutate()} disabled={updateListingMutation.isPending || isCheckingImages || isModelLoading} className="w-full sm:w-auto">
+            {(updateListingMutation.isPending || isCheckingImages || isModelLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isModelLoading ? 'Scanner loading...' : isCheckingImages ? 'Checking images...' : 'Save Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>
