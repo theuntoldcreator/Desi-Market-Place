@@ -72,6 +72,7 @@ export default function Marketplace() {
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [listingToEdit, setListingToEdit] = useState<any>(null);
   const [listingToDelete, setListingToDelete] = useState<any>(null);
+  const [listingToMarkAsSold, setListingToMarkAsSold] = useState<any>(null);
   const [onlineCount, setOnlineCount] = useState(0);
 
   const { data: listings = [], isLoading, isError } = useQuery({
@@ -138,6 +139,26 @@ export default function Marketplace() {
       }
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
+  });
+
+  const markAsSoldMutation = useMutation({
+    mutationFn: async (listing: any) => {
+      if (!session || session.user.id !== listing.user_id) throw new Error("Unauthorized");
+      const { error } = await supabase.from('listings').update({ status: 'sold' }).eq('id', listing.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, listing) => {
+      toast({ title: "Success!", description: "Listing marked as sold." });
+      queryClient.setQueryData(['listings', session?.user?.id], (oldData: any[] | undefined) =>
+        oldData ? oldData.filter(item => item.id !== listing.id) : []
+      );
+      queryClient.invalidateQueries({ queryKey: ['my-listings', session?.user?.id] });
+      if (selectedListing?.id === listing.id) {
+        setSelectedListing(null);
+      }
+    },
+    onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
+    onSettled: () => setListingToMarkAsSold(null)
   });
 
   const deleteMutation = useMutation({
@@ -256,9 +277,19 @@ export default function Marketplace() {
           onSendMessage={() => handleSendMessage(selectedListing)}
           onEdit={() => { setSelectedListing(null); setListingToEdit(selectedListing); }}
           onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
+          onMarkAsSold={() => { setSelectedListing(null); setListingToMarkAsSold(selectedListing); }}
         />
       )}
       {listingToEdit && <EditListing isOpen={!!listingToEdit} onClose={() => setListingToEdit(null)} listing={listingToEdit} />}
+      <AlertDialog open={!!listingToMarkAsSold} onOpenChange={() => setListingToMarkAsSold(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will mark the listing as sold and hide it from the marketplace. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => markAsSoldMutation.mutate(listingToMarkAsSold)} disabled={markAsSoldMutation.isPending}>Mark as Sold</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!listingToDelete} onOpenChange={() => setListingToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your listing.</AlertDialogDescription></AlertDialogHeader>
