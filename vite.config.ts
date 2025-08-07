@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
       manifest: {
-        name: 'studentXchange',
-        short_name: 'studentXchange',
-        description: 'Your go-to platform to buy and sell anything locally. Find great deals on furniture, electronics, and more from the student community.',
+        name: "NRI's Marketplace",
+        short_name: "NRI's Mkt",
+        description: 'Your go-to platform to buy and sell anything locally. Find great deals on furniture, electronics, and more from the community.',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',

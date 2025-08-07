@@ -196,7 +196,7 @@ export default function Marketplace() {
       return;
     }
 
-    const message = `Hey! I'm interested in your listing "${listing.title}" on studentXchange.`;
+    const message = `Hey! I'm interested in your listing "${listing.title}" on NRI's Marketplace.`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
