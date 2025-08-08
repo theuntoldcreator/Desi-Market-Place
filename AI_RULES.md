@@ -1,4 +1,4 @@
-# AI Development Rules for NRI's Marketplace
+# AI Development Rules for UNT | MARKETPLACE
 
 This document provides guidelines for the AI assistant to follow when developing and modifying this application.
 
