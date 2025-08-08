@@ -196,8 +196,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                 {images.length < 5 && (
                   <div 
                     className={cn(
-                      "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-4",
-                      images.length === 0 ? "col-span-full min-h-[250px]" : "col-span-1 min-h-[150px]"
+                      "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-4 aspect-square" // Removed conditional classes
                     )}
                   >
                     <ImageIcon className="w-10 h-10 text-muted-foreground" />
