@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import imageCompression from 'browser-image-compression';
+// Removed: import imageCompression from 'browser-image-compression';
 
 interface EditListingProps {
   isOpen: boolean;
@@ -52,7 +52,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isProcessingImages, setIsProcessingImages] = useState(false);
+  // Removed: const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   useEffect(() => {
     if (listing) {
@@ -169,35 +169,24 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
     const newFiles = Array.from(files).slice(0, 5 - (existingImageUrls.length + newImages.length));
     if (newFiles.length === 0) return;
 
-    setIsProcessingImages(true);
-    toast({ title: "Compressing images...", description: "This may take a moment." });
+    // Removed: setIsProcessingImages(true);
+    // Removed: toast({ title: "Compressing images...", description: "This may take a moment." });
 
-    const options = {
-      maxSizeMB: 0.5, // Increased from 0.1 to 0.5 for better clarity
-      maxWidthOrHeight: 1024,
-      useWebWorker: true,
-      fileType: 'image/webp',
-    };
+    // Removed: const options = { ... };
 
     try {
-      const compressedFiles = await Promise.all(
-        newFiles.map(async (file) => {
-          const compressedFile = await imageCompression(file, options);
-          const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-          return new File([compressedFile], `${originalName}.webp`, { type: 'image/webp' });
-        })
-      );
-      setNewImages(prev => [...prev, ...compressedFiles]);
-      toast({ title: "Success!", description: "Images are ready." });
+      // Changed: Directly use newFiles instead of compressing
+      setNewImages(prev => [...prev, ...newFiles]);
+      // Removed: toast({ title: "Success!", description: "Images are ready." });
     } catch (error) {
-      console.error("Image compression error:", error);
+      console.error("Image upload error:", error);
       toast({
-        title: "Image Processing Error",
-        description: "There was an issue compressing your images. Please try again.",
+        title: "Image Upload Error",
+        description: "There was an issue uploading your images. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsProcessingImages(false);
+      // Removed: setIsProcessingImages(false);
     }
   };
 
@@ -271,7 +260,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                         accept="image/*" 
                         onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} 
                         className="hidden" 
-                        disabled={isProcessingImages || totalImages >= 5} 
+                        disabled={totalImages >= 5} // Removed isProcessingImages
                       />
                       <ImageIcon className="w-10 h-10 text-muted-foreground" />
                       <p className="font-medium text-primary text-lg">Add Photos</p>
@@ -335,16 +324,16 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
               type="button" 
               variant="destructive" 
               onClick={() => setShowDeleteConfirm(true)} 
-              disabled={updateListingMutation.isPending || deleteMutation.isPending || isProcessingImages}
+              disabled={updateListingMutation.isPending || deleteMutation.isPending} // Removed isProcessingImages
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleSaveChanges} disabled={updateListingMutation.isPending || deleteMutation.isPending || isProcessingImages}>
-                {(updateListingMutation.isPending || isProcessingImages) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isProcessingImages ? 'Processing...' : updateListingMutation.isPending ? 'Saving...' : 'Save Changes'}
+              <Button onClick={handleSaveChanges} disabled={updateListingMutation.isPending || deleteMutation.isPending}> {/* Removed isProcessingImages */}
+                {updateListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {updateListingMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </DialogFooter>

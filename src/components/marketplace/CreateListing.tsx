@@ -15,7 +15,7 @@ import { countries } from '@/lib/countries';
 import { Alert, AlertDescription } from '../ui/alert';
 import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
-import imageCompression from 'browser-image-compression';
+// Removed: import imageCompression from 'browser-image-compression';
 
 interface CreateListingProps {
   isOpen: boolean;
@@ -41,7 +41,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   });
   const [images, setImages] = useState<File[]>([]);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
-  const [isProcessingImages, setIsProcessingImages] = useState(false);
+  // Removed: const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   const resetForm = () => {
     setFormData({ title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: '' });
@@ -106,38 +106,27 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   };
 
   const handleImageUpload = async (files: FileList) => {
-    const newImages = Array.from(files).slice(0, 5 - images.length);
-    if (newImages.length === 0) return;
+    const newFiles = Array.from(files).slice(0, 5 - images.length);
+    if (newFiles.length === 0) return;
 
-    setIsProcessingImages(true);
-    toast({ title: "Compressing images...", description: "This may take a moment." });
+    // Removed: setIsProcessingImages(true);
+    // Removed: toast({ title: "Compressing images...", description: "This may take a moment." });
 
-    const options = {
-      maxSizeMB: 0.5, // Increased from 0.1 to 0.5 for better clarity
-      maxWidthOrHeight: 1024,
-      useWebWorker: true,
-      fileType: 'image/webp',
-    };
+    // Removed: const options = { ... };
 
     try {
-      const compressedFiles = await Promise.all(
-        newImages.map(async (file) => {
-          const compressedFile = await imageCompression(file, options);
-          const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-          return new File([compressedFile], `${originalName}.webp`, { type: 'image/webp' });
-        })
-      );
-      setImages(prev => [...prev, ...compressedFiles]);
-      toast({ title: "Success!", description: "Images are ready." });
+      // Changed: Directly use newFiles instead of compressing
+      setImages(prev => [...prev, ...newFiles]);
+      // Removed: toast({ title: "Success!", description: "Images are ready." });
     } catch (error) {
-      console.error("Image compression error:", error);
+      console.error("Image upload error:", error);
       toast({
-        title: "Image Processing Error",
-        description: "There was an issue compressing your images. Please try again.",
+        title: "Image Upload Error",
+        description: "There was an issue uploading your images. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsProcessingImages(false);
+      // Removed: setIsProcessingImages(false);
     }
   };
 
@@ -208,7 +197,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                       accept="image/*" 
                       onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} 
                       className="hidden" 
-                      disabled={isProcessingImages || images.length >= 5} 
+                      disabled={images.length >= 5} // Removed isProcessingImages
                     />
                     <ImageIcon className="w-10 h-10 text-muted-foreground" />
                     <p className="font-medium text-primary text-lg">Add Photos</p>
@@ -281,10 +270,10 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         </div>
 
         <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4">
-          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
-          <Button onClick={handlePublish} disabled={createListingMutation.isPending || !validateForm() || isProcessingImages} className="w-full sm:w-auto">
-            {(isProcessingImages || createListingMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isProcessingImages ? 'Processing...' : createListingMutation.isPending ? 'Publishing...' : 'Publish Listing'}
+          <Button onClick={onClose} className="w-full sm:w-auto" variant="outline">Cancel</Button>
+          <Button onClick={handlePublish} disabled={createListingMutation.isPending || !validateForm()}> {/* Removed isProcessingImages */}
+            {createListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {createListingMutation.isPending ? 'Publishing...' : 'Publish Listing'}
           </Button>
         </DialogFooter>
         <ProfanityViolationModal 
