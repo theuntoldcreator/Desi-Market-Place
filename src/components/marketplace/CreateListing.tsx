@@ -113,8 +113,8 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     toast({ title: "Processing images...", description: "Checking and optimizing image sizes." });
 
     const processedFiles: File[] = [];
-    const minSize = 1 * 1024 * 1024; // 1MB
-    const maxSize = 1.5 * 1024 * 1024; // 1.5MB
+    const minAcceptableSize = 500 * 1024; // 500KB
+    const maxTargetSize = 1.5 * 1024 * 1024; // 1.5MB
 
     for (const file of newFilesToProcess) {
       if (images.length + processedFiles.length >= 5) {
@@ -122,13 +122,13 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         break;
       }
 
-      if (file.size < minSize) {
-        toast({ title: "Image Too Small", description: `Image '${file.name}' is too small (${(file.size / (1024 * 1024)).toFixed(2)} MB). Must be at least 1MB.`, variant: "destructive" });
+      if (file.size < minAcceptableSize) {
+        toast({ title: "Image Too Small", description: `Image '${file.name}' is too small (${(file.size / (1024 * 1024)).toFixed(2)} MB). Must be at least 500KB.`, variant: "destructive" });
         continue;
       }
 
       let finalFile = file;
-      if (file.size > maxSize) {
+      if (file.size > maxTargetSize) {
         try {
           const options = {
             maxSizeMB: 1.5, // Target max size
@@ -138,18 +138,21 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
           };
           const compressedFile = await imageCompression(file, options);
           finalFile = compressedFile;
+          
+          // After compression, re-check if it's within the acceptable range
+          if (finalFile.size < minAcceptableSize || finalFile.size > maxTargetSize) {
+            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (500KB-1.5MB). Current: ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "destructive" });
+            continue;
+          }
           toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
         } catch (error) {
           console.error("Image compression error:", error);
           toast({ title: "Compression Failed", description: `Could not compress image '${file.name}'. Please try another image.`, variant: "destructive" });
           continue;
         }
-      }
-
-      // Final check after potential compression
-      if (finalFile.size < minSize || finalFile.size > maxSize) {
-        toast({ title: "Size Mismatch", description: `Image '${file.name}' is ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB. It must be between 1MB and 1.5MB.`, variant: "destructive" });
-        continue;
+      } else {
+        // Image is already within 500KB and 1.5MB
+        toast({ title: "Image Accepted", description: `Image '${file.name}' accepted at ${(file.size / (1024 * 1024)).toFixed(2)} MB.` });
       }
 
       processedFiles.push(finalFile);
