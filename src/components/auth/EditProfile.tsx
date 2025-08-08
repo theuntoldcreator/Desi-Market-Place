@@ -18,6 +18,7 @@ const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   phoneNumber: z.string().min(10, "Please enter a valid phone number").optional().or(z.literal('')),
+  telegramUsername: z.string().optional().or(z.literal('')),
   dob: z.date().optional(),
   avatarFile: z.instanceof(File).optional(),
   gender: z.enum(['male', 'female']).optional(),
@@ -42,6 +43,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
       firstName: profile.first_name || '',
       lastName: profile.last_name || '',
       phoneNumber: profile.phone_number || '',
+      telegramUsername: profile.telegram_username || '',
       dob: profile.dob ? new Date(profile.dob) : undefined,
       gender: profile.gender,
     },
@@ -92,6 +94,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
           first_name: values.firstName,
           last_name: values.lastName,
           phone_number: values.phoneNumber,
+          telegram_username: values.telegramUsername,
           dob: values.dob?.toISOString().split('T')[0],
           avatar_url: avatar_url,
           gender: values.gender,
@@ -137,6 +140,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
               <FormField name="lastName" control={form.control} render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
             <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="123-456-7890" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField name="telegramUsername" control={form.control} render={({ field }) => (<FormItem><FormLabel>Telegram Username</FormLabel><FormControl><Input placeholder="@username" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 name="dob"

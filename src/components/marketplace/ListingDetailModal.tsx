@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, MapPin, Check, Trash2, Info } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, MapPin, Check, Trash2, Info, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -70,6 +70,8 @@ export function ListingDetailModal({
   const conditionMap: { [key: string]: string } = { new: 'New', like_new: 'Like New', used: 'Used' };
   const categoryMap: { [key: string]: string } = { electronics: 'Electronics', books: 'Books & Study', furniture: 'Furniture', vehicles: 'Vehicles', clothing: 'Clothing', gaming: 'Gaming', free: 'Free Stuff' };
 
+  const hasTelegram = !!listing.seller?.telegram_username;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-2xl flex flex-col overflow-hidden [&>button]:hidden">
@@ -134,11 +136,14 @@ export function ListingDetailModal({
                   <Alert className="text-xs p-3">
                     <Info className="h-4 w-4" />
                     <AlertDescription>
-                      You’ll be redirected to WhatsApp to chat directly with the seller. Please be respectful and avoid sharing sensitive personal information.
+                      You’ll be redirected to {hasTelegram ? 'Telegram' : 'WhatsApp'} to chat directly with the seller. Please be respectful and avoid sharing sensitive personal information.
                     </AlertDescription>
                   </Alert>
                   <div className="space-y-2">
-                    <Button className="w-full" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
+                    <Button className="w-full" onClick={onSendMessage}>
+                      {hasTelegram ? <Send className="w-4 h-4 mr-2" /> : <MessageSquare className="w-4 h-4 mr-2" />}
+                      Chat on {hasTelegram ? 'Telegram' : 'WhatsApp'}
+                    </Button>
                     <Button variant="outline" className="w-full" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
                       <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
                       {listing.isFavorited ? 'Saved' : 'Save'}

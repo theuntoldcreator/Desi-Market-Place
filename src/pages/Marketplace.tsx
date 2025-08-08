@@ -20,7 +20,7 @@ const fetchListings = async (userId: string | undefined) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*')
+    .select('*, profile:profiles(*)')
     .eq('status', 'active') // Only fetch active listings
     .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
@@ -28,16 +28,9 @@ const fetchListings = async (userId: string | undefined) => {
   if (listingsError) throw new Error(listingsError.message);
   if (!listings) return [];
 
-  const userIds = [...new Set(listings.map(l => l.user_id))];
-  const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds);
-  const profilesById = profiles?.reduce((acc, p) => {
-    acc[p.id] = p;
-    return acc;
-  }, {} as any) || {};
-
   const listingsWithProfiles = listings.map(l => ({
     ...l,
-    profile: profilesById[l.user_id] || null,
+    profile: Array.isArray(l.profile) ? l.profile[0] : l.profile,
   }));
 
   if (!userId) {
@@ -184,6 +177,14 @@ export default function Marketplace() {
       toast({ title: "Please log in", description: "You need to be logged in to send a message.", variant: "destructive" });
       return;
     }
+
+    if (listing.profile?.telegram_username) {
+      const telegramUsername = listing.profile.telegram_username.replace('@', '');
+      const telegramUrl = `https://t.me/${telegramUsername}`;
+      window.open(telegramUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     if (!listing.contact) {
       toast({ title: "Contact information not available", description: "The seller has not provided a contact number.", variant: "destructive" });
       return;
