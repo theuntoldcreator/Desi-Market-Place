@@ -18,10 +18,11 @@ import { subDays } from 'date-fns';
 
 const fetchListings = async (userId: string | undefined) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
-  
+
+  // Step 1: Fetch all active listings
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles(*)')
+    .select('*')
     .eq('status', 'active')
     .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
@@ -29,30 +30,40 @@ const fetchListings = async (userId: string | undefined) => {
   if (listingsError) throw new Error(listingsError.message);
   if (!listings || listings.length === 0) return [];
 
-  const listingsWithProfiles = listings.map((listing) => ({
+  // Step 2: Collect all unique seller IDs from the listings
+  const sellerIds = [...new Set(listings.map((l) => l.user_id).filter(Boolean))];
+  if (sellerIds.length === 0) {
+    return listings.map(l => ({ ...l, profile: null, isFavorited: false }));
+  }
+
+  // Step 3: Fetch all profiles for these sellers in a single query
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', sellerIds);
+
+  if (profilesError) throw new Error(profilesError.message);
+
+  // Step 4: Create a map for easy profile lookup
+  const profilesMap = new Map(profiles?.map(p => [p.id, p]));
+
+  // Step 5: Fetch user's favorites if logged in
+  let favoriteSet = new Set();
+  if (userId) {
+    const listingIds = listings.map(l => l.id);
+    const { data: favorites } = await supabase
+      .from('favorites')
+      .select('listing_id')
+      .eq('user_id', userId)
+      .in('listing_id', listingIds);
+    favoriteSet = new Set(favorites?.map(f => f.listing_id));
+  }
+
+  // Step 6: Combine everything
+  return listings.map((listing) => ({
     ...listing,
-    profile: Array.isArray(listing.profile) ? listing.profile[0] : listing.profile,
-  }));
-
-  if (!userId) {
-    return listingsWithProfiles.map(l => ({ ...l, isFavorited: false }));
-  }
-
-  const listingIds = listings.map(l => l.id);
-  const { data: favorites, error: favoritesError } = await supabase
-    .from('favorites')
-    .select('listing_id')
-    .eq('user_id', userId)
-    .in('listing_id', listingIds);
-
-  if (favoritesError) {
-    console.error("Failed to fetch favorites:", favoritesError.message);
-  }
-
-  const favoriteSet = new Set(favorites?.map(f => f.listing_id) || []);
-  return listingsWithProfiles.map(l => ({
-    ...l,
-    isFavorited: favoriteSet.has(l.id),
+    profile: profilesMap.get(listing.user_id) || null,
+    isFavorited: favoriteSet.has(listing.id),
   }));
 };
 

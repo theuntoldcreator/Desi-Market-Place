@@ -15,24 +15,51 @@ import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
 
 const fetchFavoriteListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
-  const { data: favorites, error: favError } = await supabase.from('favorites').select('listing_id').eq('user_id', userId);
+
+  // Step 1: Get the user's favorite listing IDs
+  const { data: favorites, error: favError } = await supabase
+    .from('favorites')
+    .select('listing_id')
+    .eq('user_id', userId);
+    
   if (favError) throw new Error(favError.message);
   if (!favorites || favorites.length === 0) return [];
 
   const listingIds = favorites.map(f => f.listing_id);
+
+  // Step 2: Fetch the details for those listings
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles(*)')
+    .select('*')
     .in('id', listingIds)
-    .eq('status', 'active') // Only fetch active listings
+    .eq('status', 'active')
     .gte('created_at', twentyDaysAgo);
+
   if (listingsError) throw new Error(listingsError.message);
   if (!listings || listings.length === 0) return [];
 
+  // Step 3: Get unique seller IDs from the listings
+  const sellerIds = [...new Set(listings.map((l) => l.user_id).filter(Boolean))];
+  if (sellerIds.length === 0) {
+    return listings.map(l => ({ ...l, profile: null, isFavorited: true }));
+  }
+
+  // Step 4: Fetch profiles for the sellers
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', sellerIds);
+
+  if (profilesError) throw new Error(profilesError.message);
+
+  // Step 5: Create a map for easy profile lookup
+  const profilesMap = new Map(profiles?.map(p => [p.id, p]));
+
+  // Step 6: Combine listings with profiles
   return listings.map(listing => ({
     ...listing,
-    profile: Array.isArray(listing.profile) ? listing.profile[0] : listing.profile,
-    isFavorited: true,
+    profile: profilesMap.get(listing.user_id) || null,
+    isFavorited: true, // All listings on this page are favorites
   }));
 };
 
