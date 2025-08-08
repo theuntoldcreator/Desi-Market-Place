@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useEffect } from "react";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import AuthLayout from "./components/auth/AuthLayout";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,7 @@ const AppRoutes = () => {
         navigate('/');
       }
       if (event === 'SIGNED_OUT') {
-        navigate('/');
+        navigate('/login');
       }
     });
 
@@ -37,10 +38,12 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<SignUp />} />
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+      </Route>
       <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<Index />} />
         <Route path="/my-listings" element={<MyListings />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/profile" element={<Profile />} />

@@ -13,7 +13,6 @@ import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useNavigate } from 'react-router-dom';
 import { subDays } from 'date-fns';
 
 const fetchListings = async (userId: string | undefined) => {
@@ -71,7 +70,6 @@ export default function Marketplace() {
   const session = useSession();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,7 +84,8 @@ export default function Marketplace() {
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['listings', session?.user?.id],
-    queryFn: () => fetchListings(session?.user?.id),
+    queryFn: () => fetchListings(session!.user.id),
+    enabled: !!session,
     staleTime: 1000 * 60,
   });
 
@@ -126,11 +125,10 @@ export default function Marketplace() {
 
   const favoriteMutation = useMutation({
     mutationFn: async ({ listingId, isFavorited }: { listingId: string, isFavorited: boolean }) => {
-      if (!session) throw new Error("You must be logged in to favorite items.");
       if (isFavorited) {
-        await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
+        await supabase.from('favorites').delete().match({ user_id: session!.user.id, listing_id: listingId });
       } else {
-        await supabase.from('favorites').insert({ user_id: session.user.id, listing_id: listingId });
+        await supabase.from('favorites').insert({ user_id: session!.user.id, listing_id: listingId });
       }
     },
     onSuccess: (_, variables) => {
@@ -152,7 +150,6 @@ export default function Marketplace() {
 
   const markAsSoldMutation = useMutation({
     mutationFn: async (listing: any) => {
-      if (!session || session.user.id !== listing.user_id) throw new Error("Unauthorized");
       const { error } = await supabase.from('listings').update({ status: 'sold' }).eq('id', listing.id);
       if (error) throw error;
     },
@@ -172,7 +169,6 @@ export default function Marketplace() {
 
   const deleteMutation = useMutation({
     mutationFn: async (listing: any) => {
-      if (!session || session.user.id !== listing.user_id) throw new Error("Unauthorized");
       const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]);
       if (imagePaths.length > 0) {
         await supabase.storage.from('listing_images').remove(imagePaths);
@@ -189,11 +185,6 @@ export default function Marketplace() {
   });
 
   const handleSendMessage = (listing: any) => {
-    if (!session) {
-      toast({ title: "Please log in", description: "You need to be logged in to send a message.", variant: "destructive" });
-      return;
-    }
-
     const message = `Hey, i am interested in this ${listing.title}, is it still available?`;
     const encodedMessage = encodeURIComponent(message);
 
@@ -211,24 +202,6 @@ export default function Marketplace() {
 
     const whatsappUrl = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleCreateListing = () => {
-    if (!session) {
-      toast({ title: 'Login Required', description: 'Please log in to create a listing.', variant: 'destructive' });
-      navigate('/login');
-    } else {
-      setShowCreateListing(true);
-    }
-  };
-
-  const handleCardClick = (listing: any) => {
-    if (!session) {
-      toast({ title: 'Login Required', description: 'Please log in to view details.', variant: 'destructive' });
-      navigate('/login');
-    } else {
-      setSelectedListing(listing);
-    }
   };
 
   const normalizedSearchQuery = searchQuery.toLowerCase().trim();
@@ -262,7 +235,7 @@ export default function Marketplace() {
               price={listing.price}
               image_urls={listing.image_urls}
               location={listing.location}
-              onClick={() => handleCardClick(listing)}
+              onClick={() => setSelectedListing(listing)}
             />
           ))}
         </div>
@@ -273,7 +246,7 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
-      <MarketplaceHeader onCreateListing={handleCreateListing} />
+      <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
       <div className="flex">
         <MarketplaceSidebar 
           selectedCategory={selectedCategory}
