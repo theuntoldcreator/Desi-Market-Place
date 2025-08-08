@@ -5,7 +5,7 @@ import { ListingCard } from '@/components/marketplace/ListingCard';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Button } from '@/components/ui/button';
 import { Loader2, Heart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -75,6 +75,37 @@ export default function Favorites() {
     queryFn: () => fetchFavoriteListings(session!.user.id),
     enabled: !!session,
   });
+
+  // Supabase Realtime subscription for changes to favorited listings
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const favoritesChannel = supabase
+      .channel(`favorites_channel:${session.user.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'listings', 
+        // Filter for listings that are currently favorited by the user
+        // This filter is less direct as it requires joining, so we'll rely on invalidateQueries
+      }, (payload) => {
+        // Invalidate both listings and favorites queries to ensure consistency
+        queryClient.invalidateQueries({ queryKey: ['listings', session.user.id] });
+        queryClient.invalidateQueries({ queryKey: ['favorites', session.user.id] });
+        
+        if (payload.eventType === 'UPDATE') {
+          toast({ title: "Favorited Listing Updated!", description: `${payload.old.title || 'An item you favorited'} has been updated.` });
+        } else if (payload.eventType === 'DELETE') {
+          toast({ title: "Favorited Listing Removed!", description: `${payload.old.title || 'An item you favorited'} has been removed.` });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(favoritesChannel);
+    };
+  }, [queryClient, session?.user?.id, toast]);
+
 
   const favoriteMutation = useMutation({
     mutationFn: async ({ listingId }: { listingId: string }) => {

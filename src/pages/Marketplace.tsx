@@ -123,21 +123,30 @@ export default function Marketplace() {
     };
   }, [session]);
 
-  // Supabase Realtime subscription for new listings
+  // Supabase Realtime subscription for all listing changes
   useEffect(() => {
     const listingsChannel = supabase
       .channel('public:listings')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'listings' }, (payload) => {
-        // Invalidate the 'listings' query to refetch and include the new listing
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, (payload) => {
+        // Invalidate the 'listings' query for any change (INSERT, UPDATE, DELETE)
+        // This will trigger a refetch of the listings data.
         queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
-        toast({ title: "New Listing!", description: "A new item has been posted to the marketplace." });
+
+        // Provide specific toasts based on event type
+        if (payload.eventType === 'INSERT') {
+          toast({ title: "New Listing!", description: "A new item has been posted to the marketplace." });
+        } else if (payload.eventType === 'UPDATE') {
+          toast({ title: "Listing Updated!", description: `${payload.old.title || 'An item'} has been updated.` });
+        } else if (payload.eventType === 'DELETE') {
+          toast({ title: "Listing Removed!", description: `${payload.old.title || 'An item'} has been removed from the marketplace.` });
+        }
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(listingsChannel);
     };
-  }, [queryClient, session?.user?.id]);
+  }, [queryClient, session?.user?.id, toast]);
 
 
   const favoriteMutation = useMutation({

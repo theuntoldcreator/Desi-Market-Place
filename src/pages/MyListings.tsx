@@ -6,7 +6,7 @@ import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Button } from '@/components/ui/button';
 import { Loader2, ShoppingBag, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -42,6 +42,33 @@ export default function MyListings() {
     queryFn: () => fetchMyListings(session!.user.id),
     enabled: !!session,
   });
+
+  // Supabase Realtime subscription for changes to user's own listings
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const myListingChannel = supabase
+      .channel(`my_listings_channel:${session.user.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'listings', 
+        filter: `user_id=eq.${session.user.id}` 
+      }, (payload) => {
+        queryClient.invalidateQueries({ queryKey: ['my-listings', session.user.id] });
+        if (payload.eventType === 'UPDATE') {
+          toast({ title: "Your Listing Updated!", description: `${payload.old.title || 'Your item'} has been updated.` });
+        } else if (payload.eventType === 'DELETE') {
+          toast({ title: "Your Listing Removed!", description: `${payload.old.title || 'Your item'} has been removed.` });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(myListingChannel);
+    };
+  }, [queryClient, session?.user?.id, toast]);
+
 
   const markAsSoldMutation = useMutation({
     mutationFn: async (listing: any) => {
