@@ -219,8 +219,8 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                   <label 
                     htmlFor="image-upload-create"
                     className={cn(
-                      "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-2 aspect-square cursor-pointer",
-                      images.length === 0 ? "col-span-full min-h-[100px]" : "col-span-1 min-h-[100px]"
+                      "border-2 border-dashed rounded-lg py-4 px-6 text-center transition-all flex flex-col items-center justify-center gap-2 cursor-pointer",
+                      images.length === 0 ? "col-span-full aspect-video min-h-[100px]" : "col-span-1 aspect-square min-h-[100px]"
                     )}
                   >
                     <input 
