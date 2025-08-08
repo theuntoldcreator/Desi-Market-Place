@@ -11,8 +11,7 @@ const TelegramLoginButton = () => {
   const { toast } = useToast();
   
   useEffect(() => {
-    // IMPORTANT: You must replace 'YOUR_BOT_USERNAME' with your actual bot's username.
-    const botUsername = "YOUR_BOT_USERNAME";
+    const botUsername = "UNTeverything_bot";
 
     // Define the callback function that Telegram will call
     (window as any).onTelegramAuth = async (user: any) => {
