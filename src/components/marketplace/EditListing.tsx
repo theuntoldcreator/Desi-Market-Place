@@ -258,7 +258,10 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                   ))}
                   {totalImages < 5 && (
                     <div 
-                      className={cn("border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-4 min-h-[180px] sm:min-h-[150px] col-span-3 sm:col-span-1")}
+                      className={cn(
+                        "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-4",
+                        totalImages === 0 ? "col-span-full min-h-[250px]" : "col-span-1 min-h-[150px]"
+                      )}
                     >
                       <ImageIcon className="w-10 h-10 text-muted-foreground" />
                       <p className="font-medium text-primary text-lg">Add Photos</p>
