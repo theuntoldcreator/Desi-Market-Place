@@ -113,7 +113,6 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     toast({ title: "Processing images...", description: "Optimizing and converting images." });
 
     const processedFiles: File[] = [];
-    const minAcceptableSize = 500 * 1024; // 500KB
     const maxTargetSize = 4 * 1024 * 1024; // 4MB
 
     for (const file of newFilesToProcess) {
@@ -122,33 +121,33 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         break;
       }
 
-      if (file.size < minAcceptableSize) {
-        toast({ title: "Image Too Small", description: `Image '${file.name}' is too small (${(file.size / (1024 * 1024)).toFixed(2)} MB). Must be at least 500KB.`, variant: "destructive" });
-        continue;
-      }
-
       let finalFile = file;
-      try {
-        const options = {
-          maxSizeMB: 4, // Target max size
-          maxWidthOrHeight: 2560, // Max long edge
-          useWebWorker: true,
-          fileType: 'image/webp', // Convert to WebP
-          quality: 0.8, // 80% quality
-        };
-        const compressedFile = await imageCompression(file, options);
-        finalFile = compressedFile;
-        
-        // After compression, re-check if it's within the acceptable range
-        if (finalFile.size < minAcceptableSize || finalFile.size > maxTargetSize) {
-          toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (500KB-4MB). Current: ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "destructive" });
+      if (file.size > maxTargetSize) {
+        try {
+          const options = {
+            maxSizeMB: 4, // Target max size
+            maxWidthOrHeight: 2560, // Max long edge
+            useWebWorker: true,
+            fileType: 'image/webp', // Convert to WebP
+            quality: 0.8, // 80% quality
+          };
+          const compressedFile = await imageCompression(file, options);
+          finalFile = compressedFile;
+          
+          // After compression, re-check if it's within the acceptable range
+          if (finalFile.size > maxTargetSize) {
+            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (max 4MB). Current: ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "destructive" });
+            continue;
+          }
+          toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
+        } catch (error) {
+          console.error("Image compression error:", error);
+          toast({ title: "Processing Failed", description: `Could not process image '${file.name}'. Please try another image.`, variant: "destructive" });
           continue;
         }
-        toast({ title: "Image Processed", description: `Image '${file.name}' converted to WebP and optimized to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
-      } catch (error) {
-        console.error("Image compression error:", error);
-        toast({ title: "Processing Failed", description: `Could not process image '${file.name}'. Please try another image.`, variant: "destructive" });
-        continue;
+      } else {
+        // Image is already within 4MB
+        toast({ title: "Image Accepted", description: `Image '${file.name}' accepted at ${(file.size / (1024 * 1024)).toFixed(2)} MB.` });
       }
 
       processedFiles.push(finalFile);
