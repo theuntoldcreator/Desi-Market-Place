@@ -1,15 +1,17 @@
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, Mail, Phone, Calendar, Edit } from 'lucide-react';
+import { Loader2, User, Mail, Phone, Calendar, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { format } from 'date-fns';
 import { EditProfile } from '@/components/auth/EditProfile';
 import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 const fetchProfile = async (supabase: any, userId: string) => {
   const { data, error } = await supabase
@@ -24,13 +26,33 @@ const fetchProfile = async (supabase: any, userId: string) => {
 export default function Profile() {
   const session = useSession();
   const supabase = useSupabaseClient();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: profile, isLoading, isError } = useQuery({
     queryKey: ['profile', session?.user?.id],
     queryFn: () => fetchProfile(supabase, session!.user.id),
     enabled: !!session,
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+        const { error } = await supabase.functions.invoke('delete-user');
+        if (error) throw error;
+    },
+    onSuccess: () => {
+        toast({ title: "Account Deleted", description: "Your account and all associated data have been permanently deleted." });
+        supabase.auth.signOut();
+    },
+    onError: (error: any) => {
+        toast({ title: "Deletion Failed", description: error.message || "Could not delete your account. Please try again.", variant: "destructive" });
+    },
+    onSettled: () => {
+        setShowDeleteConfirm(false);
+    }
   });
 
   const renderProfileDetail = (Icon: React.ElementType, label: string, value: string | null | undefined) => (
@@ -82,6 +104,24 @@ export default function Profile() {
               {renderProfileDetail(User, 'Gender', profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : null)}
             </div>
           </CardContent>
+          <CardFooter className="flex-col items-start">
+            <div className="w-full pt-6 mt-6 border-t">
+                <h3 className="font-semibold text-destructive">Danger Zone</h3>
+                <p className="text-sm text-muted-foreground mt-1 mb-3">
+                    Deleting your account is permanent. All of your data, including listings and profile information, will be removed. This action cannot be undone.
+                </p>
+                <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-full sm:w-auto"
+                    disabled={deleteAccountMutation.isPending}
+                >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete My Account
+                </Button>
+            </div>
+          </CardFooter>
         </Card>
         {showEditProfile && (
           <EditProfile
@@ -90,6 +130,28 @@ export default function Profile() {
             profile={profile}
           />
         )}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your
+                        account and remove all your data from our servers.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={() => deleteAccountMutation.mutate()}
+                        disabled={deleteAccountMutation.isPending}
+                        className="bg-destructive hover:bg-destructive/90"
+                    >
+                        {deleteAccountMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Yes, Delete Account
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       </>
     );
   };
