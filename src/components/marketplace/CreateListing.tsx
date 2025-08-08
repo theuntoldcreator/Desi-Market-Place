@@ -28,7 +28,7 @@ const categories = [
   { value: 'furniture', label: 'Furniture' },
   { value: 'vehicles', label: 'Vehicles' },
   { value: 'clothing', label: 'Clothing' },
-  { value: 'gaming', label: 'Gaming' },
+  { value: 'gaming', 'label': 'Gaming' },
 ];
 
 export function CreateListing({ isOpen, onClose }: CreateListingProps) {
@@ -220,7 +220,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                     htmlFor="image-upload-create"
                     className={cn(
                       "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-2 aspect-square cursor-pointer",
-                      images.length === 0 ? "col-span-full min-h-[120px]" : "col-span-1 min-h-[100px]"
+                      images.length === 0 ? "col-span-full min-h-[100px]" : "col-span-1 min-h-[100px]"
                     )}
                   >
                     <input 
