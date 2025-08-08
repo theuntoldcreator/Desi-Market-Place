@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { DobPicker } from '@/components/auth/DobPicker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import marketplaceLogo from '@/assets/marketplace.jpg';
 
 const eighteenYearsAgo = new Date();
 eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
@@ -62,7 +63,7 @@ export default function SignUp() {
     }
   }
 
-  const logoUrl = 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png';
+  const logoUrl = marketplaceLogo;
 
   return (
     <div className="min-h-screen bg-marketplace-bg flex items-center justify-center p-4">

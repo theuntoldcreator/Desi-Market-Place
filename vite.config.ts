@@ -33,25 +33,25 @@ export default defineConfig(({ mode }) => ({
         start_url: '/',
         icons: [
           {
-            src: 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png',
+            src: '/src/assets/marketplace.jpg',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png',
+            src: '/src/assets/marketplace.jpg',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png',
+            src: '/src/assets/marketplace.jpg',
             sizes: '180x180',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png',
+            src: '/src/assets/marketplace.jpg',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'

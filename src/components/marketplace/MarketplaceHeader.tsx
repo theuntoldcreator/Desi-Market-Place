@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { Link } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
+import marketplaceLogo from '@/assets/marketplace.jpg';
 
 interface MarketplaceHeaderProps {
   onCreateListing: () => void;
@@ -10,7 +11,7 @@ interface MarketplaceHeaderProps {
 
 export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
   const session = useSession();
-  const logoUrl = 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png';
+  const logoUrl = marketplaceLogo;
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-white/95 backdrop-blur-sm">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6">

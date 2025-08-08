@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { RememberedUserForm } from '@/components/auth/RememberedUserForm';
+import marketplaceLogo from '@/assets/marketplace.jpg';
 
 interface RememberedUser {
   email: string;
@@ -31,7 +32,7 @@ const Login = () => {
     setRememberedUser(null);
   };
 
-  const logoUrl = 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png';
+  const logoUrl = marketplaceLogo;
 
   if (rememberedUser) {
     return <RememberedUserForm user={rememberedUser} onSwitchAccount={handleSwitchAccount} />;
@@ -69,8 +70,8 @@ const Login = () => {
                 variables: {
                   default: {
                     colors: {
-                      brand: 'hsl(174 79% 31%)',
-                      brandAccent: 'hsl(174 79% 25%)',
+                      brand: 'hsl(151 100% 24%)',
+                      brandAccent: 'hsl(151 100% 19%)',
                     },
                   },
                 },
