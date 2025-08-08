@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
       manifest: {
-        name: "UNT | MARKETPLACE",
-        short_name: "UNT Mkt",
+        name: "NRI's Marketplace",
+        short_name: "NRI Mkt",
         description: 'Your go-to platform to buy and sell anything locally. Find great deals on furniture, electronics, and more from the community.',
         theme_color: '#ffffff',
         background_color: '#ffffff',
