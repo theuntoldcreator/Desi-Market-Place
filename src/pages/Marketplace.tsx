@@ -18,10 +18,11 @@ import { subDays } from 'date-fns';
 
 const fetchListings = async (userId: string | undefined) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
+  
   // 1. Fetch active listings
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, profile:profiles(*)')
+    .select('*')
     .eq('status', 'active')
     .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
@@ -29,13 +30,33 @@ const fetchListings = async (userId: string | undefined) => {
   if (listingsError) throw new Error(listingsError.message);
   if (!listings || listings.length === 0) return [];
 
-  // 2. Combine listings with their profiles
+  // 2. Get unique user IDs from the listings
+  const userIds = [...new Set(listings.map((l) => l.user_id))];
+  if (userIds.length === 0) {
+    return listings.map(l => ({ ...l, profile: null, isFavorited: false }));
+  }
+
+  // 3. Fetch the profiles for these users
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', userIds);
+
+  if (profilesError) throw new Error(profilesError.message);
+
+  // Create a map of profiles by user ID for easy lookup
+  const profilesById = (profiles || []).reduce((acc, profile) => {
+    acc[profile.id] = profile;
+    return acc;
+  }, {} as Record<string, any>);
+
+  // 4. Combine listings with their profiles
   const listingsWithProfiles = listings.map((listing) => ({
     ...listing,
-    profile: Array.isArray(listing.profile) ? listing.profile[0] : listing.profile,
+    profile: profilesById[listing.user_id] || null,
   }));
 
-  // 3. If a user is logged in, fetch their favorites and mark listings accordingly
+  // 5. If a user is logged in, fetch their favorites and mark listings accordingly
   if (!userId) {
     return listingsWithProfiles.map(l => ({ ...l, isFavorited: false }));
   }
@@ -47,7 +68,9 @@ const fetchListings = async (userId: string | undefined) => {
     .eq('user_id', userId)
     .in('listing_id', listingIds);
 
-  if (favoritesError) throw new Error(favoritesError.message);
+  if (favoritesError) {
+    console.error("Failed to fetch favorites:", favoritesError.message);
+  }
 
   const favoriteSet = new Set(favorites?.map(f => f.listing_id) || []);
   return listingsWithProfiles.map(l => ({
