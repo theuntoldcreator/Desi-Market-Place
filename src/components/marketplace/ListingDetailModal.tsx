@@ -37,8 +37,9 @@ export function ListingDetailModal({
   const [isImageLoading, setIsImageLoading] = useState(true);
 
   useEffect(() => {
+    // Reset loading state when the listing or current image changes
     setIsImageLoading(true);
-  }, [currentImageIndex, listing.image_urls]);
+  }, [currentImageIndex, listing?.image_urls]);
 
   if (!listing) return null;
 
@@ -80,7 +81,10 @@ export function ListingDetailModal({
             <img
               src={listing.image_urls[currentImageIndex]}
               alt={listing.title}
-              className={cn("w-full h-full object-contain z-10", isImageLoading && "invisible")}
+              className={cn(
+                "w-full h-full object-contain z-10 transition-opacity duration-500",
+                isImageLoading ? "opacity-0" : "opacity-100"
+              )}
               onLoad={() => setIsImageLoading(false)}
               onError={() => setIsImageLoading(false)}
             />
