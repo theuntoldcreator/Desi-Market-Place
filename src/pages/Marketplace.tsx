@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { subDays } from 'date-fns';
 
 const fetchListings = async (userId: string | undefined) => {
+  console.log('Fetching listings...'); // Debugging log
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
 
   const { data, error } = await supabase
@@ -102,6 +103,7 @@ export default function Marketplace() {
     const listingsChannel = supabase
       .channel('public:listings')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, (payload) => {
+        console.log('Realtime event received for listings:', payload); // Debugging log
         // Invalidate the 'listings' query for any change (INSERT, UPDATE, DELETE)
         // This will trigger a refetch of the listings data.
         queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });

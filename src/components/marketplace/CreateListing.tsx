@@ -76,7 +76,8 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Your listing has been created." });
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      console.log('Invalidating listings query after successful creation.'); // Debugging log
+      queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       resetForm();
       onClose();
