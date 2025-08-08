@@ -13,7 +13,7 @@ const Login = () => {
         <div className="space-y-6 text-center lg:text-left">
           <div className="flex items-center justify-center lg:justify-start gap-4">
             <img src={logoUrl} alt="UNT | MARKETPLACE Logo" className="w-12 h-12 rounded-lg" />
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#00853E] to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
               UNT | MARKETPLACE
             </h1>
           </div>
@@ -38,8 +38,8 @@ const Login = () => {
                 variables: {
                   default: {
                     colors: {
-                      brand: 'hsl(214 84% 56%)',
-                      brandAccent: 'hsl(214 84% 50%)',
+                      brand: 'hsl(174 79% 31%)',
+                      brandAccent: 'hsl(174 79% 25%)',
                     },
                   },
                 },

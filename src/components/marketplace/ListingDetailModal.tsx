@@ -139,7 +139,7 @@ export function ListingDetailModal({
                   </Alert>
                   <div className="space-y-2">
                     <Button
-                      className="w-full bg-[#25D366] hover:bg-[#25D366]/90 text-white"
+                      className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
                       onClick={onSendMessage}
                     >
                       <MessageSquare className="w-4 h-4 mr-2" />
