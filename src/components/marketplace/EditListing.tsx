@@ -282,7 +282,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                       htmlFor="image-upload-edit"
                       className={cn(
                         "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-2 aspect-square cursor-pointer",
-                        totalImages === 0 ? "col-span-full min-h-[250px]" : "col-span-1 min-h-[150px]"
+                        totalImages === 0 ? "col-span-full min-h-[180px]" : "col-span-1 min-h-[100px]"
                       )}
                     >
                       <input 
