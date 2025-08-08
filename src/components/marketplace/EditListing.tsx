@@ -198,7 +198,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
           };
           const compressedFile = await imageCompression(file, options);
           finalFile = compressedFile;
-          toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "success" });
+          toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
         } catch (error) {
           console.error("Image compression error:", error);
           toast({ title: "Compression Failed", description: `Could not compress image '${file.name}'. Please try another image.`, variant: "destructive" });
@@ -217,9 +217,9 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
     setNewImages(prev => [...prev, ...processedFiles]);
     if (processedFiles.length > 0) {
-      toast({ title: "Images Ready", description: `${processedFiles.length} image(s) processed successfully.`, variant: "success" });
+      toast({ title: "Images Ready", description: `${processedFiles.length} image(s) processed successfully.` });
     } else {
-      toast({ title: "No Images Added", description: "No images met the size requirements.", variant: "info" });
+      toast({ title: "No Images Added", description: "No images met the size requirements." });
     }
     setIsProcessingImages(false);
   };
