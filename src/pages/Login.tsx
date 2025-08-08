@@ -3,9 +3,40 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { RememberedUserForm } from '@/components/auth/RememberedUserForm';
+
+interface RememberedUser {
+  email: string;
+  fullName: string;
+  avatarUrl: string | null;
+}
 
 const Login = () => {
+  const [rememberedUser, setRememberedUser] = useState<RememberedUser | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('rememberedUser');
+    if (storedUser) {
+      try {
+        setRememberedUser(JSON.parse(storedUser));
+      } catch (e) {
+        localStorage.removeItem('rememberedUser');
+      }
+    }
+  }, []);
+
+  const handleSwitchAccount = () => {
+    localStorage.removeItem('rememberedUser');
+    setRememberedUser(null);
+  };
+
   const logoUrl = 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png';
+
+  if (rememberedUser) {
+    return <RememberedUserForm user={rememberedUser} onSwitchAccount={handleSwitchAccount} />;
+  }
+
   return (
     <div className="min-h-screen bg-marketplace-bg flex items-center justify-center p-4">
       <div className="max-w-4xl w-full grid lg:grid-cols-2 gap-12 items-center">

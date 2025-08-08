@@ -21,6 +21,26 @@ export function UserMenu() {
     enabled: !!session,
   });
 
+  const handleLogout = () => {
+    if (session?.user.email && profile) {
+      const rememberedUser = {
+        email: session.user.email,
+        fullName: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+        avatarUrl: profile.avatar_url,
+      };
+      localStorage.setItem('rememberedUser', JSON.stringify(rememberedUser));
+    } else if (session?.user.email) {
+      // Fallback if profile is not loaded
+      const rememberedUser = {
+        email: session.user.email,
+        fullName: session.user.email,
+        avatarUrl: null,
+      };
+      localStorage.setItem('rememberedUser', JSON.stringify(rememberedUser));
+    }
+    supabase.auth.signOut();
+  };
+
   if (!session) return null;
 
   const fullName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '';
@@ -48,7 +68,7 @@ export function UserMenu() {
         <DropdownMenuItem asChild><Link to="/my-listings"><ShoppingBag className="mr-2 h-4 w-4" /><span>My Listings</span></Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/favorites"><Heart className="mr-2 h-4 w-4" /><span>Favorites</span></Link></DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
