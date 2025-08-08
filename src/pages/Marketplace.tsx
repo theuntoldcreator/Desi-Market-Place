@@ -18,51 +18,25 @@ import { subDays } from 'date-fns';
 const fetchListings = async (userId: string | undefined) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
 
-  // Step 1: Fetch all active listings
-  const { data: listings, error: listingsError } = await supabase
-    .from('listings')
-    .select('*')
+  const { data, error } = await supabase
+    .from('listings_with_profiles_and_favorites') // Query the new view
+    .select('*') // Select all columns from the view
     .eq('status', 'active')
     .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
 
-  if (listingsError) throw new Error(listingsError.message);
-  if (!listings || listings.length === 0) return [];
+  if (error) throw new Error(error.message);
 
-  // Step 2: Collect all unique seller IDs from the listings
-  const sellerIds = [...new Set(listings.map((l) => l.user_id).filter(Boolean))];
-  if (sellerIds.length === 0) {
-    return listings.map(l => ({ ...l, profile: null, isFavorited: false }));
-  }
-
-  // Step 3: Fetch all profiles for these sellers in a single query
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('*')
-    .in('id', sellerIds);
-
-  if (profilesError) throw new Error(profilesError.message);
-
-  // Step 4: Create a map for easy profile lookup
-  const profilesMap = new Map(profiles?.map(p => [p.id, p]));
-
-  // Step 5: Fetch user's favorites if logged in
-  let favoriteSet = new Set();
-  if (userId) {
-    const listingIds = listings.map(l => l.id);
-    const { data: favorites } = await supabase
-      .from('favorites')
-      .select('listing_id')
-      .eq('user_id', userId)
-      .in('listing_id', listingIds);
-    favoriteSet = new Set(favorites?.map(f => f.listing_id));
-  }
-
-  // Step 6: Combine everything
-  return listings.map((listing) => ({
+  // Map the data to match the expected structure for components
+  return data.map(listing => ({
     ...listing,
-    profile: profilesMap.get(listing.user_id) || null,
-    isFavorited: favoriteSet.has(listing.id),
+    profile: {
+      id: listing.user_id, // Ensure seller ID is available
+      first_name: listing.seller_first_name,
+      last_name: listing.seller_last_name,
+      avatar_url: listing.seller_avatar_url,
+    },
+    isFavorited: listing.is_favorited,
   }));
 };
 
