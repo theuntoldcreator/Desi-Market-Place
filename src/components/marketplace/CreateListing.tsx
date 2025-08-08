@@ -114,7 +114,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
     const processedFiles: File[] = [];
     const minAcceptableSize = 500 * 1024; // 500KB
-    const maxTargetSize = 1.5 * 1024 * 1024; // 1.5MB
+    const maxTargetSize = 4 * 1024 * 1024; // 4MB
 
     for (const file of newFilesToProcess) {
       if (images.length + processedFiles.length >= 5) {
@@ -131,7 +131,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
       if (file.size > maxTargetSize) {
         try {
           const options = {
-            maxSizeMB: 1.5, // Target max size
+            maxSizeMB: 4, // Target max size
             maxWidthOrHeight: 1920, // Common resolution for web
             useWebWorker: true,
             initialQuality: 0.8, // Start with a good quality
@@ -141,7 +141,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
           
           // After compression, re-check if it's within the acceptable range
           if (finalFile.size < minAcceptableSize || finalFile.size > maxTargetSize) {
-            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (500KB-1.5MB). Current: ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "destructive" });
+            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (500KB-4MB). Current: ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "destructive" });
             continue;
           }
           toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
@@ -151,7 +151,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
           continue;
         }
       } else {
-        // Image is already within 500KB and 1.5MB
+        // Image is already within 500KB and 4MB
         toast({ title: "Image Accepted", description: `Image '${file.name}' accepted at ${(file.size / (1024 * 1024)).toFixed(2)} MB.` });
       }
 
@@ -178,7 +178,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     return requiredFields.every(field => !!(formData as any)[field]);
   };
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePriceChange = (e: React.ChangeEvent<IHTMLInputElement>) => {
     const newPrice = e.target.value;
     setFormData(prev => {
         if (newPrice === '0') {
