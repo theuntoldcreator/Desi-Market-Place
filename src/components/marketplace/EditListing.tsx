@@ -90,7 +90,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
       const newUploadedUrls = await Promise.all(
         newImages.map(async (file) => {
-          const filePath = `${session.user.id}/${Date.now()}-${file.name}`;
+          const filePath = `${session.user.id}/${Date.now()}-${file.name.split('.').slice(0, -1).join('.')}.webp`; // Ensure .webp extension
           const { error } = await supabase.storage.from('listing_images').upload(filePath, file);
           if (error) throw new Error(`Image upload failed: ${error.message}`);
           const { data: { publicUrl } } = supabase.storage.from('listing_images').getPublicUrl(filePath);
@@ -170,7 +170,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
     if (newFilesToProcess.length === 0) return;
 
     setIsProcessingImages(true);
-    toast({ title: "Processing images...", description: "Checking and optimizing image sizes." });
+    toast({ title: "Processing images...", description: "Optimizing and converting images." });
 
     const processedFiles: File[] = [];
     const minAcceptableSize = 500 * 1024; // 500KB
@@ -188,31 +188,27 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
       }
 
       let finalFile = file;
-      if (file.size > maxTargetSize) {
-        try {
-          const options = {
-            maxSizeMB: 4, // Target max size
-            maxWidthOrHeight: 1920, // Common resolution for web
-            useWebWorker: true,
-            initialQuality: 0.8, // Start with a good quality
-          };
-          const compressedFile = await imageCompression(file, options);
-          finalFile = compressedFile;
+      try {
+        const options = {
+          maxSizeMB: 4, // Target max size
+          maxWidthOrHeight: 2560, // Max long edge
+          useWebWorker: true,
+          fileType: 'image/webp', // Convert to WebP
+          quality: 0.8, // 80% quality
+        };
+        const compressedFile = await imageCompression(file, options);
+        finalFile = compressedFile;
 
-          // After compression, re-check if it's within the acceptable range
-          if (finalFile.size < minAcceptableSize || finalFile.size > maxTargetSize) {
-            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (500KB-4MB). Current: ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "destructive" });
-            continue;
-          }
-          toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
-        } catch (error) {
-          console.error("Image compression error:", error);
-          toast({ title: "Compression Failed", description: `Could not compress image '${file.name}'. Please try another image.`, variant: "destructive" });
+        // After compression, re-check if it's within the acceptable range
+        if (finalFile.size < minAcceptableSize || finalFile.size > maxTargetSize) {
+          toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (500KB-4MB). Current: ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "destructive" });
           continue;
         }
-      } else {
-        // Image is already within 500KB and 4MB
-        toast({ title: "Image Accepted", description: `Image '${file.name}' accepted at ${(file.size / (1024 * 1024)).toFixed(2)} MB.` });
+        toast({ title: "Image Processed", description: `Image '${file.name}' converted to WebP and optimized to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
+      } catch (error) {
+        console.error("Image compression error:", error);
+        toast({ title: "Processing Failed", description: `Could not process image '${file.name}'. Please try another image.`, variant: "destructive" });
+        continue;
       }
 
       processedFiles.push(finalFile);
