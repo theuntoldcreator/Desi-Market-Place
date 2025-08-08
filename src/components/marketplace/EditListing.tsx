@@ -259,7 +259,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                   {totalImages < 5 && (
                     <div 
                       className={cn(
-                        "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-4",
+                        "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-4 aspect-square",
                         totalImages === 0 ? "col-span-full min-h-[250px]" : "col-span-1 min-h-[150px]"
                       )}
                     >
@@ -267,12 +267,6 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                       <p className="font-medium text-primary text-lg">Add Photos</p>
                       <p className="text-sm text-muted-foreground">Max 5 images.</p>
                       <div className="flex flex-col gap-2 w-full mt-2">
-                        <input type="file" accept="image/*" capture="camera" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="camera-upload-edit" disabled={isProcessingImages || totalImages >= 5} />
-                        <Button asChild variant="outline" className="w-full" disabled={isProcessingImages || totalImages >= 5}>
-                          <label htmlFor="camera-upload-edit" className="cursor-pointer flex items-center justify-center gap-2">
-                            <Camera className="w-4 h-4" /> Take Photo
-                          </label>
-                        </Button>
                         <input type="file" multiple accept="image/*" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="gallery-upload-edit" disabled={isProcessingImages || totalImages >= 5} />
                         <Button asChild variant="outline" className="w-full" disabled={isProcessingImages || totalImages >= 5}>
                           <label htmlFor="gallery-upload-edit" className="cursor-pointer flex items-center justify-center gap-2">
