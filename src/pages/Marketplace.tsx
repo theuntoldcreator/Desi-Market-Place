@@ -227,7 +227,7 @@ export default function Marketplace() {
 
     return (
       <>
-        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {filteredListings.slice(0, visibleCount).map((listing) => (
             <ListingCard
               key={listing.id}
