@@ -22,20 +22,16 @@ const fetchFavoriteListings = async (userId: string) => {
   const listingIds = favorites.map(f => f.listing_id);
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*')
+    .select('*, profile:profiles(*)')
     .in('id', listingIds)
     .eq('status', 'active') // Only fetch active listings
     .gte('created_at', twentyDaysAgo);
   if (listingsError) throw new Error(listingsError.message);
   if (!listings || listings.length === 0) return [];
 
-  const userIds = [...new Set(listings.map(l => l.user_id))];
-  const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url, telegram_username').in('id', userIds);
-  const profilesById = profiles?.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as any) || {};
-
   return listings.map(listing => ({
     ...listing,
-    profile: profilesById[listing.user_id] || null,
+    profile: Array.isArray(listing.profile) ? listing.profile[0] : listing.profile,
     isFavorited: true,
   }));
 };
@@ -75,13 +71,6 @@ export default function Favorites() {
 
     const message = `Hey, i am interested in this ${listing.title}, is it still available?`;
     const encodedMessage = encodeURIComponent(message);
-
-    if (listing.profile?.telegram_username) {
-      const telegramUsername = listing.profile.telegram_username.replace('@', '');
-      const telegramUrl = `https://t.me/${telegramUsername}?text=${encodedMessage}`;
-      window.open(telegramUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
 
     if (!listing.contact) {
       toast({ title: "Contact information not available", description: "The seller has not provided a contact number.", variant: "destructive" });

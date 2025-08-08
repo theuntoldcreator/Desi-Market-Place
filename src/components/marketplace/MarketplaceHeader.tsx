@@ -15,7 +15,7 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
         <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/" className="flex items-center sm:space-x-3">
             <img src={logoUrl} alt="UNT | MARKETPLACE Logo" className="hidden sm:block w-8 h-8 rounded-lg" />
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#00853E] to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
+            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
               UNT | MARKETPLACE
             </h1>
           </Link>
