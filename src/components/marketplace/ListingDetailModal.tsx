@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, MapPin, Check, Trash2, Info } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, Pencil, Tag, MapPin, Check, Trash2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '../ui/separator';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
+import { FaTelegramPlane } from 'react-icons/fa';
 
 interface ListingDetailModalProps {
   listing: any;
@@ -134,11 +135,14 @@ export function ListingDetailModal({
                   <Alert className="text-xs p-3">
                     <Info className="h-4 w-4" />
                     <AlertDescription>
-                      You’ll be redirected to WhatsApp to chat directly with the seller. Please be respectful and avoid sharing sensitive personal information.
+                      You’ll be redirected to Telegram to chat directly with the seller. Please be respectful and avoid sharing sensitive personal information.
                     </AlertDescription>
                   </Alert>
                   <div className="space-y-2">
-                    <Button className="w-full" onClick={onSendMessage}><MessageSquare className="w-4 h-4 mr-2" />Chat on WhatsApp</Button>
+                    <Button className="w-full" onClick={onSendMessage} disabled={!listing.seller?.telegram_username}>
+                      <FaTelegramPlane className="w-4 h-4 mr-2" />
+                      Chat on Telegram
+                    </Button>
                     <Button variant="outline" className="w-full" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
                       <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
                       {listing.isFavorited ? 'Saved' : 'Save'}

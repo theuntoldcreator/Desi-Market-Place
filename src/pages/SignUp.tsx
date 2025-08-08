@@ -22,7 +22,7 @@ const signUpSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   gender: z.enum(['male', 'female'], { required_error: "Gender is required" }),
-  phoneNumber: z.string().min(10, "Please enter a valid phone number"),
+  telegramUsername: z.string().min(2, "Username must be at least 2 characters"),
   dob: z.date({ required_error: "Date of birth is required" }).max(eighteenYearsAgo, "You must be at least 18 years old"),
 });
 
@@ -31,7 +31,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { firstName: '', lastName: '', email: '', password: '', phoneNumber: '' },
+    defaultValues: { firstName: '', lastName: '', email: '', password: '', telegramUsername: '' },
   });
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
@@ -47,7 +47,7 @@ export default function SignUp() {
           first_name: values.firstName,
           last_name: values.lastName,
           gender: values.gender,
-          phone_number: values.phoneNumber,
+          telegram_username: values.telegramUsername,
           dob: values.dob.toISOString().split('T')[0],
           avatar_url: avatar_url,
         }
@@ -82,13 +82,13 @@ export default function SignUp() {
               <FormField name="email" control={form.control} render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField name="password" control={form.control} render={({ field }) => (<FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <div className="grid grid-cols-2 gap-4">
-                <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="123-456-7890" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField name="telegramUsername" control={form.control} render={({ field }) => (<FormItem><FormLabel>Telegram Username</FormLabel><FormControl><Input placeholder="@username" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField name="gender" control={form.control} render={({ field }) => (<FormItem><FormLabel>Gender</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger></FormControl><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
               </div>
               <Alert className="text-xs p-3">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Your number is used for WhatsApp chat on listings. Be respectful and avoid sharing sensitive info.
+                  Your Telegram username is used for chat on listings.
                 </AlertDescription>
               </Alert>
               <FormField

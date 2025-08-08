@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, Phone, MapPin, Loader2, Info, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Loader2, Info, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,11 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { countries } from '@/lib/countries';
 import { Alert, AlertDescription } from '../ui/alert';
 import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
 import imageCompression from 'browser-image-compression';
+import { MapPin } from 'lucide-react';
 
 interface CreateListingProps {
   isOpen: boolean;
@@ -37,7 +37,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
-    title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: ''
+    title: '', description: '', price: '', category: '', location: '', condition: ''
   });
   const [images, setImages] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -45,7 +45,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   const resetForm = () => {
-    setFormData({ title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: '' });
+    setFormData({ title: '', description: '', price: '', category: '', location: '', condition: '' });
     setImages([]);
     setViolation(null);
   };
@@ -64,13 +64,12 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         })
       );
 
-      const { title, description, price, category, location, countryCode, phoneNumber, condition } = formData;
+      const { title, description, price, category, location, condition } = formData;
       const { error: insertError } = await supabase.from('listings').insert({
         title, description, category, location, condition,
         price: parseFloat(price),
         image_urls: imageUrls,
         user_id: session.user.id,
-        contact: `${countryCode}${phoneNumber.replace(/\D/g, '')}`,
       });
 
       if (insertError) throw new Error(`Failed to create listing: ${insertError.message}`);
@@ -145,9 +144,9 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index));
 
   const validateForm = () => {
-    const requiredFields = ['title', 'price', 'category', 'location', 'phoneNumber', 'condition'];
+    const requiredFields = ['title', 'price', 'category', 'location', 'condition'];
     if (formData.price === '0') {
-        const freeRequired = ['title', 'price', 'location', 'phoneNumber', 'condition'];
+        const freeRequired = ['title', 'price', 'location', 'condition'];
         return freeRequired.every(field => !!(formData as any)[field]);
     }
     return requiredFields.every(field => !!(formData as any)[field]);
@@ -252,27 +251,6 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            {/* Contact Info Section */}
-            <div className="space-y-4 pt-4 border-t">
-              <Label className="font-semibold">Contact Info *</Label>
-              <div className="flex items-center gap-2">
-                <Select value={formData.countryCode} onValueChange={(value) => setFormData(prev => ({ ...prev, countryCode: value }))}>
-                  <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{`${c.code} ${c.dial_code}`}</SelectItem>)}</SelectContent>
-                </Select>
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="contact" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} placeholder="Phone Number" className="pl-10" />
-                </div>
-              </div>
-              <Alert className="text-xs p-3">
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Your number is used for WhatsApp chat. Be respectful and avoid sharing sensitive info.
-                </AlertDescription>
-              </Alert>
             </div>
             
             <Alert>
