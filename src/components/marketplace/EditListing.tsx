@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, Loader2, Upload, X, MapPin, Info, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Phone, Loader2, Upload, X, MapPin, Info, Image as ImageIcon, Trash2, Camera, GalleryHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -78,7 +78,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
   }, [listing]);
 
   const updateListingMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (values: typeof formData) => {
       if (!listing || !session) throw new Error("Authentication error.");
 
       if (imagesToDelete.length > 0) {
@@ -101,7 +101,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
       const finalImageUrls = [...existingImageUrls, ...newUploadedUrls];
       if (finalImageUrls.length === 0) throw new Error("Listing must have at least one image.");
 
-      const { title, description, price, category, location, countryCode, phoneNumber, condition } = formData;
+      const { title, description, price, category, location, countryCode, phoneNumber, condition } = values;
       const { error } = await supabase
         .from('listings')
         .update({ 
@@ -162,7 +162,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
       return;
     }
 
-    updateListingMutation.mutate();
+    updateListingMutation.mutate(formData);
   };
 
   const handleImageUpload = async (files: FileList) => {
@@ -221,6 +221,8 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
   if (!listing) return null;
 
+  const totalImages = existingImageUrls.length + newImages.length;
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -254,15 +256,28 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                       <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setNewImages(prev => prev.filter((_, i) => i !== index))}><X className="w-3 h-3" /></Button>
                     </div>
                   ))}
-                  {(existingImageUrls.length + newImages.length) < 5 && (
-                    <>
-                      <input type="file" multiple accept="image/*" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="image-update-upload" disabled={isProcessingImages} />
-                      <label htmlFor="image-update-upload" className={cn("cursor-pointer", isProcessingImages && "cursor-not-allowed opacity-50")}>
-                        <div className="flex items-center justify-center border-2 border-dashed rounded-lg aspect-square text-muted-foreground hover:text-primary hover:border-primary transition-colors">
-                          <Upload className="w-6 h-6" />
-                        </div>
-                      </label>
-                    </>
+                  {totalImages < 5 && (
+                    <div 
+                      className={cn("border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-2")}
+                    >
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                      <p className="font-medium text-primary">Add Photos</p>
+                      <p className="text-sm text-muted-foreground">Max 5 images.</p>
+                      <div className="flex flex-col gap-2 w-full mt-2">
+                        <input type="file" accept="image/*" capture="camera" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="camera-upload-edit" disabled={isProcessingImages || totalImages >= 5} />
+                        <Button asChild variant="outline" className="w-full" disabled={isProcessingImages || totalImages >= 5}>
+                          <label htmlFor="camera-upload-edit" className="cursor-pointer flex items-center justify-center gap-2">
+                            <Camera className="w-4 h-4" /> Take Photo
+                          </label>
+                        </Button>
+                        <input type="file" multiple accept="image/*" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="gallery-upload-edit" disabled={isProcessingImages || totalImages >= 5} />
+                        <Button asChild variant="outline" className="w-full" disabled={isProcessingImages || totalImages >= 5}>
+                          <label htmlFor="gallery-upload-edit" className="cursor-pointer flex items-center justify-center gap-2">
+                            <GalleryHorizontal className="w-4 h-4" /> Choose from Gallery
+                          </label>
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, Phone, MapPin, Loader2, Info, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Phone, MapPin, Loader2, Info, Image as ImageIcon, Camera, GalleryHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,7 +40,6 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: ''
   });
   const [images, setImages] = useState<File[]>([]);
-  const [dragActive, setDragActive] = useState(false);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
 
@@ -185,41 +184,39 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
             {/* Image Upload Section */}
             <div className="space-y-3">
               <Label className="font-semibold">Images (up to 5) *</Label>
-              {images.length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                  {images.map((image, index) => (
-                    <div key={index} className="relative group aspect-square">
-                      <img src={URL.createObjectURL(image)} alt={`Upload ${index + 1}`} className="w-full h-full object-cover rounded-lg border" />
-                      <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}>
-                        <X className="w-3 h-3" />
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                {images.map((image, index) => (
+                  <div key={index} className="relative group aspect-square">
+                    <img src={URL.createObjectURL(image)} alt={`Upload ${index + 1}`} className="w-full h-full object-cover rounded-lg border" />
+                    <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+                {images.length < 5 && (
+                  <div 
+                    className={cn("border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-2")}
+                  >
+                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                    <p className="font-medium text-primary">Add Photos</p>
+                    <p className="text-sm text-muted-foreground">Max 5 images.</p>
+                    <div className="flex flex-col gap-2 w-full mt-2">
+                      <input type="file" accept="image/*" capture="camera" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="camera-upload-create" disabled={isProcessingImages || images.length >= 5} />
+                      <Button asChild variant="outline" className="w-full" disabled={isProcessingImages || images.length >= 5}>
+                        <label htmlFor="camera-upload-create" className="cursor-pointer flex items-center justify-center gap-2">
+                          <Camera className="w-4 h-4" /> Take Photo
+                        </label>
+                      </Button>
+                      <input type="file" multiple accept="image/*" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="gallery-upload-create" disabled={isProcessingImages || images.length >= 5} />
+                      <Button asChild variant="outline" className="w-full" disabled={isProcessingImages || images.length >= 5}>
+                        <label htmlFor="gallery-upload-create" className="cursor-pointer flex items-center justify-center gap-2">
+                          <GalleryHorizontal className="w-4 h-4" /> Choose from Gallery
+                        </label>
                       </Button>
                     </div>
-                  ))}
-                  {images.length < 5 && (
-                    <label htmlFor="image-upload" className="cursor-pointer flex items-center justify-center border-2 border-dashed rounded-lg aspect-square text-muted-foreground hover:text-primary hover:border-primary transition-colors">
-                      <Upload className="w-6 h-6" />
-                    </label>
-                  )}
-                </div>
-              )}
-              {images.length === 0 && (
-                <div 
-                  className={cn("border-2 border-dashed rounded-lg p-6 text-center transition-all", dragActive && "border-primary bg-primary/5")}
-                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
-                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); }}
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={async (e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); if (e.dataTransfer.files) await handleImageUpload(e.dataTransfer.files); }}
-                >
-                  <input type="file" multiple accept="image/*" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="image-upload" disabled={images.length >= 5 || isProcessingImages} />
-                  <label htmlFor="image-upload" className={cn("cursor-pointer", (images.length >= 5 || isProcessingImages) && "cursor-not-allowed opacity-50")}>
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <ImageIcon className="w-8 h-8" />
-                      <p className="font-medium text-primary">Click or drag to upload</p>
-                      <p className="text-sm">Add up to 5 photos.</p>
-                    </div>
-                  </label>
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Form Fields Section */}
