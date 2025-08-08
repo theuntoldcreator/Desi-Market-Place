@@ -123,6 +123,23 @@ export default function Marketplace() {
     };
   }, [session]);
 
+  // Supabase Realtime subscription for new listings
+  useEffect(() => {
+    const listingsChannel = supabase
+      .channel('public:listings')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'listings' }, (payload) => {
+        // Invalidate the 'listings' query to refetch and include the new listing
+        queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
+        toast({ title: "New Listing!", description: "A new item has been posted to the marketplace." });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(listingsChannel);
+    };
+  }, [queryClient, session?.user?.id]);
+
+
   const favoriteMutation = useMutation({
     mutationFn: async ({ listingId, isFavorited }: { listingId: string, isFavorited: boolean }) => {
       if (isFavorited) {

@@ -113,7 +113,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     toast({ title: "Compressing images...", description: "This may take a moment." });
 
     const options = {
-      maxSizeMB: 0.1,
+      maxSizeMB: 0.5, // Increased from 0.1 to 0.5 for better clarity
       maxWidthOrHeight: 1024,
       useWebWorker: true,
       fileType: 'image/webp',
