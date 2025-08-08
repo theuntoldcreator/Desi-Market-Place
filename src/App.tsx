@@ -8,7 +8,6 @@ import NotFound from "./pages/NotFound";
 import MyListings from "./pages/MyListings";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
-import SignUp from "./pages/SignUp";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useEffect } from "react";
 
@@ -33,7 +32,6 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
-      <Route path="/signup" element={<SignUp />} />
       <Route path="/my-listings" element={<MyListings />} />
       <Route path="/favorites" element={<Favorites />} />
       <Route path="/profile" element={<Profile />} />

@@ -23,15 +23,16 @@ export function UserMenu() {
 
   if (!session) return null;
 
-  const fullName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '';
-  const fallback = fullName ? fullName[0].toUpperCase() : session.user.email?.[0].toUpperCase();
+  const fullName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'User';
+  const fallback = fullName ? fullName[0].toUpperCase() : '?';
+  const telegramHandle = profile?.telegram_username ? `@${profile.telegram_username}` : session.user.email;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={profile?.avatar_url} alt={fullName || session.user.email} />
+            <AvatarImage src={profile?.avatar_url} alt={fullName} />
             <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
         </Button>
@@ -40,7 +41,7 @@ export function UserMenu() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{fullName}</p>
-            <p className="text-xs leading-none text-muted-foreground">{session.user.email}</p>
+            <p className="text-xs leading-none text-muted-foreground">{telegramHandle}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
