@@ -63,7 +63,7 @@ const Login = () => {
           const errorJson = await err.context.json();
           const serverError = errorJson.error || '';
           if (serverError.includes("not found")) {
-            errorMessage = "No account found with that number. Please sign up or check the number.";
+            errorMessage = "This phone number is not registered. Please use a number linked to a Telegram account on our platform.";
           } else if (serverError.includes("not linked")) {
             errorMessage = "Your Telegram account isn't linked. Please start a chat with our bot on Telegram first.";
           }
@@ -71,7 +71,7 @@ const Login = () => {
           // Context might not be valid JSON, fall back to generic message
         }
       }
-      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+      toast({ title: "Login Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
