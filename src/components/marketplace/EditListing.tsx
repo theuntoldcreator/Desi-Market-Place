@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// Removed: import imageCompression from 'browser-image-compression';
+import imageCompression from 'browser-image-compression';
 
 interface EditListingProps {
   isOpen: boolean;
@@ -52,7 +52,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  // Removed: const [isProcessingImages, setIsProcessingImages] = useState(false);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   useEffect(() => {
     if (listing) {
@@ -166,28 +166,62 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
   };
 
   const handleImageUpload = async (files: FileList) => {
-    const newFiles = Array.from(files).slice(0, 5 - (existingImageUrls.length + newImages.length));
-    if (newFiles.length === 0) return;
+    const newFilesToProcess = Array.from(files);
+    if (newFilesToProcess.length === 0) return;
 
-    // Removed: setIsProcessingImages(true);
-    // Removed: toast({ title: "Compressing images...", description: "This may take a moment." });
+    setIsProcessingImages(true);
+    toast({ title: "Processing images...", description: "Checking and optimizing image sizes." });
 
-    // Removed: const options = { ... };
+    const processedFiles: File[] = [];
+    const minSize = 1 * 1024 * 1024; // 1MB
+    const maxSize = 1.5 * 1024 * 1024; // 1.5MB
 
-    try {
-      // Changed: Directly use newFiles instead of compressing
-      setNewImages(prev => [...prev, ...newFiles]);
-      // Removed: toast({ title: "Success!", description: "Images are ready." });
-    } catch (error) {
-      console.error("Image upload error:", error);
-      toast({
-        title: "Image Upload Error",
-        description: "There was an issue uploading your images. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      // Removed: setIsProcessingImages(false);
+    for (const file of newFilesToProcess) {
+      if (existingImageUrls.length + newImages.length + processedFiles.length >= 5) {
+        toast({ title: "Image Limit Reached", description: "You can upload a maximum of 5 images.", variant: "destructive" });
+        break;
+      }
+
+      if (file.size < minSize) {
+        toast({ title: "Image Too Small", description: `Image '${file.name}' is too small (${(file.size / (1024 * 1024)).toFixed(2)} MB). Must be at least 1MB.`, variant: "destructive" });
+        continue;
+      }
+
+      let finalFile = file;
+      if (file.size > maxSize) {
+        try {
+          const options = {
+            maxSizeMB: 1.5, // Target max size
+            maxWidthOrHeight: 1920, // Common resolution for web
+            useWebWorker: true,
+            initialQuality: 0.8, // Start with a good quality
+          };
+          const compressedFile = await imageCompression(file, options);
+          finalFile = compressedFile;
+          toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "success" });
+        } catch (error) {
+          console.error("Image compression error:", error);
+          toast({ title: "Compression Failed", description: `Could not compress image '${file.name}'. Please try another image.`, variant: "destructive" });
+          continue;
+        }
+      }
+
+      // Final check after potential compression
+      if (finalFile.size < minSize || finalFile.size > maxSize) {
+        toast({ title: "Size Mismatch", description: `Image '${file.name}' is ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB. It must be between 1MB and 1.5MB.`, variant: "destructive" });
+        continue;
+      }
+
+      processedFiles.push(finalFile);
     }
+
+    setNewImages(prev => [...prev, ...processedFiles]);
+    if (processedFiles.length > 0) {
+      toast({ title: "Images Ready", description: `${processedFiles.length} image(s) processed successfully.`, variant: "success" });
+    } else {
+      toast({ title: "No Images Added", description: "No images met the size requirements.", variant: "info" });
+    }
+    setIsProcessingImages(false);
   };
 
   const removeExistingImage = (url: string) => {
@@ -260,7 +294,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                         accept="image/*" 
                         onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} 
                         className="hidden" 
-                        disabled={totalImages >= 5} // Removed isProcessingImages
+                        disabled={totalImages >= 5 || isProcessingImages}
                       />
                       <ImageIcon className="w-10 h-10 text-muted-foreground" />
                       <p className="font-medium text-primary text-lg">Add Photos</p>
@@ -324,14 +358,14 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
               type="button" 
               variant="destructive" 
               onClick={() => setShowDeleteConfirm(true)} 
-              disabled={updateListingMutation.isPending || deleteMutation.isPending} // Removed isProcessingImages
+              disabled={updateListingMutation.isPending || deleteMutation.isPending || isProcessingImages}
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleSaveChanges} disabled={updateListingMutation.isPending || deleteMutation.isPending}> {/* Removed isProcessingImages */}
+              <Button onClick={handleSaveChanges} disabled={updateListingMutation.isPending || deleteMutation.isPending || isProcessingImages}>
                 {updateListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {updateListingMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
