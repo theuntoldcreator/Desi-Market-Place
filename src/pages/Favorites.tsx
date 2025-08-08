@@ -30,7 +30,7 @@ const fetchFavoriteListings = async (userId: string) => {
   if (!listings || listings.length === 0) return [];
 
   const userIds = [...new Set(listings.map(l => l.user_id))];
-  const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url').in('id', userIds);
+  const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, avatar_url, telegram_username').in('id', userIds);
   const profilesById = profiles?.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as any) || {};
 
   return listings.map(listing => ({
@@ -66,6 +66,38 @@ export default function Favorites() {
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
   });
+
+  const handleSendMessage = (listing: any) => {
+    if (!session) {
+      toast({ title: "Please log in", description: "You need to be logged in to send a message.", variant: "destructive" });
+      return;
+    }
+
+    const message = `Hey, i am interested in this ${listing.title}, is it still available?`;
+    const encodedMessage = encodeURIComponent(message);
+
+    if (listing.profile?.telegram_username) {
+      const telegramUsername = listing.profile.telegram_username.replace('@', '');
+      const telegramUrl = `https://t.me/${telegramUsername}?text=${encodedMessage}`;
+      window.open(telegramUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (!listing.contact) {
+      toast({ title: "Contact information not available", description: "The seller has not provided a contact number.", variant: "destructive" });
+      return;
+    }
+    
+    const cleanedNumber = listing.contact.replace(/\D/g, '');
+    
+    if (!cleanedNumber) {
+      toast({ title: "Invalid contact number", variant: "destructive" });
+      return;
+    }
+
+    const whatsappUrl = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
 
   const renderContent = () => {
     if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -112,6 +144,7 @@ export default function Favorites() {
           isOwner={false}
           onClose={() => setSelectedListing(null)}
           onFavoriteToggle={(id) => favoriteMutation.mutate({ listingId: id })}
+          onSendMessage={() => handleSendMessage(selectedListing)}
         />
       )}
       <FloatingHomeButton />
