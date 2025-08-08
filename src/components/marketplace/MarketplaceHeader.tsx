@@ -2,12 +2,14 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { Link } from 'react-router-dom';
+import { useSession } from '@supabase/auth-helpers-react';
 
 interface MarketplaceHeaderProps {
   onCreateListing: () => void;
 }
 
 export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
+  const session = useSession();
   const logoUrl = 'https://res.cloudinary.com/dlzvthxf5/image/upload/v1754093530/eaglelogo_otceda.png';
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-white/95 backdrop-blur-sm">
@@ -23,7 +25,13 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
         <div className="flex items-center gap-2 sm:gap-3">
           <Button onClick={onCreateListing} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
           <Button onClick={onCreateListing} size="icon" className="sm:hidden flex"><Plus className="w-4 h-4" /></Button>
-          <UserMenu />
+          {session ? (
+            <UserMenu />
+          ) : (
+            <Button asChild>
+              <Link to="/login">Login</Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>

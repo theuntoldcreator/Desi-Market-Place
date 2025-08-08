@@ -213,6 +213,24 @@ export default function Marketplace() {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const handleCreateListing = () => {
+    if (!session) {
+      toast({ title: 'Login Required', description: 'Please log in to create a listing.', variant: 'destructive' });
+      navigate('/login');
+    } else {
+      setShowCreateListing(true);
+    }
+  };
+
+  const handleCardClick = (listing: any) => {
+    if (!session) {
+      toast({ title: 'Login Required', description: 'Please log in to view details.', variant: 'destructive' });
+      navigate('/login');
+    } else {
+      setSelectedListing(listing);
+    }
+  };
+
   const normalizedSearchQuery = searchQuery.toLowerCase().trim();
   const filteredListings = listings
     .filter(l => {
@@ -244,7 +262,7 @@ export default function Marketplace() {
               price={listing.price}
               image_urls={listing.image_urls}
               location={listing.location}
-              onClick={() => setSelectedListing(listing)}
+              onClick={() => handleCardClick(listing)}
             />
           ))}
         </div>
@@ -255,7 +273,7 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
-      <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
+      <MarketplaceHeader onCreateListing={handleCreateListing} />
       <div className="flex">
         <MarketplaceSidebar 
           selectedCategory={selectedCategory}
