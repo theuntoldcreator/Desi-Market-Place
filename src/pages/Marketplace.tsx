@@ -20,7 +20,7 @@ const fetchListings = async (userId: string | undefined) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
-    .select('*, seller:profiles(*)')
+    .select('*')
     .eq('status', 'active') // Only fetch active listings
     .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
@@ -28,8 +28,20 @@ const fetchListings = async (userId: string | undefined) => {
   if (listingsError) throw new Error(listingsError.message);
   if (!listings) return [];
 
+  const userIds = [...new Set(listings.map(l => l.user_id))];
+  const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds);
+  const profilesById = profiles?.reduce((acc, p) => {
+    acc[p.id] = p;
+    return acc;
+  }, {} as any) || {};
+
+  const listingsWithProfiles = listings.map(l => ({
+    ...l,
+    profile: profilesById[l.user_id] || null,
+  }));
+
   if (!userId) {
-    return listings.map(l => ({ ...l, isFavorited: false }));
+    return listingsWithProfiles.map(l => ({ ...l, isFavorited: false }));
   }
 
   const listingIds = listings.map(l => l.id);
@@ -40,7 +52,7 @@ const fetchListings = async (userId: string | undefined) => {
     .in('listing_id', listingIds);
 
   const favoriteSet = new Set(favorites?.map(f => f.listing_id) || []);
-  return listings.map(l => ({
+  return listingsWithProfiles.map(l => ({
     ...l,
     isFavorited: favoriteSet.has(l.id),
   }));
@@ -172,15 +184,22 @@ export default function Marketplace() {
       toast({ title: "Please log in", description: "You need to be logged in to send a message.", variant: "destructive" });
       return;
     }
-    const telegramUsername = listing.seller?.telegram_username;
-    if (!telegramUsername) {
-      toast({ title: "Contact information not available", description: "The seller has not provided a Telegram username.", variant: "destructive" });
+    if (!listing.contact) {
+      toast({ title: "Contact information not available", description: "The seller has not provided a contact number.", variant: "destructive" });
       return;
     }
     
-    const cleanedUsername = telegramUsername.replace('@', '');
-    const telegramUrl = `https://t.me/${cleanedUsername}`;
-    window.open(telegramUrl, '_blank', 'noopener,noreferrer');
+    const cleanedNumber = listing.contact.replace(/\D/g, '');
+    
+    if (!cleanedNumber) {
+      toast({ title: "Invalid contact number", variant: "destructive" });
+      return;
+    }
+
+    const message = `Hey! I'm interested in your listing "${listing.title}" on NRI's Marketplace.`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
   const normalizedSearchQuery = searchQuery.toLowerCase().trim();
@@ -250,7 +269,7 @@ export default function Marketplace() {
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
       {selectedListing && (
         <ListingDetailModal
-          listing={selectedListing}
+          listing={{ ...selectedListing, seller: selectedListing.profile || {}, timeAgo: new Date(selectedListing.created_at).toLocaleDateString() }}
           isOpen={!!selectedListing}
           isOwner={session?.user?.id === selectedListing.user_id}
           onClose={() => setSelectedListing(null)}

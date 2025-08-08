@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Upload, X, MapPin, Trash2 } from 'lucide-react';
+import { Phone, Loader2, Upload, X, MapPin, Info, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } f
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
+import { countries } from '@/lib/countries';
 import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
 import {
@@ -45,7 +46,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  const [formData, setFormData] = useState({ title: '', description: '', price: '', category: '', location: '', condition: '' });
+  const [formData, setFormData] = useState({ title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: '' });
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
@@ -55,12 +56,18 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
   useEffect(() => {
     if (listing) {
+      const contact = listing.contact?.replace(/\s+/g, '') || '';
+      const sortedCountries = [...countries].sort((a, b) => b.dial_code.length - a.dial_code.length);
+      let foundCountry = sortedCountries.find(c => contact.startsWith(c.dial_code));
+
       setFormData({
         title: listing.title || '',
         description: listing.description || '',
         price: listing.price?.toString() || '',
         category: listing.category || '',
         location: listing.location || '',
+        countryCode: foundCountry?.dial_code || '+1',
+        phoneNumber: foundCountry ? contact.substring(foundCountry.dial_code.length) : contact,
         condition: listing.condition || '',
       });
       setExistingImageUrls(listing.image_urls || []);
@@ -94,13 +101,14 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
       const finalImageUrls = [...existingImageUrls, ...newUploadedUrls];
       if (finalImageUrls.length === 0) throw new Error("Listing must have at least one image.");
 
-      const { title, description, price, category, location, condition } = formData;
+      const { title, description, price, category, location, countryCode, phoneNumber, condition } = formData;
       const { error } = await supabase
         .from('listings')
         .update({ 
           title, description, category, location, condition,
           price: parseFloat(price), 
           image_urls: finalImageUrls,
+          contact: `${countryCode}${phoneNumber.replace(/\D/g, '')}`,
         })
         .eq('id', listing.id);
 
@@ -288,6 +296,21 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                         <SelectItem value="used">Used</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              {/* Contact Info Section */}
+              <div className="space-y-4 pt-4 border-t">
+                <Label className="font-semibold">Contact Info *</Label>
+                <div className="flex items-center gap-2">
+                  <Select value={formData.countryCode} onValueChange={(value) => setFormData(prev => ({ ...prev, countryCode: value }))}>
+                    <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{`${c.code} ${c.dial_code}`}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <div className="relative flex-1">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input id="contact" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} placeholder="Phone Number" className="pl-10" />
+                  </div>
                 </div>
               </div>
             </div>

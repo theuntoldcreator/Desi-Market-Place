@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  telegramUsername: z.string().min(2, "Username must be at least 2 characters").optional().or(z.literal('')),
+  phoneNumber: z.string().min(10, "Please enter a valid phone number").optional().or(z.literal('')),
   dob: z.date().optional(),
   avatarFile: z.instanceof(File).optional(),
   gender: z.enum(['male', 'female']).optional(),
@@ -41,7 +41,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
     defaultValues: {
       firstName: profile.first_name || '',
       lastName: profile.last_name || '',
-      telegramUsername: profile.telegram_username || '',
+      phoneNumber: profile.phone_number || '',
       dob: profile.dob ? new Date(profile.dob) : undefined,
       gender: profile.gender,
     },
@@ -91,7 +91,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
         .update({
           first_name: values.firstName,
           last_name: values.lastName,
-          telegram_username: values.telegramUsername,
+          phone_number: values.phoneNumber,
           dob: values.dob?.toISOString().split('T')[0],
           avatar_url: avatar_url,
           gender: values.gender,
@@ -136,7 +136,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
               <FormField name="firstName" control={form.control} render={({ field }) => (<FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField name="lastName" control={form.control} render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
-            <FormField name="telegramUsername" control={form.control} render={({ field }) => (<FormItem><FormLabel>Telegram Username</FormLabel><FormControl><Input placeholder="@username" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="123-456-7890" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 name="dob"

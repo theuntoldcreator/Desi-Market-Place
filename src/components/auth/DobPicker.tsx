@@ -1,49 +1,80 @@
-"use client"
-
-import * as React from "react"
-import { format } from "date-fns"
-import { Calendar as CalendarIcon } from "lucide-react"
-
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { useState, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface DobPickerProps {
   value?: Date;
   onChange: (date?: Date) => void;
+  className?: string;
 }
 
-export function DobPicker({ value, onChange }: DobPickerProps) {
+const months = [
+  { value: 0, label: 'January' }, { value: 1, label: 'February' }, { value: 2, label: 'March' },
+  { value: 3, label: 'April' }, { value: 4, label: 'May' }, { value: 5, label: 'June' },
+  { value: 6, label: 'July' }, { value: 7, label: 'August' }, { value: 8, label: 'September' },
+  { value: 9, label: 'October' }, { value: 10, label: 'November' }, { value: 11, label: 'December' }
+];
+
+const endYear = new Date().getFullYear() - 18; // Enforce 18+ age limit
+const startYear = 1900;
+const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i);
+
+export function DobPicker({ value, onChange, className }: DobPickerProps) {
+  const [day, setDay] = useState<number | undefined>(value?.getDate());
+  const [month, setMonth] = useState<number | undefined>(value?.getMonth());
+  const [year, setYear] = useState<number | undefined>(value?.getFullYear());
+
+  const daysInMonth = (y?: number, m?: number) => {
+    if (y === undefined || m === undefined) return 31;
+    return new Date(y, m + 1, 0).getDate();
+  };
+
+  const dayOptions = Array.from({ length: daysInMonth(year, month) }, (_, i) => i + 1);
+
+  useEffect(() => {
+    if (day !== undefined && month !== undefined && year !== undefined) {
+      const newDate = new Date(year, month, day);
+      onChange(newDate);
+    } else {
+      onChange(undefined);
+    }
+  }, [day, month, year, onChange]);
+  
+  useEffect(() => {
+    if (day && day > daysInMonth(year, month)) {
+        setDay(undefined);
+    }
+  }, [month, year, day]);
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={"outline"}
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground"
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "PPP") : <span>Pick a date</span>}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <Calendar
-          mode="single"
-          selected={value}
-          onSelect={onChange}
-          initialFocus
-          captionLayout="dropdown-buttons"
-          fromYear={1920}
-          toYear={new Date().getFullYear()}
-        />
-      </PopoverContent>
-    </Popover>
-  )
+    <div className={cn("grid grid-cols-3 gap-2", className)}>
+      <Select
+        value={month?.toString()}
+        onValueChange={(val) => setMonth(parseInt(val))}
+      >
+        <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
+        <SelectContent>
+          {months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select
+        value={day?.toString()}
+        onValueChange={(val) => setDay(parseInt(val))}
+      >
+        <SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger>
+        <SelectContent>
+          {dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select
+        value={year?.toString()}
+        onValueChange={(val) => setYear(parseInt(val))}
+      >
+        <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+        <SelectContent>
+          {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 }
