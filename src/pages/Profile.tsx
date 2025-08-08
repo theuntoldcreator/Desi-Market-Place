@@ -3,11 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, Mail, Calendar, Edit } from 'lucide-react';
+import { Loader2, User, Mail, Edit, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
-import { format } from 'date-fns';
 import { EditProfile } from '@/components/auth/EditProfile';
 import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
 import { FaTelegramPlane } from 'react-icons/fa';
@@ -78,8 +77,8 @@ export default function Profile() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t">
               {renderProfileDetail(User, 'Full Name', fullName)}
               {renderProfileDetail(Mail, 'Email', session?.user.email)}
+              {renderProfileDetail(Phone, 'Phone Number', profile.phone_number)}
               {renderProfileDetail(FaTelegramPlane, 'Telegram', profile.telegram_username ? `@${profile.telegram_username.replace('@', '')}` : null)}
-              {renderProfileDetail(Calendar, 'Date of Birth', profile.dob ? format(new Date(profile.dob), 'PPP') : null)}
               {renderProfileDetail(User, 'Gender', profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : null)}
             </div>
           </CardContent>
