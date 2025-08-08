@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, Country } from '@/lib/countries';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { FunctionsHttpError } from '@supabase/supabase-js';
 
 const phoneSchema = z.object({
   countryCode: z.string().min(1, "Country code is required"),
@@ -50,14 +51,26 @@ const Login = () => {
       const { error } = await supabase.functions.invoke('send-telegram-otp', {
         body: { phoneNumber: completeNumber },
       });
-      if (error) throw new Error(error);
+
+      if (error) throw error;
       
       toast({ title: "OTP Sent!", description: "Check your Telegram for the login code." });
       setStep('otp');
     } catch (err: any) {
-      const errorMessage = err.message.includes("not found") 
-        ? "No account found with that number. Please sign up or check the number."
-        : "Failed to send OTP. Please try again later.";
+      let errorMessage = "Failed to send OTP. Please try again later.";
+      if (err instanceof FunctionsHttpError) {
+        try {
+          const errorJson = await err.context.json();
+          const serverError = errorJson.error || '';
+          if (serverError.includes("not found")) {
+            errorMessage = "No account found with that number. Please sign up or check the number.";
+          } else if (serverError.includes("not linked")) {
+            errorMessage = "Your Telegram account isn't linked. Please start a chat with our bot on Telegram first.";
+          }
+        } catch (e) {
+          // Context might not be valid JSON, fall back to generic message
+        }
+      }
       toast({ title: "Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -70,15 +83,28 @@ const Login = () => {
       const { data: session, error } = await supabase.functions.invoke('verify-telegram-otp', {
         body: { phoneNumber: fullPhoneNumber, otp: values.otp },
       });
-      if (error) throw new Error(error);
-      if (!session.access_token) throw new Error("Authentication failed.");
+      
+      if (error) throw error;
+      
+      if (!session || !session.access_token) throw new Error("Authentication failed.");
 
       await supabase.auth.setSession(session);
       toast({ title: "Login Successful!", description: "Welcome back!" });
       navigate('/');
       setTimeout(() => window.location.reload(), 500);
     } catch (err: any) {
-      toast({ title: "Login Failed", description: "Invalid or expired OTP. Please try again.", variant: "destructive" });
+      let errorMessage = "Invalid or expired OTP. Please try again.";
+      if (err instanceof FunctionsHttpError) {
+        try {
+          const errorJson = await err.context.json();
+          if (errorJson.error) {
+            errorMessage = errorJson.error;
+          }
+        } catch (e) {
+          // Fall back to generic message
+        }
+      }
+      toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
