@@ -140,7 +140,13 @@ export function ListingDetailModal({
                     </AlertDescription>
                   </Alert>
                   <div className="space-y-2">
-                    <Button className="w-full" onClick={onSendMessage}>
+                    <Button
+                      className={cn(
+                        "w-full",
+                        hasTelegram && "bg-[#229ED9] hover:bg-[#229ED9]/90 text-white"
+                      )}
+                      onClick={onSendMessage}
+                    >
                       {hasTelegram ? <Send className="w-4 h-4 mr-2" /> : <MessageSquare className="w-4 h-4 mr-2" />}
                       Chat on {hasTelegram ? 'Telegram' : 'WhatsApp'}
                     </Button>
