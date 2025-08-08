@@ -194,24 +194,26 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                   </div>
                 ))}
                 {images.length < 5 && (
-                  <div 
+                  <label 
+                    htmlFor="image-upload-create"
                     className={cn(
-                      "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-4 aspect-square",
+                      "border-2 border-dashed rounded-lg p-6 text-center transition-all flex flex-col items-center justify-center gap-2 aspect-square cursor-pointer",
                       images.length === 0 ? "col-span-full min-h-[250px]" : "col-span-1 min-h-[150px]"
                     )}
                   >
+                    <input 
+                      id="image-upload-create" 
+                      type="file" 
+                      multiple 
+                      accept="image/*" 
+                      onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} 
+                      className="hidden" 
+                      disabled={isProcessingImages || images.length >= 5} 
+                    />
                     <ImageIcon className="w-10 h-10 text-muted-foreground" />
                     <p className="font-medium text-primary text-lg">Add Photos</p>
                     <p className="text-sm text-muted-foreground">Max 5 images.</p>
-                    <div className="flex flex-col gap-2 w-full mt-2">
-                      <input type="file" multiple accept="image/*" onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} className="hidden" id="gallery-upload-create" disabled={isProcessingImages || images.length >= 5} />
-                      <Button asChild variant="outline" className="w-full" disabled={isProcessingImages || images.length >= 5}>
-                        <label htmlFor="gallery-upload-create" className="cursor-pointer flex items-center justify-center gap-2">
-                          <GalleryHorizontal className="w-4 h-4" /> Choose from Gallery
-                        </label>
-                      </Button>
-                    </div>
-                  </div>
+                  </label>
                 )}
               </div>
             </div>
