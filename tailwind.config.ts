@@ -75,10 +75,10 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// New colors for dark header and navigation icons
-				'header-bg': 'hsl(218 25% 18%)', // Dark grey for header
-				'icon-bg': 'hsl(218 25% 25%)', // Slightly lighter grey for icon background
-				'icon-active-underline': 'hsl(214 89% 52%)', // Blue for active indicator
+				// Updated colors for white header and navigation icons
+				'header-bg': 'hsl(0 0% 100%)', // White for header
+				'icon-bg': 'hsl(220 14% 96%)', // Light gray for icon background
+				'icon-active-underline': 'hsl(151 100% 24%)', // Primary green for active indicator
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

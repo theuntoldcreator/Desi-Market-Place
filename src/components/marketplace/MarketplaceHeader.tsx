@@ -14,17 +14,18 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
   const session = useSession();
   const logoUrl = marketplaceLogo;
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-header-bg bg-header-bg backdrop-blur-sm">
+    <header className="sticky top-0 z-30 w-full border-b border-border bg-header-bg backdrop-blur-sm">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/" className="flex items-center sm:space-x-3">
             <img src={logoUrl} alt="NRI's Marketplace Logo" className="hidden sm:block w-8 h-8 rounded-lg" />
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent bg-[size:200%_auto] animate-gradient-move">
+            <h1 className="text-lg sm:text-xl font-bold text-foreground">
               NRI's Marketplace
             </h1>
           </Link>
         </div>
-        <nav className="hidden sm:flex flex-1 justify-center gap-2">
+        {/* Desktop navigation - hidden on small screens */}
+        <nav className="hidden md:flex flex-1 justify-center gap-2">
           <NavLinkIcon to="/" icon={Home} label="All Listings" />
           <NavLinkIcon to="/my-listings" icon={ShoppingBag} label="My Listings" />
           <NavLinkIcon to="/favorites" icon={Heart} label="Favorites" />
