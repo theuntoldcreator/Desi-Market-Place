@@ -186,7 +186,7 @@ export default function Favorites() {
       <MarketplaceHeader
         onCreateListing={() => setShowCreateListing(true)}
         searchQuery={searchQuery} // Pass searchQuery
-        onSearchChange={setSearchQuery} // Pass onSearchChange
+        onSearchChange={setSearchChange} // Pass onSearchChange
       />
       <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl"> {/* Removed md:pt-8 */}
         <div>
@@ -198,7 +198,7 @@ export default function Favorites() {
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
       {selectedListing && (
         <ListingDetailModal
-          listing={{ ...selectedListing, profile: selectedListing.profile || {}, timeAgo: new Date(selectedListing.created_at).toLocaleDateString() }}
+          listing={{ ...selectedListing, profile: selectedListing.profile || null, timeAgo: new Date(selectedListing.created_at).toLocaleDateString() }}
           isOpen={!!selectedListing}
           isOwner={false}
           onClose={() => setSelectedListing(null)}
