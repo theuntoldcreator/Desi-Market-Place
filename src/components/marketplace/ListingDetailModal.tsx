@@ -73,10 +73,14 @@ export function ListingDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-5xl sm:h-[90vh] sm:rounded-2xl flex flex-col sm:flex-row overflow-hidden [&>button]:hidden">
-        {/* Close buttons - positioned absolutely within DialogContent */}
-        <Button variant="ghost" size="icon" className="absolute top-4 left-4 z-20 sm:hidden bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10" onClick={onClose}><X className="h-5 w-5" /></Button>
-        <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-20 hidden sm:inline-flex bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10" onClick={onClose}><X className="h-5 w-5" /></Button>
+      <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-4xl sm:max-h-[90vh] sm:rounded-2xl flex flex-col sm:flex-row overflow-hidden">
+        {/* Close buttons - positioned absolutely within DialogContent, wrapped in div to bypass default hidden style */}
+        <div className="absolute top-4 left-4 z-20 sm:hidden">
+          <Button variant="ghost" size="icon" className="bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10" onClick={onClose}><X className="h-5 w-5" /></Button>
+        </div>
+        <div className="absolute top-4 right-4 z-20 hidden sm:inline-flex">
+          <Button variant="ghost" size="icon" className="bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10" onClick={onClose}><X className="h-5 w-5" /></Button>
+        </div>
 
         {/* Image Section (left column on desktop) */}
         <div className="relative bg-muted flex items-center justify-center aspect-square sm:aspect-auto sm:w-1/2 sm:h-full sm:flex-shrink-0">
