@@ -73,7 +73,7 @@ export function ListingDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-5xl sm:h-[90vh] sm:rounded-2xl flex flex-col sm:flex-row overflow-hidden [&>button]:hidden">
+      <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-4xl sm:max-h-[90vh] sm:rounded-2xl flex flex-col sm:flex-row overflow-hidden [&>button]:hidden">
         {/* Close buttons - positioned absolutely within DialogContent */}
         <Button variant="ghost" size="icon" className="absolute top-4 left-4 z-20 sm:hidden bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}><X className="h-5 w-5" /></Button>
         <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-20 hidden sm:inline-flex bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}><X className="h-5 w-5" /></Button>
