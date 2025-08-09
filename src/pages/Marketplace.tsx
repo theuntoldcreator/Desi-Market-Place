@@ -387,14 +387,14 @@ export default function Marketplace() {
       <MarketplaceHeader 
         onCreateListing={() => setShowCreateListing(true)} 
         searchQuery={searchQuery} // Pass searchQuery
-        onSearchChange={setSearchChange} // Pass onSearchChange
+        onSearchChange={setSearchQuery} // Pass onSearchChange
       />
       <div className="flex">
         <MarketplaceSidebar 
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           searchQuery={searchQuery}
-          onSearchChange={setSearchChange}
+          onSearchChange={setSearchQuery}
           onlineCount={onlineCount}
           totalUsersCount={totalUsersCount ?? undefined}
         />
