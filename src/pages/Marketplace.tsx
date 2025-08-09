@@ -401,12 +401,14 @@ export default function Marketplace() {
           totalUsersCount={totalUsersCount ?? undefined}
         />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 md:pt-8"> {/* Adjusted padding-top for mobile */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4"> {/* Changed to always be a flex row */}
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold">{selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
               <p className="text-muted-foreground mt-1">{filteredListings.length} items found</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setSortBy(s => s === 'newest' ? 'price-low' : s === 'price-low' ? 'price-high' : 'newest')} className="gap-2"><SortAsc className="w-4 h-4" />{sortBy === 'newest' ? 'Newest' : sortBy === 'price-low' ? 'Price: Low-High' : 'Price: High-Low'}</Button>
+            <Button variant="outline" size="sm" onClick={() => setSortBy(s => s === 'newest' ? 'price-low' : s === 'price-low' ? 'price-high' : 'newest')} className="gap-2 flex-shrink-0">
+              <SortAsc className="w-4 h-4" />{sortBy === 'newest' ? 'Newest' : sortBy === 'price-low' ? 'Price: Low-High' : 'Price: High-Low'}
+            </Button>
           </div>
           {renderContent()}
           <DisclaimerSection />
