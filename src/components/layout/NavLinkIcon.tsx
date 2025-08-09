@@ -16,7 +16,8 @@ export function NavLinkIcon({ to, icon: Icon, label }: NavLinkIconProps) {
   return (
     <Button asChild variant="ghost" className={cn(
       "relative h-12 w-24 rounded-lg flex flex-col items-center justify-center gap-1 text-primary hover:text-primary transition-colors",
-      "focus-visible:ring-offset-0 focus-visible:ring-transparent", // Removed hover:bg-icon-bg
+      "focus-visible:ring-offset-0 focus-visible:ring-transparent",
+      "hover:bg-transparent", // Explicitly remove background hover
       isActive && "text-primary"
     )}>
       <Link to={to} className="flex flex-col items-center justify-center w-full h-full">
