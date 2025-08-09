@@ -11,9 +11,10 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
+import { Listing } from '@/lib/types'; // Import Listing type
 
 
-const fetchFavoriteListings = async (userId: string) => {
+const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
 
   // Step 1: Get the user's favorite listing IDs
@@ -68,10 +69,10 @@ export default function Favorites() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [searchQuery, setSearchQuery] = useState(''); // Add search query state
 
-  const { data: listings = [], isLoading, isError } = useQuery({
+  const { data: listings = [], isLoading, isError } = useQuery<Listing[]>({
     queryKey: ['favorites', session?.user?.id],
     queryFn: () => fetchFavoriteListings(session!.user.id),
     enabled: !!session,
@@ -95,9 +96,9 @@ export default function Favorites() {
         queryClient.invalidateQueries({ queryKey: ['favorites', session.user.id] });
         
         if (payload.eventType === 'UPDATE') {
-          toast({ title: "Favorited Listing Updated!", description: `${payload.old.title || 'An item you favorited'} has been updated.` });
+          toast({ title: "Favorited Listing Updated!", description: `${(payload.old as Listing).title || 'An item you favorited'} has been updated.` });
         } else if (payload.eventType === 'DELETE') {
-          toast({ title: "Favorited Listing Removed!", description: `${payload.old.title || 'An item you favorited'} has been removed.` });
+          toast({ title: "Favorited Listing Removed!", description: `${(payload.old as Listing).title || 'An item you favorited'} has been removed.` });
         }
       })
       .subscribe();
@@ -109,7 +110,7 @@ export default function Favorites() {
 
 
   const favoriteMutation = useMutation({
-    mutationFn: async ({ listingId }: { listingId: string }) => {
+    mutationFn: async ({ listingId }: { listingId: number }) => { // Changed listingId to number
       if (!session) throw new Error("You must be logged in.");
       await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
     },
@@ -122,7 +123,7 @@ export default function Favorites() {
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
   });
 
-  const handleSendMessage = (listing: any) => {
+  const handleSendMessage = (listing: Listing) => {
     if (!session) {
       toast({ title: "Please log in", description: "You need to be logged in to send a message.", variant: "destructive" });
       return;
@@ -197,7 +198,7 @@ export default function Favorites() {
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
       {selectedListing && (
         <ListingDetailModal
-          listing={{ ...selectedListing, seller: selectedListing.profile || {}, timeAgo: new Date(selectedListing.created_at).toLocaleDateString() }}
+          listing={{ ...selectedListing, profile: selectedListing.profile || {}, timeAgo: new Date(selectedListing.created_at).toLocaleDateString() }}
           isOpen={!!selectedListing}
           isOwner={false}
           onClose={() => setSelectedListing(null)}
