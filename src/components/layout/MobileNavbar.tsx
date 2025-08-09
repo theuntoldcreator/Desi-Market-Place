@@ -1,4 +1,4 @@
-import { Home, ShoppingBag, Heart, User } from 'lucide-react';
+import { Home, ShoppingBag, Heart } from 'lucide-react'; // Removed User icon
 import { NavLinkIcon } from '@/components/layout/NavLinkIcon';
 import { cn } from '@/lib/utils';
 
@@ -11,7 +11,7 @@ export function MobileNavbar() {
       <NavLinkIcon to="/" icon={Home} label="Home" />
       <NavLinkIcon to="/my-listings" icon={ShoppingBag} label="My Listings" />
       <NavLinkIcon to="/favorites" icon={Heart} label="Favorites" />
-      <NavLinkIcon to="/profile" icon={User} label="Profile" />
+      {/* Removed NavLinkIcon for Profile */}
     </nav>
   );
 }
