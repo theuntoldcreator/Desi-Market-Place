@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } => '@/lib/utils';
 import React from 'react';
 
 interface NavLinkIconProps {
@@ -23,7 +23,8 @@ export function NavLinkIcon({ to, icon: Icon, label }: NavLinkIconProps) {
         <Icon className="h-6 w-6" />
         <span className="text-xs mt-1">{label}</span>
         {isActive && (
-          <div className="absolute bottom-0 h-1 w-3/4 bg-icon-active-underline rounded-t-sm" /> {/* Reduced width to w-3/4 */}
+          // Reduced width to w-3/4
+          <div className="absolute bottom-0 h-1 w-3/4 bg-icon-active-underline rounded-t-sm" /> 
         )}
       </Link>
     </Button>
