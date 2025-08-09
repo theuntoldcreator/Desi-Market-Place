@@ -79,27 +79,13 @@ export const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery
 };
 
 export function MarketplaceSidebar(props: MarketplaceSidebarProps) {
-  const [isOpen, setIsOpen] = useState(false);
   return (
     <>
       {/* Desktop */}
       <div className="hidden sm:block w-72 border-r bg-white h-screen sticky top-16 shrink-0">
         <SidebarContent {...props} />
       </div>
-      {/* Mobile */}
-      <div className="sm:hidden fixed bottom-4 right-4 z-40">
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild><Button size="icon" className="rounded-full shadow-lg h-14 w-14"><Menu className="h-6 w-6" /></Button></SheetTrigger>
-          <SheetContent 
-            side="left" 
-            className="w-80 p-0 bg-white"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-          >
-            <SheetHeader className="p-4 border-b"><SheetTitle>Filters & Menu</SheetTitle></SheetHeader>
-            <SidebarContent {...props} onLinkClick={() => setIsOpen(false)} />
-          </SheetContent>
-        </Sheet>
-      </div>
+      {/* Mobile - Floating button removed */}
     </>
   );
 }
