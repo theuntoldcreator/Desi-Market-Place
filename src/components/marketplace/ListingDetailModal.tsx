@@ -5,17 +5,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, MapPin, Check, Trash2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipTrigger } => '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '../ui/separator';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
+import { Listing } from '@/lib/types'; // Import Listing type
 
 interface ListingDetailModalProps {
-  listing: any;
+  listing: Listing; // Use the Listing type
   isOpen: boolean;
   isOwner: boolean;
   onClose: () => void;
-  onFavoriteToggle?: (id: string, isFavorited: boolean) => void;
+  onFavoriteToggle?: (id: number, isFavorited: boolean) => void; // Changed id to number
   onSendMessage?: () => void;
   onEdit?: () => void;
   onMarkAsSold?: () => void;
@@ -52,7 +53,7 @@ export function ListingDetailModal({
     setCurrentImageIndex((prev) => (prev - 1 + listing.image_urls.length) % listing.image_urls.length);
   };
 
-  const fullName = `${listing.seller?.first_name || ''} ${listing.seller?.last_name || ''}`.trim() || 'Unknown User';
+  const fullName = `${listing.profile?.first_name || ''} ${listing.profile?.last_name || ''}`.trim() || 'Unknown User';
   const fallback = fullName?.[0]?.toUpperCase();
 
   const creationDate = new Date(listing.created_at);
@@ -118,7 +119,7 @@ export function ListingDetailModal({
           </div>
           <Separator />
           <div className="flex items-center gap-3">
-            <Avatar className="w-12 h-12"><AvatarImage src={listing.seller?.avatar_url} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
+            <Avatar className="w-12 h-12"><AvatarImage src={listing.profile?.avatar_url || undefined} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
             <div>
               <p className="font-semibold">{fullName}</p>
               <p className="text-sm text-muted-foreground">Seller Information</p>
@@ -156,7 +157,7 @@ export function ListingDetailModal({
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Chat on WhatsApp
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
+                  <Button variant="outline" className="w-full" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited || false)}>
                     <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
                     {listing.isFavorited ? 'Saved' : 'Save'}
                   </Button>

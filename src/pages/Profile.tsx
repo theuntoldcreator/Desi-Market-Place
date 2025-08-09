@@ -30,6 +30,7 @@ export default function Profile() {
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(''); // Added state for search query
 
   const { data: profile, isLoading, isError } = useQuery({
     queryKey: ['profile', session?.user?.id],
@@ -158,7 +159,11 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
-      <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
+      <MarketplaceHeader 
+        onCreateListing={() => setShowCreateListing(true)} 
+        searchQuery={searchQuery} // Pass searchQuery
+        onSearchChange={setSearchQuery} // Pass onSearchChange
+      />
       <main className="container mx-auto px-4 sm:px-6 py-8">
         {renderContent()}
       </main>

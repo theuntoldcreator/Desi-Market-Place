@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { countries } from '@/lib/countries';
 import { validateText } from '@/lib/profanity';
-import { ProfanityViolationModal } from './ProfanityViolationModal';
+import { ProfanityViolationModal } from '@/components/marketplace/ProfanityViolationModal'; // Corrected import path
 import {
   AlertDialog,
   AlertDialogAction,
@@ -170,7 +170,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
 
             if (updateErrors.length > 0) {
               console.error("Errors updating some listings:", updateErrors);
-              toast({ title: "Partial Update Warning", description: "Profile updated, but some listings could not be updated.", variant: "warning" });
+              toast({ title: "Partial Update Warning", description: "Profile updated, but some listings could not be updated.", variant: "default" }); // Changed variant to "default"
             } else {
               toast({ title: "Listings Updated", description: "Your listings have been updated with new contact and location info." });
             }

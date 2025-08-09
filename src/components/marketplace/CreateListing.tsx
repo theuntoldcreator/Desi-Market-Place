@@ -174,7 +174,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     return requiredFields.every(field => !!(formData as any)[field]);
   };
 
-  const handlePriceChange = (e: React.ChangeEvent<IHTMLInputElement>) => {
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPrice = e.target.value;
     setFormData(prev => {
         if (newPrice === '0') {
