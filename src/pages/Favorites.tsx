@@ -11,7 +11,6 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
-import { MarketplaceMobileSearchAndNav } from '@/components/marketplace/MarketplaceMobileSearchAndNav'; // Import for mobile nav
 
 
 const fetchFavoriteListings = async (userId: string) => {
@@ -183,12 +182,12 @@ export default function Favorites() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
-      <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
-      <MarketplaceMobileSearchAndNav
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+      <MarketplaceHeader
+        onCreateListing={() => setShowCreateListing(true)}
+        searchQuery={searchQuery} // Pass searchQuery
+        onSearchChange={setSearchQuery} // Pass onSearchChange
       />
-      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl md:pt-8"> {/* Adjusted padding-top for mobile */}
+      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl"> {/* Removed md:pt-8 */}
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold">My Favorites</h2>
           <p className="text-muted-foreground mt-1">{filteredListings.length} items saved</p>

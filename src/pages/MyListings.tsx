@@ -12,7 +12,6 @@ import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
-import { MarketplaceMobileSearchAndNav } from '@/components/marketplace/MarketplaceMobileSearchAndNav'; // Import for mobile nav
 
 const fetchMyListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
@@ -144,12 +143,12 @@ export default function MyListings() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
-      <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
-      <MarketplaceMobileSearchAndNav
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+      <MarketplaceHeader
+        onCreateListing={() => setShowCreateListing(true)}
+        searchQuery={searchQuery} // Pass searchQuery
+        onSearchChange={setSearchQuery} // Pass onSearchChange
       />
-      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl md:pt-8"> {/* Adjusted padding-top for mobile */}
+      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl"> {/* Removed md:pt-8 */}
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold">My Listings</h2>
           <p className="text-muted-foreground mt-1">{filteredListings.length} items posted</p>

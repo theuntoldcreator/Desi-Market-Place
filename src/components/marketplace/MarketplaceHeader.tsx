@@ -5,12 +5,15 @@ import { Link } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
 import marketplaceLogo from '@/assets/marketplace.jpg';
 import { NavLinkIcon } from '@/components/layout/NavLinkIcon';
+import { MobileSearchDialog } from './MobileSearchDialog'; // Import the new component
 
 interface MarketplaceHeaderProps {
   onCreateListing: () => void;
+  searchQuery: string; // Add searchQuery prop
+  onSearchChange: (query: string) => void; // Add onSearchChange prop
 }
 
-export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
+export function MarketplaceHeader({ onCreateListing, searchQuery, onSearchChange }: MarketplaceHeaderProps) {
   const session = useSession();
   const logoUrl = marketplaceLogo;
   return (
@@ -31,6 +34,8 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
           <NavLinkIcon to="/favorites" icon={Heart} label="Favorites" />
         </nav>
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile Search Button */}
+          <MobileSearchDialog searchQuery={searchQuery} onSearchChange={onSearchChange} />
           <Button onClick={onCreateListing} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
           <Button onClick={onCreateListing} size="icon" className="sm:hidden flex"><Plus className="w-4 h-4" /></Button>
           {session ? (

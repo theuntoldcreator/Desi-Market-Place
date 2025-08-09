@@ -14,7 +14,6 @@ import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { subDays } from 'date-fns';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
-import { MarketplaceMobileSearchAndNav } from '@/components/marketplace/MarketplaceMobileSearchAndNav'; // Import the new component
 
 const fetchListings = async (userId: string | undefined, latestTimestamp?: string) => {
   let query = supabase
@@ -385,11 +384,10 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
-      <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
-      {/* New Mobile/Tablet Search and Navigation Bar */}
-      <MarketplaceMobileSearchAndNav
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+      <MarketplaceHeader 
+        onCreateListing={() => setShowCreateListing(true)} 
+        searchQuery={searchQuery} // Pass searchQuery
+        onSearchChange={setSearchQuery} // Pass onSearchChange
       />
       <div className="flex">
         <MarketplaceSidebar 
@@ -400,8 +398,8 @@ export default function Marketplace() {
           onlineCount={onlineCount}
           totalUsersCount={totalUsersCount ?? undefined}
         />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 md:pt-8"> {/* Adjusted padding-top for mobile */}
-          <div className="flex items-center justify-between gap-4"> {/* Changed to always be a flex row */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8"> {/* Removed md:pt-8 */}
+          <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold">{selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
               <p className="text-muted-foreground mt-1">{filteredListings.length} items found</p>
