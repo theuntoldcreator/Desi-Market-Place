@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, MapPin, Check, Trash2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } => '@/components/ui/tooltip';
 import { Separator } from '../ui/separator';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
@@ -76,10 +76,10 @@ export function ListingDetailModal({
       <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-4xl sm:max-h-[90vh] sm:rounded-2xl flex flex-col sm:flex-row overflow-hidden">
         {/* Close buttons - positioned absolutely within DialogContent, wrapped in div to bypass default hidden style */}
         <div className="absolute top-4 left-4 z-20 sm:hidden">
-          <Button variant="ghost" size="icon" className="bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10" onClick={onClose}><X className="h-5 w-5" /></Button>
+          <Button variant="ghost" size="icon" className="bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10 hover:text-black" onClick={onClose}><X className="h-5 w-5" /></Button>
         </div>
         <div className="absolute top-4 right-4 z-20 hidden sm:inline-flex">
-          <Button variant="ghost" size="icon" className="bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10" onClick={onClose}><X className="h-5 w-5" /></Button>
+          <Button variant="ghost" size="icon" className="bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10 hover:text-black" onClick={onClose}><X className="h-5 w-5" /></Button>
         </div>
 
         {/* Image Section (left column on desktop) */}
