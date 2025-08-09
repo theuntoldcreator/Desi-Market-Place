@@ -65,9 +65,9 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link to="/profile"><User className="mr-2 h-4 w-4" /><span>Profile</span></Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link to="/"><LayoutGrid className="mr-2 h-4 w-4" /><span>All Listings</span></Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/my-listings"><ShoppingBag className="mr-2 h-4 w-4" /><span>My Listings</span></Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/favorites"><Heart className="mr-2 h-4 w-4" /><span>Favorites</span></Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/"><LayoutGrid className="mr-2 h-4 w-4" /><span>All Listings</span></Link></DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

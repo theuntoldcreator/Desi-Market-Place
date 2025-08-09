@@ -1,18 +1,35 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState, useEffect } from 'react';
+import { useSession } from '@supabase/auth-helpers-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Phone, Loader2, Upload, X, MapPin, Info, Image as ImageIcon, Trash2, Camera, GalleryHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { cn } from '@/lib/utils';
+import { Label } from '../ui/label';
+import { countries } from '@/lib/countries';
+import { validateText } from '@/lib/profanity';
+import { ProfanityViolationModal } from './ProfanityViolationModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import imageCompression from 'browser-image-compression';
 import { DobPicker } from './DobPicker';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -21,6 +38,7 @@ const profileSchema = z.object({
   dob: z.date().optional(),
   avatarFile: z.instanceof(File).optional(),
   gender: z.enum(['male', 'female']).optional(),
+  location: z.string().min(1, "Location is required").optional().or(z.literal('')),
 });
 
 interface EditProfileProps {
@@ -44,6 +62,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
       phoneNumber: profile.phone_number || '',
       dob: profile.dob ? new Date(profile.dob) : undefined,
       gender: profile.gender,
+      location: profile.location || '', // Add location to default values
     },
   });
 
@@ -95,10 +114,53 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
           dob: values.dob?.toISOString().split('T')[0],
           avatar_url: avatar_url,
           gender: values.gender,
+          location: values.location, // Update location in profile
         })
         .eq('id', session.user.id);
 
       if (updateError) throw new Error(`Profile update failed: ${updateError.message}`);
+
+      // --- New logic for updating listings ---
+      if (session?.user?.id) {
+        try {
+          const { data: userListings, error: listingsFetchError } = await supabaseClient
+            .from('listings')
+            .select('id');
+
+          if (listingsFetchError) throw listingsFetchError;
+
+          if (userListings && userListings.length > 0) {
+            const newContact = `${form.getValues('countryCode')}${values.phoneNumber.replace(/\D/g, '')}`;
+            const newLocation = values.location;
+
+            const updatePromises = userListings.map(listing =>
+              supabaseClient
+                .from('listings')
+                .update({
+                  contact: newContact,
+                  location: newLocation,
+                })
+                .eq('id', listing.id)
+            );
+
+            const results = await Promise.all(updatePromises);
+            const updateErrors = results.filter(r => r.error).map(r => r.error);
+
+            if (updateErrors.length > 0) {
+              console.error("Errors updating some listings:", updateErrors);
+              toast({ title: "Partial Update Warning", description: "Profile updated, but some listings could not be updated.", variant: "warning" });
+            } else {
+              toast({ title: "Listings Updated", description: "Your listings have been updated with new contact and location info." });
+            }
+            queryClient.invalidateQueries({ queryKey: ['listings'] });
+            queryClient.invalidateQueries({ queryKey: ['my-listings'] });
+          }
+        } catch (error: any) {
+          console.error("Error updating user listings:", error.message);
+          toast({ title: "Listing Update Failed", description: `Could not update all your listings: ${error.message}`, variant: "destructive" });
+        }
+      }
+      // --- End new logic ---
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Your profile has been updated." });
@@ -137,6 +199,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
               <FormField name="lastName" control={form.control} render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
             <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="123-456-7890" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField name="location" control={form.control} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Your City, State" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 name="dob"

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, Mail, Phone, Calendar, Edit, Trash2 } from 'lucide-react';
+import { Loader2, User, Mail, Phone, Calendar, Edit, Trash2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
@@ -100,6 +100,7 @@ export default function Profile() {
               {renderProfileDetail(User, 'Full Name', fullName)}
               {renderProfileDetail(Mail, 'Email', session?.user.email)}
               {renderProfileDetail(Phone, 'Phone Number', profile.phone_number)}
+              {renderProfileDetail(MapPin, 'Location', profile.location)} {/* Display location */}
               {renderProfileDetail(Calendar, 'Date of Birth', profile.dob ? format(new Date(profile.dob), 'PPP') : null)}
               {renderProfileDetail(User, 'Gender', profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : null)}
             </div>

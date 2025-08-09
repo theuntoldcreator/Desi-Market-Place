@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } => 'react-router-dom';
 import { DobPicker } from '@/components/auth/DobPicker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import marketplaceLogo from '@/assets/marketplace.jpg';
@@ -25,6 +25,7 @@ const signUpSchema = z.object({
   gender: z.enum(['male', 'female'], { required_error: "Gender is required" }),
   phoneNumber: z.string().min(10, "Please enter a valid phone number"),
   dob: z.date({ required_error: "Date of birth is required" }).max(eighteenYearsAgo, "You must be at least 18 years old"),
+  location: z.string().min(1, "Location is required"), // Add location to schema
 });
 
 export default function SignUp() {
@@ -32,7 +33,7 @@ export default function SignUp() {
   const navigate = useNavigate();
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { firstName: '', lastName: '', email: '', password: '', phoneNumber: '' },
+    defaultValues: { firstName: '', lastName: '', email: '', password: '', phoneNumber: '', location: '' }, // Add location to default values
   });
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
@@ -51,6 +52,7 @@ export default function SignUp() {
           phone_number: values.phoneNumber,
           dob: values.dob.toISOString().split('T')[0],
           avatar_url: avatar_url,
+          location: values.location, // Add location to user metadata
         }
       }
     });
@@ -86,6 +88,7 @@ export default function SignUp() {
                 <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="123-456-7890" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField name="gender" control={form.control} render={({ field }) => (<FormItem><FormLabel>Gender</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger></FormControl><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
               </div>
+              <FormField name="location" control={form.control} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Your City, State" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <Alert className="text-xs p-3">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
