@@ -38,7 +38,7 @@ export function MobileSearchDialog({ searchQuery, onSearchChange }: MobileSearch
               autoFocus
             />
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="rounded-full border border-input">
             <X className="w-5 h-5" />
           </Button>
         </SheetHeader>
