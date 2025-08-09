@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
 import { Listing } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Profile {
   id: string;
@@ -122,6 +123,26 @@ export default function TheUntoldCreator() {
     onSettled: () => setUserToDelete(null)
   });
 
+  // Mutation for updating user role
+  const updateUserRoleMutation = useMutation({
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
+      if (!session) throw new Error("Unauthorized");
+      const { data, error } = await supabaseClient.functions.invoke('update-user-role', {
+        body: { userIdToUpdate: userId, newRole },
+      });
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      toast({ title: "Success!", description: `User role updated to ${variables.newRole}.` });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['profile', variables.userId] }); // Invalidate specific profile
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: `Failed to update user role: ${error.message}`, variant: "destructive" });
+    },
+  });
+
   const normalizedSearchQuery = searchQuery.toLowerCase().trim();
 
   const filteredListings = listings.filter(l =>
@@ -197,7 +218,25 @@ export default function TheUntoldCreator() {
                 {profile.first_name} {profile.last_name}
               </TableCell>
               <TableCell>{profile.email}</TableCell>
-              <TableCell className="capitalize">{profile.role}</TableCell>
+              <TableCell className="capitalize">
+                {session?.user?.id === profile.id ? (
+                  <span className="font-semibold text-primary">Admin (You)</span>
+                ) : (
+                  <Select
+                    value={profile.role}
+                    onValueChange={(newRole) => updateUserRoleMutation.mutate({ userId: profile.id, newRole })}
+                    disabled={updateUserRoleMutation.isPending}
+                  >
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </TableCell>
               <TableCell className="text-right">
                 {session?.user?.id !== profile.id && ( // Prevent admin from deleting their own account
                   <Button variant="destructive" size="sm" onClick={() => setUserToDelete(profile)}>
