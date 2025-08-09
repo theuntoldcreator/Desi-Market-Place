@@ -1,6 +1,6 @@
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, User, ShoppingBag, Heart, LayoutGrid } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -65,9 +65,6 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link to="/profile"><User className="mr-2 h-4 w-4" /><span>Profile</span></Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/"><LayoutGrid className="mr-2 h-4 w-4" /><span>All Listings</span></Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/my-listings"><ShoppingBag className="mr-2 h-4 w-4" /><span>My Listings</span></Link></DropdownMenuItem>
-        <DropdownMenuItem asChild><Link to="/favorites"><Heart className="mr-2 h-4 w-4" /><span>Favorites</span></Link></DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

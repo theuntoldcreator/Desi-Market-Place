@@ -74,7 +74,11 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// New colors for dark header and navigation icons
+				'header-bg': 'hsl(218 25% 18%)', // Dark grey for header
+				'icon-bg': 'hsl(218 25% 25%)', // Slightly lighter grey for icon background
+				'icon-active-underline': 'hsl(214 89% 52%)', // Blue for active indicator
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

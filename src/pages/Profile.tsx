@@ -9,7 +9,6 @@ import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { format } from 'date-fns';
 import { EditProfile } from '@/components/auth/EditProfile';
-import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 
@@ -164,7 +163,6 @@ export default function Profile() {
         {renderContent()}
       </main>
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
-      <FloatingHomeButton />
     </div>
   );
 }

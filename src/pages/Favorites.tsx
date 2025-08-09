@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
-import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
+import { MarketplaceHeader } => '@/components/marketplace/MarketplaceHeader';
 import { Button } from '@/components/ui/button';
 import { Loader2, Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
-import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
+
 
 const fetchFavoriteListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
@@ -194,7 +194,6 @@ export default function Favorites() {
           onSendMessage={() => handleSendMessage(selectedListing)}
         />
       )}
-      <FloatingHomeButton />
     </div>
   );
 }

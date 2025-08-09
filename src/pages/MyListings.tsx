@@ -12,7 +12,7 @@ import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
-import { FloatingHomeButton } from '@/components/layout/FloatingHomeButton';
+
 
 const fetchMyListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
@@ -93,7 +93,7 @@ export default function MyListings() {
       if (listing.image_urls && listing.image_urls.length > 0) {
         const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]).filter(Boolean);
         if (imagePaths.length > 0) {
-          await supabase.storage.from('listing_images').remove(imagePaths);
+            await supabase.storage.from('listing_images').remove(imagePaths);
         }
       }
 
@@ -176,7 +176,6 @@ export default function MyListings() {
           onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
         />
       )}
-      <FloatingHomeButton />
     </div>
   );
 }

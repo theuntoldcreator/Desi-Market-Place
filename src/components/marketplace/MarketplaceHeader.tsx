@@ -1,9 +1,10 @@
-import { Plus } from 'lucide-react';
+import { Plus, Home, ShoppingBag, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { Link } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
 import marketplaceLogo from '@/assets/marketplace.jpg';
+import { NavLinkIcon } from '@/components/layout/NavLinkIcon';
 
 interface MarketplaceHeaderProps {
   onCreateListing: () => void;
@@ -13,7 +14,7 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
   const session = useSession();
   const logoUrl = marketplaceLogo;
   return (
-    <header className="sticky top-0 z-30 w-full border-b bg-white/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 w-full border-b border-header-bg bg-header-bg backdrop-blur-sm">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/" className="flex items-center sm:space-x-3">
@@ -23,6 +24,11 @@ export function MarketplaceHeader({ onCreateListing }: MarketplaceHeaderProps) {
             </h1>
           </Link>
         </div>
+        <nav className="hidden sm:flex flex-1 justify-center gap-2">
+          <NavLinkIcon to="/" icon={Home} label="All Listings" />
+          <NavLinkIcon to="/my-listings" icon={ShoppingBag} label="My Listings" />
+          <NavLinkIcon to="/favorites" icon={Heart} label="Favorites" />
+        </nav>
         <div className="flex items-center gap-2 sm:gap-3">
           <Button onClick={onCreateListing} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
           <Button onClick={onCreateListing} size="icon" className="sm:hidden flex"><Plus className="w-4 h-4" /></Button>
