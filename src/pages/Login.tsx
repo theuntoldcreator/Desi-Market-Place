@@ -39,7 +39,7 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-marketplace-bg flex items-center justify-center p-4">
+    <div className="min-h-screen bg-marketplace-bg flex flex-col items-center justify-center p-4">
       <div className="max-w-4xl w-full grid lg:grid-cols-2 gap-12 items-center">
         {/* Left side - Welcome content */}
         <div className="space-y-6 text-center lg:text-left">
@@ -88,6 +88,12 @@ const Login = () => {
             </p>
           </CardContent>
         </Card>
+      </div>
+      <div className="mt-8 text-center text-sm text-muted-foreground">
+        Made with ❤️ by{' '}
+        <Link to="/theuntoldcreator" className="font-semibold text-primary hover:underline">
+          The Untold Creator
+        </Link>
       </div>
     </div>
   );
