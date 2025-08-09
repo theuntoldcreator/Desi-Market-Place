@@ -21,7 +21,7 @@ export function MarketplaceHeader({ onCreateListing, searchQuery, onSearchChange
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/" className="flex items-center sm:space-x-3">
-            <img src={logoUrl} alt="NRI's Marketplace Logo" className="hidden sm:block w-8 h-8 rounded-lg" />
+            <img src={logoUrl} alt="NRI's Marketplace Logo" className="hidden sm:block w-8 h-8 rounded-lg border border-gray-200" />
             <h1 className="text-lg sm:text-xl font-bold text-foreground">
               NRI's Marketplace
             </h1>
