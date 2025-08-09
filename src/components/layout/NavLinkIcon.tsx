@@ -23,8 +23,8 @@ export function NavLinkIcon({ to, icon: Icon, label }: NavLinkIconProps) {
         <Icon className="h-6 w-6" />
         <span className="text-xs mt-1">{label}</span>
         {isActive && (
-          // Reduced width to w-3/4
-          <div className="absolute bottom-0 h-1 w-3/4 bg-icon-active-underline rounded-t-sm" /> 
+          // Reduced width to w-1/2
+          <div className="absolute bottom-0 h-1 w-1/2 bg-icon-active-underline rounded-t-sm" /> 
         )}
       </Link>
     </Button>
