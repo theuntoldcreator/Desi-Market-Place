@@ -197,7 +197,7 @@ export default function Marketplace() {
             }
           }
         }
-      }, 15000); // Poll every 15 seconds
+      }, 60000); // Poll every 60 seconds (1 minute)
     };
 
     const stopPolling = () => {
