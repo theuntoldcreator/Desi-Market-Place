@@ -416,7 +416,7 @@ export default function Marketplace() {
       <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
       {selectedListing && (
         <ListingDetailModal
-          listing={{ ...selectedListing, profile: selectedListing.profile || null, timeAgo: new Date(selectedListing.created_at).toLocaleDateString() }}
+          listing={{ ...selectedListing, profile: selectedListing.profile || null }}
           isOpen={!!selectedListing}
           isOwner={session?.user?.id === selectedListing.user_id}
           onClose={() => setSelectedListing(null)}
