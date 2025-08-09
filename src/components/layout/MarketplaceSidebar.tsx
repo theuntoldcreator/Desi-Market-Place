@@ -26,13 +26,23 @@ interface MarketplaceSidebarProps {
   totalUsersCount?: number;
 }
 
-const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick, onlineCount, totalUsersCount }: MarketplaceSidebarProps & { onLinkClick?: () => void }) => {
+interface SidebarContentProps {
+  selectedCategory: string;
+  onCategoryChange: (category: string) => void;
+  searchQuery?: string; // Make optional for reuse
+  onSearchChange?: (query: string) => void; // Make optional for reuse
+  onLinkClick?: () => void;
+  onlineCount: number;
+  totalUsersCount?: number;
+}
+
+export const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick, onlineCount, totalUsersCount }: SidebarContentProps) => {
   return (
     <div className="p-4 space-y-6">
       <div className="space-y-4 hidden md:block"> {/* Hidden on mobile, shown on desktop */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="pl-10" />
+          <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange?.(e.target.value)} className="pl-10" />
         </div>
       </div>
       <Separator className="hidden md:block" /> {/* Hide separator on mobile if search is hidden */}
