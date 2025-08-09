@@ -82,7 +82,7 @@ export function MarketplaceSidebar(props: MarketplaceSidebarProps) {
   return (
     <>
       {/* Desktop */}
-      <div className="hidden sm:block w-72 border-r bg-white h-screen sticky top-16 shrink-0">
+      <div className="hidden sm:block w-1/4 border-r bg-white h-screen sticky top-16 shrink-0">
         <SidebarContent {...props} />
       </div>
       {/* Mobile - Floating button removed */}
