@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 const fetchProfile = async (supabase: any, userId: string) => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('*, role') // Select role
     .eq('id', userId)
     .single();
   if (error) throw new Error(error.message);

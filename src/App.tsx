@@ -10,6 +10,7 @@ import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
+import TheUntoldCreator from "./pages/TheUntoldCreator"; // Import the new admin page
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useEffect } from "react";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -47,6 +48,7 @@ const AppRoutes = () => {
         <Route path="/my-listings" element={<MyListings />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/theuntoldcreator" element={<TheUntoldCreator />} /> {/* New Admin Route */}
       </Route>
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />

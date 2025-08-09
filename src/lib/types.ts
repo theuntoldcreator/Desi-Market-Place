@@ -19,6 +19,7 @@ export interface Listing {
     first_name: string | null;
     last_name: string | null;
     avatar_url: string | null;
+    role: string; // Added role
   } | null;
   isFavorited?: boolean; // Optional because it's only added conditionally
 }

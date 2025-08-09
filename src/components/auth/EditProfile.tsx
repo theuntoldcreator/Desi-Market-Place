@@ -88,6 +88,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
           avatar_url: avatar_url, // Use the existing avatar URL
           gender: values.gender,
           location: values.location,
+          // Do NOT update role here, it should be managed by admin
         })
         .eq('id', session.user.id);
 

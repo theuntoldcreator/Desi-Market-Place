@@ -18,12 +18,44 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    const { data: { user: caller } } = await supabaseClient.auth.getUser()
 
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: No authenticated user.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
+      })
+    }
+
+    // Check if the caller is an admin
+    const { data: callerProfile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.id)
+      .single();
+
+    if (profileError || callerProfile?.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Forbidden: Only administrators can perform this action.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403,
+      })
+    }
+
+    // Parse the request body to get the userIdToDelete
+    const { userIdToDelete } = await req.json();
+
+    if (!userIdToDelete) {
+      return new Response(JSON.stringify({ error: 'Bad Request: userIdToDelete is required.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      })
+    }
+
+    // Prevent admin from deleting their own account via this portal
+    if (userIdToDelete === caller.id) {
+      return new Response(JSON.stringify({ error: 'Forbidden: You cannot delete your own admin account via this portal.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403,
       })
     }
 
@@ -32,13 +64,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id)
+    // Delete the user using the admin client
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userIdToDelete)
 
     if (deleteError) {
       throw deleteError
     }
 
-    return new Response(JSON.stringify({ message: 'User deleted successfully' }), {
+    return new Response(JSON.stringify({ message: `User ${userIdToDelete} deleted successfully` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

@@ -65,6 +65,7 @@ export default function SignUp() {
           dob: values.dob.toISOString().split('T')[0],
           avatar_url: avatar_url,
           location: values.location,
+          // Role is handled by the database default in handle_new_user function
         }
       }
     });
