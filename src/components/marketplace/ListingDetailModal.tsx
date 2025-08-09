@@ -73,105 +73,107 @@ export function ListingDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-2xl flex flex-col overflow-hidden [&>button]:hidden">
-        <div className="flex-grow overflow-y-auto hide-scrollbar pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-0 sm:pb-0">
-          <div className="relative bg-muted flex items-center justify-center aspect-square">
-            {isImageLoading && <Skeleton className="absolute inset-0 w-full h-full z-10" />}
-            {listing.status === 'sold' && <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">SOLD</div>}
-            <img
-              src={listing.image_urls[currentImageIndex]}
-              alt={listing.title}
-              className={cn(
-                "w-full h-full object-contain z-10 transition-opacity duration-500",
-                isImageLoading ? "opacity-0" : "opacity-100"
-              )}
-              onLoad={() => setIsImageLoading(false)}
-              onError={() => setIsImageLoading(false)}
-            />
-            {listing.image_urls.length > 1 && (
-              <>
-                <Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button>
-                <Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={nextImage}><ChevronRight /></Button>
-              </>
-            )}
-            <Button variant="ghost" size="icon" className="absolute top-4 left-4 z-20 sm:hidden bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}><X className="h-5 w-5" /></Button>
-            <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-20 hidden sm:inline-flex bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}><X className="h-5 w-5" /></Button>
-          </div>
+      <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-5xl sm:h-[90vh] sm:rounded-2xl flex flex-col sm:flex-row overflow-hidden [&>button]:hidden">
+        {/* Close buttons - positioned absolutely within DialogContent */}
+        <Button variant="ghost" size="icon" className="absolute top-4 left-4 z-20 sm:hidden bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}><X className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-20 hidden sm:inline-flex bg-black/30 hover:bg-black/50 text-white rounded-full" onClick={onClose}><X className="h-5 w-5" /></Button>
 
-          <div className="p-4 space-y-4">
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold tracking-tight">{listing.title}</h1>
-              <p className="text-2xl font-bold">{listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}</p>
-              <div className="text-sm text-muted-foreground flex items-center gap-2 pt-1">
-                <MapPin className="w-4 h-4" />
-                <span>{listing.location}</span>
-                <span className="mx-1">&middot;</span>
-                <span>Posted {formatDistanceToNow(creationDate, { addSuffix: true })}</span>
-              </div>
-            </div>
-            <Separator />
-            <div className="flex items-center gap-3">
-              <Avatar className="w-12 h-12"><AvatarImage src={listing.seller?.avatar_url} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
-              <div>
-                <p className="font-semibold">{fullName}</p>
-                <p className="text-sm text-muted-foreground">Seller Information</p>
-              </div>
-            </div>
-            <Separator />
-            {isOwner ? (
-              <div className="space-y-2">
-                {listing.status !== 'sold' ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" onClick={onEdit}><Pencil className="w-4 h-4 mr-2" />Edit</Button>
-                    <Button onClick={onMarkAsSold}><Tag className="w-4 h-4 mr-2" />Mark as Sold</Button>
-                  </div>
-                ) : (
-                  <>
-                    <Button disabled className="w-full"><Check className="w-4 h-4 mr-2" />Item Sold</Button>
-                    <Button variant="ghost" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={onDelete}><Trash2 className="w-4 h-4 mr-2" />Delete Listing</Button>
-                  </>
-                )}
-              </div>
-            ) : (
-              listing.status !== 'sold' && (
-                <div className="space-y-3">
-                  <Alert className="text-xs p-3">
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      You’ll be redirected to WhatsApp to chat directly with the seller. Please be respectful and avoid sharing sensitive personal information.
-                    </AlertDescription>
-                  </Alert>
-                  <div className="space-y-2">
-                    <Button
-                      className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
-                      onClick={onSendMessage}
-                    >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Chat on WhatsApp
-                    </Button>
-                    <Button variant="outline" className="w-full" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
-                      <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
-                      {listing.isFavorited ? 'Saved' : 'Save'}
-                    </Button>
-                  </div>
-                </div>
-              )
+        {/* Image Section (left column on desktop) */}
+        <div className="relative bg-muted flex items-center justify-center aspect-square sm:aspect-auto sm:w-1/2 sm:h-full sm:flex-shrink-0">
+          {isImageLoading && <Skeleton className="absolute inset-0 w-full h-full z-10" />}
+          {listing.status === 'sold' && <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">SOLD</div>}
+          <img
+            src={listing.image_urls[currentImageIndex]}
+            alt={listing.title}
+            className={cn(
+              "w-full h-full object-contain z-10 transition-opacity duration-500",
+              isImageLoading ? "opacity-0" : "opacity-100"
             )}
-            <Separator />
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold">Details</h2>
-              <div className="text-sm space-y-2">
-                <div className="flex justify-between"><span>Category</span><span className="text-muted-foreground capitalize">{categoryMap[listing.category] || listing.category}</span></div>
-                {listing.condition && <div className="flex justify-between"><span>Condition</span><span className="text-muted-foreground">{conditionMap[listing.condition]}</span></div>}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex justify-between cursor-help"><span>Listing Status</span><span className="text-muted-foreground">{expirationText}</span></div>
-                  </TooltipTrigger>
-                  <TooltipContent><p>Expires on {format(expirationDate, 'PPP')}</p></TooltipContent>
-                </Tooltip>
-              </div>
-              {listing.description && <p className="text-sm text-foreground/80 pt-2">{listing.description}</p>}
+            onLoad={() => setIsImageLoading(false)}
+            onError={() => setIsImageLoading(false)}
+          />
+          {listing.image_urls.length > 1 && (
+            <>
+              <Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button>
+              <Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={nextImage}><ChevronRight /></Button>
+            </>
+          )}
+        </div>
+
+        {/* Details Section (right column on desktop) */}
+        <div className="flex-grow overflow-y-auto hide-scrollbar p-4 space-y-4 sm:w-1/2 sm:h-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-4 sm:pb-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight">{listing.title}</h1>
+            <p className="text-2xl font-bold">{listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}</p>
+            <div className="text-sm text-muted-foreground flex items-center gap-2 pt-1">
+              <MapPin className="w-4 h-4" />
+              <span>{listing.location}</span>
+              <span className="mx-1">&middot;</span>
+              <span>Posted {formatDistanceToNow(creationDate, { addSuffix: true })}</span>
             </div>
+          </div>
+          <Separator />
+          <div className="flex items-center gap-3">
+            <Avatar className="w-12 h-12"><AvatarImage src={listing.seller?.avatar_url} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
+            <div>
+              <p className="font-semibold">{fullName}</p>
+              <p className="text-sm text-muted-foreground">Seller Information</p>
+            </div>
+          </div>
+          <Separator />
+          {isOwner ? (
+            <div className="space-y-2">
+              {listing.status !== 'sold' ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" onClick={onEdit}><Pencil className="w-4 h-4 mr-2" />Edit</Button>
+                  <Button onClick={onMarkAsSold}><Tag className="w-4 h-4 mr-2" />Mark as Sold</Button>
+                </div>
+              ) : (
+                <>
+                  <Button disabled className="w-full"><Check className="w-4 h-4 mr-2" />Item Sold</Button>
+                  <Button variant="ghost" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={onDelete}><Trash2 className="w-4 h-4 mr-2" />Delete Listing</Button>
+                </>
+              )}
+            </div>
+          ) : (
+            listing.status !== 'sold' && (
+              <div className="space-y-3">
+                <Alert className="text-xs p-3">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    You’ll be redirected to WhatsApp to chat directly with the seller. Please be respectful and avoid sharing sensitive personal information.
+                  </AlertDescription>
+                </Alert>
+                <div className="space-y-2">
+                  <Button
+                    className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
+                    onClick={onSendMessage}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Chat on WhatsApp
+                  </Button>
+                  <Button variant="outline" className="w-full" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited)}>
+                    <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
+                    {listing.isFavorited ? 'Saved' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            )
+          )}
+          <Separator />
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">Details</h2>
+            <div className="text-sm space-y-2">
+              <div className="flex justify-between"><span>Category</span><span className="text-muted-foreground capitalize">{categoryMap[listing.category] || listing.category}</span></div>
+              {listing.condition && <div className="flex justify-between"><span>Condition</span><span className="text-muted-foreground">{conditionMap[listing.condition]}</span></div>}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex justify-between cursor-help"><span>Listing Status</span><span className="text-muted-foreground">{expirationText}</span></div>
+                </TooltipTrigger>
+                <TooltipContent><p>Expires on {format(expirationDate, 'PPP')}</p></TooltipContent>
+              </Tooltip>
+            </div>
+            {listing.description && <p className="text-sm text-foreground/80 pt-2">{listing.description}</p>}
           </div>
         </div>
       </DialogContent>
