@@ -5,7 +5,7 @@ import { ListingCard } from '@/components/marketplace/ListingCard';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Button } from '@/components/ui/button';
 import { Loader2, ShoppingBag, Plus } from 'lucide-react';
-import { useToast } => '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { EditListing } from '@/components/marketplace/EditListing';
