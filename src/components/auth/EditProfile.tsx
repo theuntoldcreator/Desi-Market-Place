@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, Loader2, Upload, X, MapPin, Info, Image as ImageIcon, Trash2, Camera, GalleryHorizontal } from 'lucide-react';
+import { Phone, Loader2, MapPin, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { countries } from '@/lib/countries';
 import { validateText } from '@/lib/profanity';
-import { ProfanityViolationModal } from '@/components/marketplace/ProfanityViolationModal'; // Corrected import path
+import { ProfanityViolationModal } from '@/components/marketplace/ProfanityViolationModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,15 +30,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { parsePhoneNumber } from '@/lib/utils'; // Import from utils
+import { parsePhoneNumber } from '@/lib/utils';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  countryCode: z.string().min(1, "Country code is required"), // Added countryCode
-  phoneNumber: z.string().min(1, "Phone number is required").regex(/^\d+$/, "Phone number must contain only digits"), // Updated validation
+  countryCode: z.string().min(1, "Country code is required"),
+  phoneNumber: z.string().min(1, "Phone number is required").regex(/^\d+$/, "Phone number must contain only digits"),
   dob: z.date().optional(),
-  avatarFile: z.instanceof(File).optional(),
   gender: z.enum(['male', 'female']).optional(),
   location: z.string().min(1, "Location is required").optional().or(z.literal('')),
 });
@@ -63,63 +62,30 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
     defaultValues: {
       firstName: profile.first_name || '',
       lastName: profile.last_name || '',
-      countryCode: initialCountryCode, // Set initial country code
-      phoneNumber: initialPhoneNumber, // Set initial local phone number
+      countryCode: initialCountryCode,
+      phoneNumber: initialPhoneNumber,
       dob: profile.dob ? new Date(profile.dob) : undefined,
       gender: profile.gender,
       location: profile.location || '',
     },
   });
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      form.setValue('avatarFile', file);
-      setAvatarPreview(URL.createObjectURL(file));
-    }
-  };
-
   const updateProfileMutation = useMutation({
     mutationFn: async (values: z.infer<typeof profileSchema>) => {
       if (!session) throw new Error("Not authenticated");
 
-      let avatar_url = profile.avatar_url;
+      let avatar_url = profile.avatar_url; // Keep existing avatar URL
 
-      if (values.avatarFile) {
-        const file = values.avatarFile;
-        const filePath = `${session.user.id}/avatar-${Date.now()}`;
-        
-        const { error: uploadError } = await supabaseClient.storage
-          .from('avatars')
-          .upload(filePath, file, { upsert: true });
-        
-        if (uploadError) throw new Error(`Avatar upload failed: ${uploadError.message}`);
-
-        const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(filePath);
-        avatar_url = publicUrl;
-
-        if (profile.avatar_url && !profile.avatar_url.includes('cloudinary')) {
-            try {
-                const oldAvatarPath = new URL(profile.avatar_url).pathname.split('/avatars/')[1];
-                if (oldAvatarPath) {
-                    await supabaseClient.storage.from('avatars').remove([oldAvatarPath]);
-                }
-            } catch (e) {
-                console.warn("Could not delete old avatar", e);
-            }
-        }
-      }
-
-      const fullPhoneNumber = `${values.countryCode}${values.phoneNumber.replace(/\D/g, '')}`; // Combine country code and local number
+      const fullPhoneNumber = `${values.countryCode}${values.phoneNumber.replace(/\D/g, '')}`;
 
       const { error: updateError } = await supabaseClient
         .from('profiles')
         .update({
           first_name: values.firstName,
           last_name: values.lastName,
-          phone_number: fullPhoneNumber, // Save combined phone number
+          phone_number: fullPhoneNumber,
           dob: values.dob?.toISOString().split('T')[0],
-          avatar_url: avatar_url,
+          avatar_url: avatar_url, // Use the existing avatar URL
           gender: values.gender,
           location: values.location,
         })
@@ -127,7 +93,6 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
 
       if (updateError) throw new Error(`Profile update failed: ${updateError.message}`);
 
-      // --- New logic for updating listings ---
       if (session?.user?.id) {
         try {
           const { data: userListings, error: listingsFetchError } = await supabaseClient
@@ -137,7 +102,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
           if (listingsFetchError) throw listingsFetchError;
 
           if (userListings && userListings.length > 0) {
-            const newContact = fullPhoneNumber; // Use the combined phone number
+            const newContact = fullPhoneNumber;
             const newLocation = values.location;
 
             const updatePromises = userListings.map(listing =>
@@ -155,7 +120,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
 
             if (updateErrors.length > 0) {
               console.error("Errors updating some listings:", updateErrors);
-              toast({ title: "Partial Update Warning", description: "Profile updated, but some listings could not be updated.", variant: "default" }); // Changed variant to "default"
+              toast({ title: "Partial Update Warning", description: "Profile updated, but some listings could not be updated.", variant: "default" });
             } else {
               toast({ title: "Listings Updated", description: "Your listings have been updated with new contact and location info." });
             }
@@ -167,7 +132,6 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
           toast({ title: "Listing Update Failed", description: `Could not update all your listings: ${error.message}`, variant: "destructive" });
         }
       }
-      // --- End new logic ---
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Your profile has been updated." });
@@ -196,10 +160,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
                 <AvatarImage src={avatarPreview || undefined} alt={fullName} />
                 <AvatarFallback className="text-3xl">{fallback}</AvatarFallback>
               </Avatar>
-              <div>
-                <FormLabel>Profile Picture</FormLabel>
-                <Input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarChange} className="mt-1" />
-              </div>
+              {/* Avatar upload feature removed */}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <FormField name="firstName" control={form.control} render={({ field }) => (<FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
