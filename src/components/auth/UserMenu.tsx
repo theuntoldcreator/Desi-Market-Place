@@ -1,6 +1,6 @@
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, User, Shield } from 'lucide-react'; // Import Shield icon
+import { LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,7 +14,7 @@ export function UserMenu() {
     queryKey: ['profile', session?.user?.id],
     queryFn: async () => {
       if (!session) return null;
-      const { data, error } = await supabase.from('profiles').select('first_name, last_name, avatar_url, role').eq('id', session.user.id).single(); // Fetch role
+      const { data, error } = await supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', session.user.id).single();
       if (error) throw new Error(error.message);
       return data;
     },
@@ -45,7 +45,6 @@ export function UserMenu() {
 
   const fullName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '';
   const fallback = fullName ? fullName[0].toUpperCase() : session.user.email?.[0].toUpperCase();
-  const isAdmin = profile?.role === 'admin'; // Check if user is admin
 
   return (
     <DropdownMenu>
@@ -66,9 +65,6 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link to="/profile"><User className="mr-2 h-4 w-4" /><span>Profile</span></Link></DropdownMenuItem>
-        {isAdmin && ( // Conditionally render admin link
-          <DropdownMenuItem asChild><Link to="/theuntoldcreator"><Shield className="mr-2 h-4 w-4" /><span>Admin Portal</span></Link></DropdownMenuItem>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

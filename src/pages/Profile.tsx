@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 const fetchProfile = async (supabase: any, userId: string) => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*, role') // Select role
+    .select('*')
     .eq('id', userId)
     .single();
   if (error) throw new Error(error.message);
@@ -100,7 +100,7 @@ export default function Profile() {
               {renderProfileDetail(User, 'Full Name', fullName)}
               {renderProfileDetail(Mail, 'Email', session?.user.email)}
               {renderProfileDetail(Phone, 'Phone Number', profile.phone_number)}
-              {renderProfileDetail(MapPin, 'Location', profile.location)} {/* Display location */}
+              {renderProfileDetail(MapPin, 'Location', profile.location)}
               {renderProfileDetail(Calendar, 'Date of Birth', profile.dob ? format(new Date(profile.dob), 'PPP') : null)}
               {renderProfileDetail(User, 'Gender', profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : null)}
             </div>
@@ -159,10 +159,10 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
-      <MarketplaceHeader 
-        onCreateListing={() => setShowCreateListing(true)} 
-        searchQuery={searchQuery} // Pass searchQuery
-        onSearchChange={setSearchQuery} // Pass onSearchChange
+      <MarketplaceHeader
+        onCreateListing={() => setShowCreateListing(true)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
       <main className="container mx-auto px-4 sm:px-6 py-8">
         {renderContent()}
