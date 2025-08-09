@@ -20,11 +20,11 @@ export function NavLinkIcon({ to, icon: Icon, label }: NavLinkIconProps) {
       isActive && "text-primary"
     )}>
       <Link to={to} className="flex flex-col items-center justify-center w-full h-full">
-        <div className="relative flex flex-col items-center justify-center"> {/* New wrapper div */}
+        <div className="relative flex flex-col items-center justify-center">
           <Icon className="h-6 w-6" />
           <span className="text-xs mt-1">{label}</span>
           {isActive && (
-            <div className="absolute bottom-0 h-1 w-full bg-icon-active-underline rounded-t-sm" /> 
+            <div className="absolute bottom-0 h-1 w-3/4 bg-icon-active-underline rounded-t-sm mx-auto mb-1" /> 
           )}
         </div>
       </Link>
