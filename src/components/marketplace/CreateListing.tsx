@@ -302,7 +302,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
           </div>
         </div>
 
-        <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4">
+        <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4 flex justify-end gap-2">
           <Button onClick={onClose} className="w-full sm:w-auto" variant="outline">Cancel</Button>
           <Button onClick={handlePublish} disabled={createListingMutation.isPending || !validateForm() || isProcessingImages}>
             {createListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
