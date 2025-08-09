@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { cn } => '@/lib/utils';
+import { cn } from '@/lib/utils'; // Corrected from '=>' to 'from'
 import React from 'react';
 
 interface NavLinkIconProps {
