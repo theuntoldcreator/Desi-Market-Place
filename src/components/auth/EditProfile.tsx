@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { parsePhoneNumber } from '@/lib/utils'; // Import from utils
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -54,22 +55,6 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
   const supabaseClient = useSupabaseClient();
   const queryClient = useQueryClient();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatar_url);
-
-  // Function to parse phone number into country code and local number
-  const parsePhoneNumber = (fullNumber: string | null | undefined) => {
-    if (!fullNumber) return { countryCode: '+1', localNumber: '' };
-    
-    const sortedCountries = [...countries].sort((a, b) => b.dial_code.length - a.dial_code.length);
-    let foundCountry = sortedCountries.find(c => fullNumber.startsWith(c.dial_code));
-    
-    if (foundCountry) {
-      return {
-        countryCode: foundCountry.dial_code,
-        localNumber: fullNumber.substring(foundCountry.dial_code.length),
-      };
-    }
-    return { countryCode: '+1', localNumber: fullNumber }; // Default to +1 if no match
-  };
 
   const { countryCode: initialCountryCode, localNumber: initialPhoneNumber } = parsePhoneNumber(profile.phone_number);
 

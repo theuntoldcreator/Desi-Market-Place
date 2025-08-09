@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from '@supabase/auth-helpers-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'; // Import useQuery
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, X, Phone, MapPin, Loader2, Info, Image as ImageIcon, Camera, GalleryHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { cn, parsePhoneNumber } from '@/lib/utils'; // Import parsePhoneNumber
 import { countries } from '@/lib/countries';
 import { Alert, AlertDescription } from '../ui/alert';
 import { validateText } from '@/lib/profanity';
@@ -43,8 +43,43 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
 
+  // Fetch user profile to pre-fill location and phone number
+  const { data: profile } = useQuery({
+    queryKey: ['profile', session?.user?.id],
+    queryFn: async () => {
+      if (!session) return null;
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: !!session,
+    staleTime: Infinity, // Profile data doesn't change often
+  });
+
+  useEffect(() => {
+    if (profile) {
+      const { countryCode, localNumber } = parsePhoneNumber(profile.phone_number);
+      setFormData(prev => ({
+        ...prev,
+        location: profile.location || '',
+        countryCode: countryCode,
+        phoneNumber: localNumber,
+      }));
+    }
+  }, [profile]);
+
   const resetForm = () => {
-    setFormData({ title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: '' });
+    const { countryCode, localNumber } = parsePhoneNumber(profile?.phone_number);
+    setFormData({ 
+      title: '', 
+      description: '', 
+      price: '', 
+      category: '', 
+      location: profile?.location || '', 
+      countryCode: countryCode, 
+      phoneNumber: localNumber, 
+      condition: '' 
+    });
     setImages([]);
     setViolation(null);
   };
