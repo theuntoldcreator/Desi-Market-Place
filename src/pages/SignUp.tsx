@@ -13,6 +13,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DobPicker } from '@/components/auth/DobPicker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import marketplaceLogo from '@/assets/marketplace.jpg';
+import { countries } from '@/lib/countries'; // Import countries
 
 const eighteenYearsAgo = new Date();
 eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
@@ -23,9 +24,10 @@ const signUpSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   gender: z.enum(['male', 'female'], { required_error: "Gender is required" }),
-  phoneNumber: z.string().min(10, "Please enter a valid phone number"),
+  countryCode: z.string().min(1, "Country code is required"), // Added countryCode
+  phoneNumber: z.string().min(1, "Phone number is required").regex(/^\d+$/, "Phone number must contain only digits"), // Updated validation
   dob: z.date({ required_error: "Date of birth is required" }).max(eighteenYearsAgo, "You must be at least 18 years old"),
-  location: z.string().min(1, "Location is required"), // Add location to schema
+  location: z.string().min(1, "Location is required"),
 });
 
 export default function SignUp() {
@@ -33,13 +35,23 @@ export default function SignUp() {
   const navigate = useNavigate();
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { firstName: '', lastName: '', email: '', password: '', phoneNumber: '', location: '' }, // Add location to default values
+    defaultValues: { 
+      firstName: '', 
+      lastName: '', 
+      email: '', 
+      password: '', 
+      countryCode: '+1', // Default country code
+      phoneNumber: '', 
+      location: '' 
+    },
   });
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
     const avatar_url = values.gender === 'male'
       ? 'https://res.cloudinary.com/div5rg0md/image/upload/v1754059528/male-avatar_tpeqcf.png'
       : 'https://res.cloudinary.com/div5rg0md/image/upload/v1754059528/female-avatar_qba6zs.png';
+
+    const fullPhoneNumber = `${values.countryCode}${values.phoneNumber.replace(/\D/g, '')}`; // Combine country code and local number
 
     const { error } = await supabase.auth.signUp({
       email: values.email,
@@ -49,10 +61,10 @@ export default function SignUp() {
           first_name: values.firstName,
           last_name: values.lastName,
           gender: values.gender,
-          phone_number: values.phoneNumber,
+          phone_number: fullPhoneNumber, // Save combined phone number
           dob: values.dob.toISOString().split('T')[0],
           avatar_url: avatar_url,
-          location: values.location, // Add location to user metadata
+          location: values.location,
         }
       }
     });
@@ -85,10 +97,32 @@ export default function SignUp() {
               <FormField name="email" control={form.control} render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField name="password" control={form.control} render={({ field }) => (<FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <div className="grid grid-cols-2 gap-4">
-                <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="123-456-7890" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField name="gender" control={form.control} render={({ field }) => (<FormItem><FormLabel>Gender</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger></FormControl><SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField name="location" control={form.control} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Your City, State" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
-              <FormField name="location" control={form.control} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Your City, State" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <div className="flex items-center gap-2">
+                <FormField
+                  name="countryCode"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Code</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-[100px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{`${c.code} ${c.dial_code}`}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem className="flex-1"><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
               <Alert className="text-xs p-3">
                 <Info className="h-4 w-4" />
                 <AlertDescription>

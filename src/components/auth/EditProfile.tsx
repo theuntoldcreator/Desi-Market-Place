@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSession } from '@supabase/auth-helpers-react';
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Phone, Loader2, Upload, X, MapPin, Info, Image as ImageIcon, Trash2, Camera, GalleryHorizontal } from 'lucide-react';
@@ -34,7 +34,8 @@ import { z } from 'zod';
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  phoneNumber: z.string().min(10, "Please enter a valid phone number").optional().or(z.literal('')),
+  countryCode: z.string().min(1, "Country code is required"), // Added countryCode
+  phoneNumber: z.string().min(1, "Phone number is required").regex(/^\d+$/, "Phone number must contain only digits"), // Updated validation
   dob: z.date().optional(),
   avatarFile: z.instanceof(File).optional(),
   gender: z.enum(['male', 'female']).optional(),
@@ -54,15 +55,34 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
   const queryClient = useQueryClient();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatar_url);
 
+  // Function to parse phone number into country code and local number
+  const parsePhoneNumber = (fullNumber: string | null | undefined) => {
+    if (!fullNumber) return { countryCode: '+1', localNumber: '' };
+    
+    const sortedCountries = [...countries].sort((a, b) => b.dial_code.length - a.dial_code.length);
+    let foundCountry = sortedCountries.find(c => fullNumber.startsWith(c.dial_code));
+    
+    if (foundCountry) {
+      return {
+        countryCode: foundCountry.dial_code,
+        localNumber: fullNumber.substring(foundCountry.dial_code.length),
+      };
+    }
+    return { countryCode: '+1', localNumber: fullNumber }; // Default to +1 if no match
+  };
+
+  const { countryCode: initialCountryCode, localNumber: initialPhoneNumber } = parsePhoneNumber(profile.phone_number);
+
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       firstName: profile.first_name || '',
       lastName: profile.last_name || '',
-      phoneNumber: profile.phone_number || '',
+      countryCode: initialCountryCode, // Set initial country code
+      phoneNumber: initialPhoneNumber, // Set initial local phone number
       dob: profile.dob ? new Date(profile.dob) : undefined,
       gender: profile.gender,
-      location: profile.location || '', // Add location to default values
+      location: profile.location || '',
     },
   });
 
@@ -105,16 +125,18 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
         }
       }
 
+      const fullPhoneNumber = `${values.countryCode}${values.phoneNumber.replace(/\D/g, '')}`; // Combine country code and local number
+
       const { error: updateError } = await supabaseClient
         .from('profiles')
         .update({
           first_name: values.firstName,
           last_name: values.lastName,
-          phone_number: values.phoneNumber,
+          phone_number: fullPhoneNumber, // Save combined phone number
           dob: values.dob?.toISOString().split('T')[0],
           avatar_url: avatar_url,
           gender: values.gender,
-          location: values.location, // Update location in profile
+          location: values.location,
         })
         .eq('id', session.user.id);
 
@@ -130,7 +152,7 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
           if (listingsFetchError) throw listingsFetchError;
 
           if (userListings && userListings.length > 0) {
-            const newContact = `${form.getValues('countryCode')}${values.phoneNumber.replace(/\D/g, '')}`;
+            const newContact = fullPhoneNumber; // Use the combined phone number
             const newLocation = values.location;
 
             const updatePromises = userListings.map(listing =>
@@ -198,7 +220,29 @@ export function EditProfile({ isOpen, onClose, profile }: EditProfileProps) {
               <FormField name="firstName" control={form.control} render={({ field }) => (<FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField name="lastName" control={form.control} render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
-            <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="123-456-7890" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <div className="flex items-center gap-2">
+              <FormField
+                name="countryCode"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Code</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-[100px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{`${c.code} ${c.dial_code}`}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField name="phoneNumber" control={form.control} render={({ field }) => (<FormItem className="flex-1"><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            </div>
             <FormField name="location" control={form.control} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Your City, State" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <div className="grid grid-cols-2 gap-4">
               <FormField
