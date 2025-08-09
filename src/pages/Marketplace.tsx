@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
-import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { ListingCard } from '@/components/marketplace/ListingCard';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { DisclaimerSection } from '@/components/marketplace/DisclaimerSection';
@@ -14,30 +13,52 @@ import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal'
 import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { subDays } from 'date-fns';
+import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader'; // Ensure this is imported
 
-const fetchListings = async (userId: string | undefined) => {
-  console.log('Fetching listings...'); // Debugging log
-  const twentyDaysAgo = subDays(new Date(), 20).toISOString();
-
-  const { data, error } = await supabase
-    .from('listings_with_profiles_and_favorites') // Query the new view
-    .select('*') // Select all columns from the view
+const fetchListings = async (userId: string | undefined, latestTimestamp?: string) => {
+  let query = supabase
+    .from('listings')
+    .select('*')
     .eq('status', 'active')
-    .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (latestTimestamp) {
+    query = query.gt('created_at', latestTimestamp);
+  } else {
+    const twentyDaysAgo = subDays(new Date(), 20).toISOString();
+    query = query.gte('created_at', twentyDaysAgo);
+  }
 
-  // Map the data to match the expected structure for components
-  return data.map(listing => ({
+  const { data: listings, error: listingsError } = await query;
+  if (listingsError) throw new Error(listingsError.message);
+  if (!listings || listings.length === 0) return [];
+
+  // Fetch profiles for all unique user_ids in the fetched listings
+  const sellerIds = [...new Set(listings.map(l => l.user_id))];
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, avatar_url')
+    .in('id', sellerIds);
+  if (profilesError) console.error("Error fetching profiles:", profilesError.message);
+  const profilesMap = new Map(profiles?.map(p => [p.id, p]));
+
+  // Fetch favorite status if user is logged in
+  let favoritedListingIds = new Set<number>();
+  if (userId) {
+    const listingIds = listings.map(l => l.id);
+    const { data: favorites, error: favoritesError } = await supabase
+      .from('favorites')
+      .select('listing_id')
+      .eq('user_id', userId)
+      .in('listing_id', listingIds);
+    if (favoritesError) console.error("Error fetching favorites:", favoritesError.message);
+    favoritedListingIds = new Set(favorites?.map(f => f.listing_id));
+  }
+
+  return listings.map(listing => ({
     ...listing,
-    profile: {
-      id: listing.user_id, // Ensure seller ID is available
-      first_name: listing.seller_first_name,
-      last_name: listing.seller_last_name,
-      avatar_url: listing.seller_avatar_url,
-    },
-    isFavorited: listing.is_favorited,
+    profile: profilesMap.get(listing.user_id) || null,
+    isFavorited: userId ? favoritedListingIds.has(listing.id) : false,
   }));
 };
 
@@ -59,9 +80,9 @@ export default function Marketplace() {
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['listings', session?.user?.id],
-    queryFn: () => fetchListings(session!.user.id),
+    queryFn: () => fetchListings(session?.user?.id),
     enabled: !!session,
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 60, // Data is considered fresh for 1 minute
   });
 
   const { data: totalUsersCount } = useQuery({
@@ -73,6 +94,133 @@ export default function Marketplace() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
+  // Supabase Realtime subscription for all listing changes
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const listingsChannel = supabase
+      .channel('public:listings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, async (payload) => {
+        const userId = session.user.id;
+
+        if (payload.eventType === 'INSERT') {
+          const newListingRaw = payload.new;
+          const [profileData, favoriteData] = await Promise.all([
+            supabase.from('profiles').select('id, first_name, last_name, avatar_url').eq('id', newListingRaw.user_id).single(),
+            userId ? supabase.from('favorites').select('listing_id').eq('user_id', userId).eq('listing_id', newListingRaw.id).single() : Promise.resolve({ data: null })
+          ]);
+
+          const newListingEnriched = {
+            ...newListingRaw,
+            profile: profileData.data || null,
+            isFavorited: userId ? !!favoriteData.data : false,
+          };
+
+          queryClient.setQueryData(['listings', userId], (oldData: any[] | undefined) => {
+            const existingIds = new Set(oldData?.map(item => item.id));
+            if (oldData && !existingIds.has(newListingEnriched.id)) {
+              toast({ title: "New Listing!", description: `${newListingEnriched.title} has been posted.` });
+              return [newListingEnriched, ...oldData]; // Add to the beginning
+            }
+            return oldData;
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedListingRaw = payload.new;
+          const [profileData, favoriteData] = await Promise.all([
+            supabase.from('profiles').select('id, first_name, last_name, avatar_url').eq('id', updatedListingRaw.user_id).single(),
+            userId ? supabase.from('favorites').select('listing_id').eq('user_id', userId).eq('listing_id', updatedListingRaw.id).single() : Promise.resolve({ data: null })
+          ]);
+
+          const updatedListingEnriched = {
+            ...updatedListingRaw,
+            profile: profileData.data || null,
+            isFavorited: userId ? !!favoriteData.data : false,
+          };
+
+          queryClient.setQueryData(['listings', userId], (oldData: any[] | undefined) => {
+            if (oldData) {
+              toast({ title: "Listing Updated!", description: `${updatedListingEnriched.title} has been updated.` });
+              return oldData.map(item =>
+                item.id === updatedListingEnriched.id ? updatedListingEnriched : item
+              );
+            }
+            return oldData;
+          });
+        } else if (payload.eventType === 'DELETE') {
+          queryClient.setQueryData(['listings', userId], (oldData: any[] | undefined) => {
+            if (oldData) {
+              toast({ title: "Listing Removed!", description: `${payload.old.title || 'An item'} has been removed.` });
+              return oldData.filter(item => item.id !== payload.old.id);
+            }
+            return oldData;
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(listingsChannel);
+    };
+  }, [queryClient, session?.user?.id, toast]);
+
+  // Delta polling fallback
+  useEffect(() => {
+    let pollingInterval: NodeJS.Timeout;
+
+    const startPolling = () => {
+      pollingInterval = setInterval(async () => {
+        if (document.visibilityState === 'visible') {
+          const currentListings = queryClient.getQueryData(['listings', session?.user?.id]) as any[] | undefined;
+          const latestTimestamp = currentListings && currentListings.length > 0
+            ? currentListings[0].created_at // Assuming sorted by newest first
+            : undefined;
+
+          if (latestTimestamp) { // Only poll for new items if there are existing items
+            try {
+              const newItems = await fetchListings(session?.user?.id, latestTimestamp);
+              if (newItems.length > 0) {
+                queryClient.setQueryData(['listings', session?.user?.id], (oldData: any[] | undefined) => {
+                  const existingIds = new Set(oldData?.map(item => item.id));
+                  const filteredNewItems = newItems.filter(newItem => !existingIds.has(newItem.id));
+                  if (filteredNewItems.length > 0) {
+                    toast({ title: "New Listings!", description: `${filteredNewItems.length} new item(s) found.` });
+                    // Merge and re-sort to ensure newest are at the top
+                    const mergedData = [...filteredNewItems, ...(oldData || [])];
+                    return mergedData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                  }
+                  return oldData;
+                });
+              }
+            } catch (error) {
+              console.error("Polling error:", error);
+            }
+          }
+        }
+      }, 15000); // Poll every 15 seconds
+    };
+
+    const stopPolling = () => {
+      clearInterval(pollingInterval);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    startPolling(); // Start polling initially
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [queryClient, session?.user?.id, toast]);
+
+  // Online users count
   useEffect(() => {
     const channel = supabase.channel('online-users', {
       config: {
@@ -98,35 +246,10 @@ export default function Marketplace() {
     };
   }, [session]);
 
-  // Supabase Realtime subscription for all listing changes
-  useEffect(() => {
-    const listingsChannel = supabase
-      .channel('public:listings')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, (payload) => {
-        console.log('Realtime event received for listings:', payload); // Debugging log
-        // Invalidate the 'listings' query for any change (INSERT, UPDATE, DELETE)
-        // This will trigger a refetch of the listings data.
-        queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
-
-        // Provide specific toasts based on event type
-        if (payload.eventType === 'INSERT') {
-          toast({ title: "New Listing!", description: "A new item has been posted to the marketplace." });
-        } else if (payload.eventType === 'UPDATE') {
-          toast({ title: "Listing Updated!", description: `${payload.old.title || 'An item'} has been updated.` });
-        } else if (payload.eventType === 'DELETE') {
-          toast({ title: "Listing Removed!", description: `${payload.old.title || 'An item'} has been removed from the marketplace.` });
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(listingsChannel);
-    };
-  }, [queryClient, session?.user?.id, toast]);
-
 
   const favoriteMutation = useMutation({
     mutationFn: async ({ listingId, isFavorited }: { listingId: string, isFavorited: boolean }) => {
+      if (!session) throw new Error("You must be logged in.");
       if (isFavorited) {
         await supabase.from('favorites').delete().match({ user_id: session!.user.id, listing_id: listingId });
       } else {
@@ -134,8 +257,17 @@ export default function Marketplace() {
       }
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['favorites', session?.user?.id] });
+      // Update the local cache for 'listings' to reflect the favorite status change
+      queryClient.setQueryData(['listings', session?.user?.id], (oldData: any[] | undefined) => {
+        if (oldData) {
+          return oldData.map(item =>
+            item.id === variables.listingId ? { ...item, isFavorited: !variables.isFavorited } : item
+          );
+        }
+        return oldData;
+      });
+      queryClient.invalidateQueries({ queryKey: ['favorites', session?.user?.id] }); // Invalidate favorites to refetch that list
+
       const listing = listings.find(l => l.id === variables.listingId);
       if (listing) {
         toast({
@@ -157,6 +289,7 @@ export default function Marketplace() {
     },
     onSuccess: (_, listing) => {
       toast({ title: "Success!", description: "Listing marked as sold." });
+      // Directly remove from the current listings view
       queryClient.setQueryData(['listings', session?.user?.id], (oldData: any[] | undefined) =>
         oldData ? oldData.filter(item => item.id !== listing.id) : []
       );
@@ -179,7 +312,10 @@ export default function Marketplace() {
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Listing deleted." });
-      queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
+      // Direct update to remove from cache
+      queryClient.setQueryData(['listings', session?.user?.id], (oldData: any[] | undefined) =>
+        oldData ? oldData.filter(item => item.id !== listingToDelete.id) : []
+      );
       queryClient.invalidateQueries({ queryKey: ['my-listings', session?.user?.id] });
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
