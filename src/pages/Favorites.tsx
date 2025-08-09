@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
-import { MarketplaceHeader } => '@/components/marketplace/MarketplaceHeader';
+import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Button } from '@/components/ui/button';
 import { Loader2, Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
