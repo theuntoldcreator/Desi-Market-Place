@@ -5,14 +5,14 @@ import { ListingCard } from '@/components/marketplace/ListingCard';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Button } from '@/components/ui/button';
 import { Loader2, ShoppingBag, Plus } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } => '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
-
+import { MarketplaceMobileSearchAndNav } from '@/components/marketplace/MarketplaceMobileSearchAndNav'; // Import for mobile nav
 
 const fetchMyListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
@@ -36,6 +36,7 @@ export default function MyListings() {
   const [listingToEdit, setListingToEdit] = useState<any>(null);
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [listingToDelete, setListingToDelete] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState(''); // Add search query state
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['my-listings', session?.user?.id],
@@ -108,10 +109,16 @@ export default function MyListings() {
     onSettled: () => setListingToDelete(null)
   });
 
+  const normalizedSearchQuery = searchQuery.toLowerCase().trim();
+  const filteredListings = listings.filter(l => 
+    l.title.toLowerCase().includes(normalizedSearchQuery) ||
+    l.location.toLowerCase().includes(normalizedSearchQuery)
+  );
+
   const renderContent = () => {
     if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (isError) return <div className="text-center py-16 text-destructive">Failed to load your listings.</div>;
-    if (listings.length === 0) return (
+    if (filteredListings.length === 0) return (
       <div className="text-center py-16 border-2 border-dashed rounded-lg">
         <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground" />
         <h3 className="mt-4 text-xl font-semibold">You haven't posted anything yet</h3>
@@ -120,7 +127,7 @@ export default function MyListings() {
     );
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {listings.map((listing) => (
+        {filteredListings.map((listing) => (
           <ListingCard
             key={listing.id}
             title={listing.title}
@@ -138,10 +145,14 @@ export default function MyListings() {
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
-      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl">
+      <MarketplaceMobileSearchAndNav
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl md:pt-8"> {/* Adjusted padding-top for mobile */}
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold">My Listings</h2>
-          <p className="text-muted-foreground mt-1">{listings.length} items posted</p>
+          <p className="text-muted-foreground mt-1">{filteredListings.length} items posted</p>
         </div>
         {renderContent()}
       </main>

@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
+import { MarketplaceMobileSearchAndNav } from '@/components/marketplace/MarketplaceMobileSearchAndNav'; // Import for mobile nav
 
 
 const fetchFavoriteListings = async (userId: string) => {
@@ -69,6 +70,7 @@ export default function Favorites() {
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState(''); // Add search query state
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['favorites', session?.user?.id],
@@ -146,10 +148,16 @@ export default function Favorites() {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const normalizedSearchQuery = searchQuery.toLowerCase().trim();
+  const filteredListings = listings.filter(l => 
+    l.title.toLowerCase().includes(normalizedSearchQuery) ||
+    l.location.toLowerCase().includes(normalizedSearchQuery)
+  );
+
   const renderContent = () => {
     if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (isError) return <div className="text-center py-16 text-destructive">Failed to load favorites.</div>;
-    if (listings.length === 0) return (
+    if (filteredListings.length === 0) return (
       <div className="text-center py-16 border-2 border-dashed rounded-lg">
         <Heart className="mx-auto h-12 w-12 text-muted-foreground" />
         <h3 className="mt-4 text-xl font-semibold">No favorites yet</h3>
@@ -159,7 +167,7 @@ export default function Favorites() {
     );
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {listings.map((listing) => (
+        {filteredListings.map((listing) => (
           <ListingCard
             key={listing.id}
             title={listing.title}
@@ -176,10 +184,14 @@ export default function Favorites() {
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
-      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl">
+      <MarketplaceMobileSearchAndNav
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl md:pt-8"> {/* Adjusted padding-top for mobile */}
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold">My Favorites</h2>
-          <p className="text-muted-foreground mt-1">{listings.length} items saved</p>
+          <p className="text-muted-foreground mt-1">{filteredListings.length} items saved</p>
         </div>
         {renderContent()}
       </main>
