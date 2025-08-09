@@ -6,7 +6,7 @@ import { ListingCard } from '@/components/marketplace/ListingCard';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { DisclaimerSection } from '@/components/marketplace/DisclaimerSection';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, SortAsc, Loader2, Home, ShoppingBag, Heart } from 'lucide-react';
+import { ChevronDown, SortAsc, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
@@ -14,7 +14,7 @@ import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { subDays } from 'date-fns';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
-import { NavLinkIcon } from '@/components/layout/NavLinkIcon'; // Import NavLinkIcon
+import { MarketplaceMobileSearchAndNav } from '@/components/marketplace/MarketplaceMobileSearchAndNav'; // Import the new component
 
 const fetchListings = async (userId: string | undefined, latestTimestamp?: string) => {
   let query = supabase
@@ -386,12 +386,11 @@ export default function Marketplace() {
   return (
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} />
-      {/* Mobile/Tablet Navigation below header */}
-      <nav className="md:hidden w-full flex justify-around items-center py-2 border-b border-border bg-background">
-        <NavLinkIcon to="/" icon={Home} label="All Listings" />
-        <NavLinkIcon to="/my-listings" icon={ShoppingBag} label="My Listings" />
-        <NavLinkIcon to="/favorites" icon={Heart} label="Favorites" />
-      </nav>
+      {/* New Mobile/Tablet Search and Navigation Bar */}
+      <MarketplaceMobileSearchAndNav
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
       <div className="flex">
         <MarketplaceSidebar 
           selectedCategory={selectedCategory}
@@ -401,7 +400,7 @@ export default function Marketplace() {
           onlineCount={onlineCount}
           totalUsersCount={totalUsersCount ?? undefined}
         />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 pt-4 sm:pt-6 lg:pt-8"> {/* Adjusted padding-top */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 md:pt-8"> {/* Adjusted padding-top for mobile */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold">{selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>

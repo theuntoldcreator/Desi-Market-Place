@@ -29,13 +29,13 @@ interface MarketplaceSidebarProps {
 const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick, onlineCount, totalUsersCount }: MarketplaceSidebarProps & { onLinkClick?: () => void }) => {
   return (
     <div className="p-4 space-y-6">
-      <div className="space-y-4">
+      <div className="space-y-4 hidden md:block"> {/* Hidden on mobile, shown on desktop */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="pl-10" />
         </div>
       </div>
-      <Separator />
+      <Separator className="hidden md:block" /> {/* Hide separator on mobile if search is hidden */}
       <div className="space-y-2">
         <h3 className="text-sm font-semibold uppercase tracking-wide">Categories</h3>
         {categories.map((cat) => (
