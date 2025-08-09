@@ -20,12 +20,16 @@ export function NavLinkIcon({ to, icon: Icon, label }: NavLinkIconProps) {
       "hover:bg-transparent", // Explicitly remove background hover
       isActive && "text-primary"
     )}>
-      <Link to={to} className="flex flex-col items-center justify-center w-full h-full">
+      <Link to={to} className="group flex flex-col items-center justify-center w-full h-full">
         <Icon className="h-6 w-6" />
         <span className="text-xs mt-1">{label}</span>
-        {isActive && (
-          <div className="absolute bottom-0 h-1 w-1/2 bg-icon-active-underline rounded-t-sm" /> 
-        )}
+        {/* Underline always rendered, controlled by classes */}
+        <div className={cn(
+          "absolute bottom-0 h-1 bg-icon-active-underline rounded-t-sm transition-all duration-200",
+          "w-0 opacity-0", // Hidden by default
+          "group-hover:w-1/2 group-hover:opacity-100", // Visible on hover
+          isActive && "w-1/2 opacity-100" // Always visible and correct width when active
+        )} />
       </Link>
     </Button>
   );
