@@ -36,8 +36,10 @@ export function MarketplaceHeader({ onCreateListing, searchQuery, onSearchChange
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Mobile Search Button */}
           <MobileSearchDialog searchQuery={searchQuery} onSearchChange={onSearchChange} />
-          <Button onClick={onCreateListing} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
-          <Button onClick={onCreateListing} size="icon" className="sm:hidden flex"><Plus className="w-4 h-4" /></Button>
+          {/* Tablet/Desktop Create Listing Buttons */}
+          <Button onClick={onCreateListing} className="hidden lg:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
+          <Button onClick={onCreateListing} size="icon" variant="outline" className="hidden sm:flex lg:hidden"><Plus className="w-4 h-4" /></Button>
+          <Button onClick={onCreateListing} size="icon" className="flex sm:hidden"><Plus className="w-4 h-4" /></Button>
           {session ? (
             <UserMenu />
           ) : (
