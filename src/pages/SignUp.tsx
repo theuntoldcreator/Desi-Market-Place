@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Link, useNavigate } => 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { DobPicker } from '@/components/auth/DobPicker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import marketplaceLogo from '@/assets/marketplace.jpg';
