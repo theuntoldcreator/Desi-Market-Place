@@ -3,40 +3,10 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { RememberedUserForm } from '@/components/auth/RememberedUserForm';
 import marketplaceLogo from '@/assets/marketplace.jpg';
 
-interface RememberedUser {
-  email: string;
-  fullName: string;
-  avatarUrl: string | null;
-}
-
 const Login = () => {
-  const [rememberedUser, setRememberedUser] = useState<RememberedUser | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('rememberedUser');
-    if (storedUser) {
-      try {
-        setRememberedUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem('rememberedUser');
-      }
-    }
-  }, []);
-
-  const handleSwitchAccount = () => {
-    localStorage.removeItem('rememberedUser');
-    setRememberedUser(null);
-  };
-
   const logoUrl = marketplaceLogo;
-
-  if (rememberedUser) {
-    return <RememberedUserForm user={rememberedUser} onSwitchAccount={handleSwitchAccount} />;
-  }
 
   return (
     <div className="min-h-screen bg-marketplace-bg flex flex-col items-center justify-center p-4">
@@ -57,9 +27,9 @@ const Login = () => {
         {/* Right side - Sign in card */}
         <Card className="w-full max-w-md mx-auto shadow-xl border-0 bg-gradient-card">
           <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-2xl font-bold">Welcome Back!</CardTitle>
+            <CardTitle className="text-2xl font-bold">Welcome!</CardTitle>
             <CardDescription className="text-base">
-              Sign in to continue
+              Sign in with Google to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -77,15 +47,9 @@ const Login = () => {
                 },
               }}
               providers={['google']}
-              view="sign_in"
+              onlyThirdPartyProviders={true}
               theme="light"
             />
-            <p className="text-center text-sm text-muted-foreground mt-4">
-              Don't have an account?{' '}
-              <Link to="/signup" className="font-semibold text-primary hover:underline">
-                Sign Up
-              </Link>
-            </p>
           </CardContent>
         </Card>
       </div>

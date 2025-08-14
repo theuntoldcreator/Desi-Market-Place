@@ -22,22 +22,6 @@ export function UserMenu() {
   });
 
   const handleLogout = () => {
-    if (session?.user.email && profile) {
-      const rememberedUser = {
-        email: session.user.email,
-        fullName: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-        avatarUrl: profile.avatar_url,
-      };
-      localStorage.setItem('rememberedUser', JSON.stringify(rememberedUser));
-    } else if (session?.user.email) {
-      // Fallback if profile is not loaded
-      const rememberedUser = {
-        email: session.user.email,
-        fullName: session.user.email,
-        avatarUrl: null,
-      };
-      localStorage.setItem('rememberedUser', JSON.stringify(rememberedUser));
-    }
     supabase.auth.signOut();
   };
 
