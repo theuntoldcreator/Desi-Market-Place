@@ -12,6 +12,7 @@ import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
+import { useDebounce } from 'use-debounce';
 
 const fetchMyListings = async (userId: string) => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
@@ -35,7 +36,8 @@ export default function MyListings() {
   const [listingToEdit, setListingToEdit] = useState<any>(null);
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [listingToDelete, setListingToDelete] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState(''); // Add search query state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
 
   const { data: listings = [], isLoading, isError } = useQuery({
     queryKey: ['my-listings', session?.user?.id],
@@ -108,7 +110,7 @@ export default function MyListings() {
     onSettled: () => setListingToDelete(null)
   });
 
-  const normalizedSearchQuery = searchQuery.toLowerCase().trim();
+  const normalizedSearchQuery = debouncedSearchQuery.toLowerCase().trim();
   const filteredListings = listings.filter(l => 
     l.title.toLowerCase().includes(normalizedSearchQuery) ||
     l.location.toLowerCase().includes(normalizedSearchQuery)
@@ -145,10 +147,10 @@ export default function MyListings() {
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader
         onCreateListing={() => setShowCreateListing(true)}
-        searchQuery={searchQuery} // Pass searchQuery
-        onSearchChange={setSearchQuery} // Pass onSearchChange
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
-      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl"> {/* Removed md:pt-8 */}
+      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold">My Listings</h2>
           <p className="text-muted-foreground mt-1">{filteredListings.length} items posted</p>

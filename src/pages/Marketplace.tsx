@@ -14,7 +14,8 @@ import { EditListing } from '@/components/marketplace/EditListing';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { subDays } from 'date-fns';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
-import { Listing } from '@/lib/types'; // Import Listing type
+import { Listing } from '@/lib/types';
+import { useDebounce } from 'use-debounce';
 
 const fetchListings = async (userId: string | undefined, latestTimestamp?: string): Promise<Listing[]> => {
   let query = supabase
@@ -70,16 +71,17 @@ export default function Marketplace() {
 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
   const [sortBy, setSortBy] = useState('newest');
-  const [selectedListing, setSelectedListing] = useState<Listing | null>(null); // Use Listing type
-  const [listingToEdit, setListingToEdit] = useState<Listing | null>(null); // Use Listing type
-  const [listingToDelete, setListingToDelete] = useState<Listing | null>(null); // Use Listing type
-  const [listingToMarkAsSold, setListingToMarkAsSold] = useState<Listing | null>(null); // Use Listing type
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [listingToEdit, setListingToEdit] = useState<Listing | null>(null);
+  const [listingToDelete, setListingToDelete] = useState<Listing | null>(null);
+  const [listingToMarkAsSold, setListingToMarkAsSold] = useState<Listing | null>(null);
   const [onlineCount, setOnlineCount] = useState(0);
 
-  const { data: listings = [], isLoading, isError } = useQuery<Listing[]>({ // Specify type
+  const { data: listings = [], isLoading, isError } = useQuery<Listing[]>({
     queryKey: ['listings', session?.user?.id],
     queryFn: () => fetchListings(session?.user?.id),
     enabled: !!session,
@@ -102,122 +104,20 @@ export default function Marketplace() {
     const listingsChannel = supabase
       .channel('public:listings')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, async (payload) => {
-        const userId = session.user.id;
-
+        queryClient.invalidateQueries({ queryKey: ['listings', session.user.id] });
+        
         if (payload.eventType === 'INSERT') {
-          const newListingRaw = payload.new as Listing; // Cast to Listing type
-          const [profileData, favoriteData] = await Promise.all([
-            supabase.from('profiles').select('id, first_name, last_name, avatar_url').eq('id', newListingRaw.user_id).single(),
-            userId ? supabase.from('favorites').select('listing_id').eq('user_id', userId).eq('listing_id', newListingRaw.id).single() : Promise.resolve({ data: null })
-          ]);
-
-          const newListingEnriched: Listing = { // Explicitly type
-            ...newListingRaw,
-            profile: profileData.data || null,
-            isFavorited: userId ? !!favoriteData.data : false,
-          };
-
-          queryClient.setQueryData(['listings', userId], (oldData: Listing[] | undefined) => { // Use Listing[] type
-            const existingIds = new Set(oldData?.map(item => item.id));
-            if (oldData && !existingIds.has(newListingEnriched.id)) {
-              toast({ title: "New Listing!", description: `${newListingEnriched.title} has been posted.` });
-              return [newListingEnriched, ...oldData]; // Add to the beginning
-            }
-            return oldData;
-          });
+            toast({ title: "New Listing!", description: `${(payload.new as Listing).title} has been posted.` });
         } else if (payload.eventType === 'UPDATE') {
-          const updatedListingRaw = payload.new as Listing; // Cast to Listing type
-          const [profileData, favoriteData] = await Promise.all([
-            supabase.from('profiles').select('id, first_name, last_name, avatar_url').eq('id', updatedListingRaw.user_id).single(),
-            userId ? supabase.from('favorites').select('listing_id').eq('user_id', userId).eq('listing_id', updatedListingRaw.id).single() : Promise.resolve({ data: null })
-          ]);
-
-          const updatedListingEnriched: Listing = { // Explicitly type
-            ...updatedListingRaw,
-            profile: profileData.data || null,
-            isFavorited: userId ? !!favoriteData.data : false,
-          };
-
-          queryClient.setQueryData(['listings', userId], (oldData: Listing[] | undefined) => { // Use Listing[] type
-            if (oldData) {
-              toast({ title: "Listing Updated!", description: `${updatedListingEnriched.title} has been updated.` });
-              return oldData.map(item =>
-                item.id === updatedListingEnriched.id ? updatedListingEnriched : item
-              );
-            }
-            return oldData;
-          });
+            toast({ title: "Listing Updated!", description: `${(payload.new as Listing).title} has been updated.` });
         } else if (payload.eventType === 'DELETE') {
-          queryClient.setQueryData(['listings', userId], (oldData: Listing[] | undefined) => { // Use Listing[] type
-            if (oldData) {
-              toast({ title: "Listing Removed!", description: `${(payload.old as Listing).title || 'An item'} has been removed.` }); // Cast payload.old
-              return oldData.filter(item => item.id !== (payload.old as Listing).id); // Cast payload.old
-            }
-            return oldData;
-          });
+            toast({ title: "Listing Removed!", description: `${(payload.old as Listing).title || 'An item'} has been removed.` });
         }
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(listingsChannel);
-    };
-  }, [queryClient, session?.user?.id, toast]);
-
-  // Delta polling fallback
-  useEffect(() => {
-    let pollingInterval: NodeJS.Timeout;
-
-    const startPolling = () => {
-      pollingInterval = setInterval(async () => {
-        if (document.visibilityState === 'visible') {
-          const currentListings = queryClient.getQueryData(['listings', session?.user?.id]) as Listing[] | undefined; // Use Listing[] type
-          const latestTimestamp = currentListings && currentListings.length > 0
-            ? currentListings[0].created_at // Assuming sorted by newest first
-            : undefined;
-
-          if (latestTimestamp) { // Only poll for new items if there are existing items
-            try {
-              const newItems = await fetchListings(session?.user?.id, latestTimestamp);
-              if (newItems.length > 0) {
-                queryClient.setQueryData(['listings', session?.user?.id], (oldData: Listing[] | undefined) => { // Use Listing[] type
-                  const existingIds = new Set(oldData?.map(item => item.id));
-                  const filteredNewItems = newItems.filter(newItem => !existingIds.has(newItem.id));
-                  if (filteredNewItems.length > 0) {
-                    toast({ title: "New Listings!", description: `${filteredNewItems.length} new item(s) found.` });
-                    // Merge and re-sort to ensure newest are at the top
-                    const mergedData = [...filteredNewItems, ...(oldData || [])];
-                    return mergedData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                  }
-                  return oldData;
-                });
-              }
-            } catch (error) {
-              console.error("Polling error:", error);
-            }
-          }
-        }
-      }, 60000); // Poll every 60 seconds (1 minute)
-    };
-
-    const stopPolling = () => {
-      clearInterval(pollingInterval);
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        stopPolling();
-      } else {
-        startPolling();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    startPolling(); // Start polling initially
-
-    return () => {
-      stopPolling();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [queryClient, session?.user?.id, toast]);
 
@@ -249,7 +149,7 @@ export default function Marketplace() {
 
 
   const favoriteMutation = useMutation({
-    mutationFn: async ({ listingId, isFavorited }: { listingId: number, isFavorited: boolean }) => { // Changed listingId to number
+    mutationFn: async ({ listingId, isFavorited }: { listingId: number, isFavorited: boolean }) => {
       if (!session) throw new Error("You must be logged in.");
       if (isFavorited) {
         await supabase.from('favorites').delete().match({ user_id: session!.user.id, listing_id: listingId });
@@ -258,8 +158,7 @@ export default function Marketplace() {
       }
     },
     onSuccess: (_, variables) => {
-      // Update the local cache for 'listings' to reflect the favorite status change
-      queryClient.setQueryData(['listings', session?.user?.id], (oldData: Listing[] | undefined) => { // Use Listing[] type
+      queryClient.setQueryData(['listings', session?.user?.id], (oldData: Listing[] | undefined) => {
         if (oldData) {
           return oldData.map(item =>
             item.id === variables.listingId ? { ...item, isFavorited: !variables.isFavorited } : item
@@ -267,7 +166,7 @@ export default function Marketplace() {
         }
         return oldData;
       });
-      queryClient.invalidateQueries({ queryKey: ['favorites', session?.user?.id] }); // Invalidate favorites to refetch that list
+      queryClient.invalidateQueries({ queryKey: ['favorites', session?.user?.id] });
 
       const listing = listings.find(l => l.id === variables.listingId);
       if (listing) {
@@ -284,14 +183,13 @@ export default function Marketplace() {
   });
 
   const markAsSoldMutation = useMutation({
-    mutationFn: async (listing: Listing) => { // Use Listing type
+    mutationFn: async (listing: Listing) => {
       const { error } = await supabase.from('listings').update({ status: 'sold' }).eq('id', listing.id);
       if (error) throw error;
     },
     onSuccess: (_, listing) => {
       toast({ title: "Success!", description: "Listing marked as sold." });
-      // Directly remove from the current listings view
-      queryClient.setQueryData(['listings', session?.user?.id], (oldData: Listing[] | undefined) => // Use Listing[] type
+      queryClient.setQueryData(['listings', session?.user?.id], (oldData: Listing[] | undefined) =>
         oldData ? oldData.filter(item => item.id !== listing.id) : []
       );
       queryClient.invalidateQueries({ queryKey: ['my-listings', session?.user?.id] });
@@ -304,7 +202,7 @@ export default function Marketplace() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (listing: Listing) => { // Use Listing type
+    mutationFn: async (listing: Listing) => {
       const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]);
       if (imagePaths.length > 0) {
         await supabase.storage.from('listing_images').remove(imagePaths);
@@ -313,9 +211,8 @@ export default function Marketplace() {
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Listing deleted." });
-      // Direct update to remove from cache
-      queryClient.setQueryData(['listings', session?.user?.id], (oldData: Listing[] | undefined) => // Use Listing[] type
-        oldData ? oldData.filter(item => item.id !== listingToDelete?.id) : [] // Use optional chaining
+      queryClient.setQueryData(['listings', session?.user?.id], (oldData: Listing[] | undefined) =>
+        oldData ? oldData.filter(item => item.id !== listingToDelete?.id) : []
       );
       queryClient.invalidateQueries({ queryKey: ['my-listings', session?.user?.id] });
     },
@@ -323,7 +220,7 @@ export default function Marketplace() {
     onSettled: () => setListingToDelete(null)
   });
 
-  const handleSendMessage = (listing: Listing) => { // Use Listing type
+  const handleSendMessage = (listing: Listing) => {
     const message = `Hey, i am interested in this ${listing.title}, is it still available?`;
     const encodedMessage = encodeURIComponent(message);
 
@@ -343,7 +240,7 @@ export default function Marketplace() {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const normalizedSearchQuery = searchQuery.toLowerCase().trim();
+  const normalizedSearchQuery = debouncedSearchQuery.toLowerCase().trim();
   const filteredListings = listings
     .filter(l => {
       const categoryMatch = selectedCategory === 'all' || l.category.toLowerCase() === selectedCategory;
@@ -387,8 +284,8 @@ export default function Marketplace() {
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader 
         onCreateListing={() => setShowCreateListing(true)} 
-        searchQuery={searchQuery} // Pass searchQuery
-        onSearchChange={setSearchQuery} // Pass onSearchChange
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
       <div className="flex">
         <MarketplaceSidebar 
@@ -399,7 +296,7 @@ export default function Marketplace() {
           onlineCount={onlineCount}
           totalUsersCount={totalUsersCount ?? undefined}
         />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8"> {/* Removed md:pt-8 */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold">{selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
@@ -433,7 +330,7 @@ export default function Marketplace() {
           <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will mark the listing as sold and hide it from the marketplace. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => markAsSoldMutation.mutate(listingToMarkAsSold)} disabled={markAsSoldMutation.isPending}>Mark as Sold</AlertDialogAction>
+            <AlertDialogAction onClick={() => markAsSoldMutation.mutate(listingToMarkAsSold!)} disabled={markAsSoldMutation.isPending}>Mark as Sold</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -442,7 +339,7 @@ export default function Marketplace() {
           <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete your listing.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteMutation.mutate(listingToDelete)} disabled={deleteMutation.isPending}>Continue</AlertDialogAction>
+            <AlertDialogAction onClick={() => deleteMutation.mutate(listingToDelete!)} disabled={deleteMutation.isPending}>Continue</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -30,12 +30,13 @@ export default function Profile() {
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(''); // Added state for search query
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: profile, isLoading, isError } = useQuery({
     queryKey: ['profile', session?.user?.id],
     queryFn: () => fetchProfile(supabase, session!.user.id),
     enabled: !!session,
+    staleTime: 1000 * 60 * 5, // Cache profile data for 5 minutes
   });
 
   const deleteAccountMutation = useMutation({

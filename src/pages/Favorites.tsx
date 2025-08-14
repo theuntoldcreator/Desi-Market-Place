@@ -11,7 +11,8 @@ import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { subDays } from 'date-fns';
-import { Listing } from '@/lib/types'; // Import Listing type
+import { Listing } from '@/lib/types';
+import { useDebounce } from 'use-debounce';
 
 
 const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
@@ -70,7 +71,8 @@ export default function Favorites() {
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
-  const [searchQuery, setSearchQuery] = useState(''); // Add search query state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
 
   const { data: listings = [], isLoading, isError } = useQuery<Listing[]>({
     queryKey: ['favorites', session?.user?.id],
@@ -88,10 +90,7 @@ export default function Favorites() {
         event: '*', 
         schema: 'public', 
         table: 'listings', 
-        // Filter for listings that are currently favorited by the user
-        // This filter is less direct as it requires joining, so we'll rely on invalidateQueries
       }, (payload) => {
-        // Invalidate both listings and favorites queries to ensure consistency
         queryClient.invalidateQueries({ queryKey: ['listings', session.user.id] });
         queryClient.invalidateQueries({ queryKey: ['favorites', session.user.id] });
         
@@ -110,7 +109,7 @@ export default function Favorites() {
 
 
   const favoriteMutation = useMutation({
-    mutationFn: async ({ listingId }: { listingId: number }) => { // Changed listingId to number
+    mutationFn: async ({ listingId }: { listingId: number }) => {
       if (!session) throw new Error("You must be logged in.");
       await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
     },
@@ -148,7 +147,7 @@ export default function Favorites() {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const normalizedSearchQuery = searchQuery.toLowerCase().trim();
+  const normalizedSearchQuery = debouncedSearchQuery.toLowerCase().trim();
   const filteredListings = listings.filter(l => 
     l.title.toLowerCase().includes(normalizedSearchQuery) ||
     l.location.toLowerCase().includes(normalizedSearchQuery)
@@ -185,10 +184,10 @@ export default function Favorites() {
     <div className="min-h-screen w-full bg-gray-50/50">
       <MarketplaceHeader
         onCreateListing={() => setShowCreateListing(true)}
-        searchQuery={searchQuery} // Pass searchQuery
-        onSearchChange={setSearchQuery} // Pass onSearchChange
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
-      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl"> {/* Removed md:pt-8 */}
+      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-screen-2xl">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold">My Favorites</h2>
           <p className="text-muted-foreground mt-1">{filteredListings.length} items saved</p>
