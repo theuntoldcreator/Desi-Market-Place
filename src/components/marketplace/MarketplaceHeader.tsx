@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { Link } from 'react-router-dom';
 import { useSession } from '@supabase/auth-helpers-react';
-import marketplaceLogo from '/logo.jpg';
+import marketplaceLogo from '@/assets/marketplace.jpg';
 import { NavLinkIcon } from '@/components/layout/NavLinkIcon';
 import { MobileSearchDialog } from './MobileSearchDialog'; // Import the new component
 
