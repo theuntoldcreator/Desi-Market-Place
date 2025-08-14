@@ -159,7 +159,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50/50">
+    <div className="w-full">
       <MarketplaceHeader
         onCreateListing={() => setShowCreateListing(true)}
         searchQuery={searchQuery}

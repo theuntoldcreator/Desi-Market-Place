@@ -61,7 +61,7 @@ const ProtectedRoute = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-dvh bg-gray-50/50">
       <div className="flex-grow pb-16 sm:pb-0">
         <Outlet />
       </div>
