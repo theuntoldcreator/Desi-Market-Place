@@ -23,10 +23,11 @@ const AppRoutes = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN') {
-        navigate('/');
+        // Replace the URL to remove the token from the address bar
+        navigate('/', { replace: true });
       }
       if (event === 'SIGNED_OUT') {
-        navigate('/login');
+        navigate('/login', { replace: true });
       }
     });
 
