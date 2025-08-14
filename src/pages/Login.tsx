@@ -3,7 +3,7 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import marketplaceLogo from '@/assets/marketplace.jpg';
+import marketplaceLogo from '/logo.jpg';
 
 const Login = () => {
   const logoUrl = marketplaceLogo;

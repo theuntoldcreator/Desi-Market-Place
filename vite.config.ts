@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['logo.jpg'],
       manifest: {
         name: "NRI's Marketplace",
         short_name: "NRI Mkt",
@@ -33,27 +33,27 @@ export default defineConfig(({ mode }) => ({
         start_url: '/',
         icons: [
           {
-            src: '/src/assets/marketplace.jpg',
+            src: '/logo.jpg',
             sizes: '192x192',
-            type: 'image/png',
+            type: 'image/jpeg',
             purpose: 'any'
           },
           {
-            src: '/src/assets/marketplace.jpg',
+            src: '/logo.jpg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/jpeg',
             purpose: 'any'
           },
           {
-            src: '/src/assets/marketplace.jpg',
+            src: '/logo.jpg',
             sizes: '180x180',
-            type: 'image/png',
+            type: 'image/jpeg',
             purpose: 'any'
           },
           {
-            src: '/src/assets/marketplace.jpg',
+            src: '/logo.jpg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/jpeg',
             purpose: 'maskable'
           }
         ]
