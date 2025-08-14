@@ -76,7 +76,7 @@ const Login = () => {
                   },
                 },
               }}
-              providers={[]}
+              providers={['google']}
               view="sign_in"
               theme="light"
             />
