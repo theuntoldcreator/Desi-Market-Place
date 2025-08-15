@@ -9,10 +9,13 @@ import MyListings from "./pages/MyListings";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
+import AdminLogin from "./pages/AdminLogin";
+import Admin from "./pages/Admin";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useEffect } from "react";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AuthLayout from "./components/auth/AuthLayout";
+import AdminRoute from "./components/auth/AdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -21,10 +24,25 @@ const AppRoutes = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
-        // Replace the URL to remove the token from the address bar
-        navigate('/', { replace: true });
+        // After sign-in, check if the user is an admin and redirect accordingly
+        const checkRole = async () => {
+          if (session) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile?.role === 'admin') {
+              navigate('/admin', { replace: true });
+            } else {
+              navigate('/', { replace: true });
+            }
+          }
+        };
+        checkRole();
       }
       if (event === 'SIGNED_OUT') {
         navigate('/login', { replace: true });
@@ -41,13 +59,20 @@ const AppRoutes = () => {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
       </Route>
+      
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Index />} />
         <Route path="/my-listings" element={<MyListings />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
+
+      <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<Admin />} />
+      </Route>
+
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
