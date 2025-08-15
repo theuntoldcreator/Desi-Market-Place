@@ -25,9 +25,9 @@ const AppRoutes = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        // After sign-in, check if the user is an admin and redirect accordingly
-        const checkRole = async () => {
+      // This logic runs on initial load (INITIAL_SESSION) and when the user signs in.
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        const checkRoleAndRedirect = async () => {
           if (session) {
             const { data: profile } = await supabase
               .from('profiles')
@@ -35,15 +35,20 @@ const AppRoutes = () => {
               .eq('id', session.user.id)
               .single();
             
+            // If the user is an admin, always redirect them to the admin dashboard.
             if (profile?.role === 'admin') {
               navigate('/admin', { replace: true });
-            } else {
+            } 
+            // If a non-admin user just signed in, redirect them to the homepage.
+            // We don't redirect on INITIAL_SESSION for non-admins to allow them to land on deep links.
+            else if (event === 'SIGNED_IN') {
               navigate('/', { replace: true });
             }
           }
         };
-        checkRole();
+        checkRoleAndRedirect();
       }
+      
       if (event === 'SIGNED_OUT') {
         navigate('/login', { replace: true });
       }
