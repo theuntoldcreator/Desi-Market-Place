@@ -36,8 +36,8 @@ const fetchConversations = async (userId: string): Promise<Conversation[]> => {
       id,
       updated_at,
       listing:listings(title, image_urls),
-      buyer:profiles!conversations_buyer_id_fkey(id, first_name, last_name, avatar_url),
-      seller:profiles!conversations_seller_id_fkey(id, first_name, last_name, avatar_url)
+      buyer:profiles!buyer_id(id, first_name, last_name, avatar_url),
+      seller:profiles!seller_id(id, first_name, last_name, avatar_url)
     `)
     .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
     .order('updated_at', { ascending: false });

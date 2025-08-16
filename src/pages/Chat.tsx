@@ -37,8 +37,8 @@ const fetchConversationDetails = async (conversationId: string, userId: string):
     .select(`
       id,
       listing:listings(id, title, image_urls),
-      buyer:profiles!conversations_buyer_id_fkey(id, first_name, last_name, avatar_url, jid),
-      seller:profiles!conversations_seller_id_fkey(id, first_name, last_name, avatar_url, jid)
+      buyer:profiles!buyer_id(id, first_name, last_name, avatar_url, jid),
+      seller:profiles!seller_id(id, first_name, last_name, avatar_url, jid)
     `)
     .eq('id', conversationId)
     .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
