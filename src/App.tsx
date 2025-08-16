@@ -11,42 +11,61 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import AdminLogin from "./pages/AdminLogin";
 import Admin from "./pages/Admin";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import Messages from "./pages/Messages";
+import Chat from "./pages/Chat";
+import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useEffect } from "react";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AuthLayout from "./components/auth/AuthLayout";
 import AdminRoute from "./components/auth/AdminRoute";
+import { XmppProvider } from "./hooks/XmppProvider";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
+  const session = useSession();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // This logic runs on initial load (INITIAL_SESSION) and when the user signs in.
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        const checkRoleAndRedirect = async () => {
+        const checkAndProvisionXmpp = async () => {
           if (session) {
-            const { data: profile } = await supabase
+            const { data: profile, error } = await supabase
               .from('profiles')
-              .select('role')
+              .select('role, jid')
               .eq('id', session.user.id)
               .single();
-            
-            // If the user is an admin, always redirect them to the admin dashboard.
+
+            if (error) {
+              console.error("Error fetching profile:", error);
+              return;
+            }
+
             if (profile?.role === 'admin') {
               navigate('/admin', { replace: true });
-            } 
-            // If a non-admin user just signed in, redirect them to the homepage.
-            // We don't redirect on INITIAL_SESSION for non-admins to allow them to land on deep links.
-            else if (event === 'SIGNED_IN') {
+              return;
+            }
+
+            if (profile && !profile.jid) {
+              try {
+                console.log('User has no JID, provisioning XMPP account...');
+                const { error: invokeError } = await supabase.functions.invoke('create-xmpp-user');
+                if (invokeError) throw invokeError;
+                console.log('XMPP account provisioned successfully.');
+                queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] });
+              } catch (e) {
+                console.error("Failed to provision XMPP account:", e);
+              }
+            }
+
+            if (event === 'SIGNED_IN' && profile?.role !== 'admin') {
               navigate('/', { replace: true });
             }
           }
         };
-        checkRoleAndRedirect();
+        checkAndProvisionXmpp();
       }
       
       if (event === 'SIGNED_OUT') {
@@ -72,13 +91,14 @@ const AppRoutes = () => {
         <Route path="/my-listings" element={<MyListings />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/chat/:conversationId" element={<Chat />} />
       </Route>
 
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<Admin />} />
       </Route>
 
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -90,7 +110,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppRoutes />
+        <XmppProvider>
+          <AppRoutes />
+        </XmppProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

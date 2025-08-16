@@ -2,22 +2,24 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, MapPin, Check, Trash2, Info } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, MapPin, Check, Trash2, Info, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '../ui/separator';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Listing } from '@/lib/types'; // Import Listing type
+import { Listing } from '@/lib/types';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ListingDetailModalProps {
-  listing: Listing; // Use the Listing type
+  listing: Listing;
   isOpen: boolean;
   isOwner: boolean;
   onClose: () => void;
-  onFavoriteToggle?: (id: number, isFavorited: boolean) => void; // Changed id to number
-  onSendMessage?: () => void;
+  onFavoriteToggle?: (id: number, isFavorited: boolean) => void;
   onEdit?: () => void;
   onMarkAsSold?: () => void;
   onDelete?: () => void;
@@ -29,18 +31,47 @@ export function ListingDetailModal({
   isOwner,
   onClose,
   onFavoriteToggle,
-  onSendMessage,
   onEdit,
   onMarkAsSold,
   onDelete,
 }: ListingDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageLoading, setIsImageLoading] = useState(true);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Reset loading state when the listing or current image changes
     setIsImageLoading(true);
   }, [currentImageIndex, listing?.image_urls]);
+
+  const handleStartChat = async () => {
+    setIsCreatingChat(true);
+    try {
+      const { data, error } = await supabase.rpc('get_or_create_conversation', {
+        p_listing_id: listing.id,
+        p_seller_id: listing.user_id,
+      });
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const conversationId = data[0].id;
+        navigate(`/chat/${conversationId}`);
+        onClose();
+      } else {
+        throw new Error("Could not create or find conversation.");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start conversation.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingChat(false);
+    }
+  };
 
   if (!listing) return null;
 
@@ -76,14 +107,12 @@ export function ListingDetailModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
         className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-4xl sm:max-h-[90vh] sm:rounded-2xl flex flex-col sm:flex-row overflow-hidden"
-        showCloseButton={false} // Hide the default close button
+        showCloseButton={false}
       >
-        {/* Single Close button - positioned absolutely within DialogContent */}
         <div className="absolute top-4 right-4 z-20">
           <Button variant="ghost" size="icon" className="bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10 hover:text-black" onClick={onClose}><X className="h-5 w-5" /></Button>
         </div>
 
-        {/* Image Section (left column on desktop) */}
         <div className="relative bg-muted flex items-center justify-center aspect-square sm:aspect-auto sm:w-1/2 sm:h-full sm:flex-shrink-0">
           {isImageLoading && <Skeleton className="absolute inset-0 w-full h-full z-10" />}
           {listing.status === 'sold' && <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">SOLD</div>}
@@ -105,7 +134,6 @@ export function ListingDetailModal({
           )}
         </div>
 
-        {/* Details Section (right column on desktop) */}
         <div className="flex-grow overflow-y-auto hide-scrollbar p-4 space-y-4 sm:w-1/2 sm:h-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-4 sm:pb-4">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold tracking-tight">{listing.title}</h1>
@@ -143,19 +171,14 @@ export function ListingDetailModal({
           ) : (
             listing.status !== 'sold' && (
               <div className="space-y-3">
-                <Alert className="text-xs p-3">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    You’ll be redirected to WhatsApp to chat directly with the seller. Please be respectful and avoid sharing sensitive personal information.
-                  </AlertDescription>
-                </Alert>
                 <div className="space-y-2">
                   <Button
                     className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
-                    onClick={onSendMessage}
+                    onClick={handleStartChat}
+                    disabled={isCreatingChat}
                   >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Chat on WhatsApp
+                    {isCreatingChat ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageSquare className="w-4 h-4 mr-2" />}
+                    {isCreatingChat ? 'Starting Chat...' : 'Message Seller'}
                   </Button>
                   <Button variant="outline" className="w-full" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited || false)}>
                     <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
