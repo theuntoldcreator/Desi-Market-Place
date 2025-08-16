@@ -29,7 +29,7 @@ const Login = () => {
           <CardHeader className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold">Welcome!</CardTitle>
             <CardDescription className="text-base">
-              Sign in with Google to continue
+              Sign in or create an account to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -47,7 +47,6 @@ const Login = () => {
                 },
               }}
               providers={['google']}
-              onlyThirdPartyProviders={true}
               theme="light"
             />
           </CardContent>
