@@ -45,7 +45,7 @@ const fetchConversationDetails = async (conversationId: string, userId: string):
     .single();
 
   if (error) throw new Error(error.message);
-  return data as ConversationDetails;
+  return data as unknown as ConversationDetails;
 };
 
 export default function Chat() {

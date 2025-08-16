@@ -43,7 +43,7 @@ const fetchConversations = async (userId: string): Promise<Conversation[]> => {
     .order('updated_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return data as Conversation[];
+  return data as unknown as Conversation[];
 };
 
 export default function Messages() {
