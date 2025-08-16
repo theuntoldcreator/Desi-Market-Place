@@ -9,7 +9,27 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 
-const fetchConversations = async (userId: string) => {
+type ProfileStub = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+};
+
+type ListingStub = {
+  title: string;
+  image_urls: string[];
+};
+
+type Conversation = {
+  id: string;
+  updated_at: string;
+  listing: ListingStub;
+  buyer: ProfileStub;
+  seller: ProfileStub;
+};
+
+const fetchConversations = async (userId: string): Promise<Conversation[]> => {
   const { data, error } = await supabase
     .from('conversations')
     .select(`
@@ -23,7 +43,7 @@ const fetchConversations = async (userId: string) => {
     .order('updated_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return data;
+  return data as Conversation[];
 };
 
 export default function Messages() {
@@ -31,7 +51,7 @@ export default function Messages() {
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: conversations = [], isLoading, isError } = useQuery({
+  const { data: conversations = [], isLoading, isError } = useQuery<Conversation[]>({
     queryKey: ['conversations', session?.user?.id],
     queryFn: () => fetchConversations(session!.user.id),
     enabled: !!session,
@@ -60,7 +80,7 @@ export default function Messages() {
             <Link key={convo.id} to={`/chat/${convo.id}`} className="block">
               <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors">
                 <Avatar className="h-14 w-14">
-                  <AvatarImage src={otherUser.avatar_url} />
+                  <AvatarImage src={otherUser.avatar_url || undefined} />
                   <AvatarFallback>{fallback}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">

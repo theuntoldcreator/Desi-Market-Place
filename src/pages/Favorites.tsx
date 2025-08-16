@@ -122,31 +122,6 @@ export default function Favorites() {
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
   });
 
-  const handleSendMessage = (listing: Listing) => {
-    if (!session) {
-      toast({ title: "Please log in", description: "You need to be logged in to send a message.", variant: "destructive" });
-      return;
-    }
-
-    const message = `Hey, i am interested in this ${listing.title}, is it still available?`;
-    const encodedMessage = encodeURIComponent(message);
-
-    if (!listing.contact) {
-      toast({ title: "Contact information not available", description: "The seller has not provided a contact number.", variant: "destructive" });
-      return;
-    }
-    
-    const cleanedNumber = listing.contact.replace(/\D/g, '');
-    
-    if (!cleanedNumber) {
-      toast({ title: "Invalid contact number", variant: "destructive" });
-      return;
-    }
-
-    const whatsappUrl = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-  };
-
   const normalizedSearchQuery = debouncedSearchQuery.toLowerCase().trim();
   const filteredListings = listings.filter(l => 
     l.title.toLowerCase().includes(normalizedSearchQuery) ||
@@ -202,7 +177,6 @@ export default function Favorites() {
           isOwner={false}
           onClose={() => setSelectedListing(null)}
           onFavoriteToggle={(id) => favoriteMutation.mutate({ listingId: id })}
-          onSendMessage={() => handleSendMessage(selectedListing)}
         />
       )}
     </div>

@@ -220,26 +220,6 @@ export default function Marketplace() {
     onSettled: () => setListingToDelete(null)
   });
 
-  const handleSendMessage = (listing: Listing) => {
-    const message = `Hey, i am interested in this ${listing.title}, is it still available?`;
-    const encodedMessage = encodeURIComponent(message);
-
-    if (!listing.contact) {
-      toast({ title: "Contact information not available", description: "The seller has not provided a contact number.", variant: "destructive" });
-      return;
-    }
-    
-    const cleanedNumber = listing.contact.replace(/\D/g, '');
-    
-    if (!cleanedNumber) {
-      toast({ title: "Invalid contact number", variant: "destructive" });
-      return;
-    }
-
-    const whatsappUrl = `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-  };
-
   const normalizedSearchQuery = debouncedSearchQuery.toLowerCase().trim();
   const filteredListings = listings
     .filter(l => {
@@ -318,7 +298,6 @@ export default function Marketplace() {
           isOwner={session?.user?.id === selectedListing.user_id}
           onClose={() => setSelectedListing(null)}
           onFavoriteToggle={(id, isFav) => favoriteMutation.mutate({ listingId: id, isFavorited: isFav })}
-          onSendMessage={() => handleSendMessage(selectedListing)}
           onEdit={() => { setSelectedListing(null); setListingToEdit(selectedListing); }}
           onDelete={() => { setSelectedListing(null); setListingToDelete(selectedListing); }}
           onMarkAsSold={() => { setSelectedListing(null); setListingToMarkAsSold(selectedListing); }}

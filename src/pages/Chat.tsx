@@ -10,7 +10,28 @@ import { useXmpp } from '@/hooks/XmppProvider';
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 
-const fetchConversationDetails = async (conversationId: string, userId: string) => {
+type ProfileWithJid = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  jid: string | null;
+};
+
+type ListingStubForChat = {
+  id: number;
+  title: string;
+  image_urls: string[];
+};
+
+type ConversationDetails = {
+  id: string;
+  listing: ListingStubForChat;
+  buyer: ProfileWithJid;
+  seller: ProfileWithJid;
+};
+
+const fetchConversationDetails = async (conversationId: string, userId: string): Promise<ConversationDetails> => {
   const { data, error } = await supabase
     .from('conversations')
     .select(`
@@ -24,7 +45,7 @@ const fetchConversationDetails = async (conversationId: string, userId: string) 
     .single();
 
   if (error) throw new Error(error.message);
-  return data;
+  return data as ConversationDetails;
 };
 
 export default function Chat() {
@@ -34,7 +55,7 @@ export default function Chat() {
   const [messageText, setMessageText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: conversation, isLoading, isError } = useQuery({
+  const { data: conversation, isLoading, isError } = useQuery<ConversationDetails>({
     queryKey: ['conversation', conversationId],
     queryFn: () => fetchConversationDetails(conversationId!, session!.user.id),
     enabled: !!session && !!conversationId,
@@ -71,7 +92,7 @@ export default function Chat() {
           <Link to="/messages"><ArrowLeft /></Link>
         </Button>
         <Avatar>
-          <AvatarImage src={otherUser.avatar_url} />
+          <AvatarImage src={otherUser.avatar_url || undefined} />
           <AvatarFallback>{fallback}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
