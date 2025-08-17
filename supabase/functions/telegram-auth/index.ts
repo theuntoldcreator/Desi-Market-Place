@@ -27,17 +27,19 @@ serve(async (req) => {
 
   try {
     const telegramUserData = await req.json()
+    
+    // --- Step 1: Verify Environment Variables ---
     const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN')
-
     if (!botToken) {
       console.error('FATAL: TELEGRAM_BOT_TOKEN is not set in environment variables.');
-      return new Response(JSON.stringify({ error: 'Server configuration error: Missing bot token.' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      throw new Error('Server configuration error: Missing bot token.');
+    }
+    if (!Deno.env.get('SUPABASE_URL') || !Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+      console.error('FATAL: Supabase environment variables are not set.');
+      throw new Error('Server configuration error: Missing Supabase credentials.');
     }
 
-    // --- Telegram Hash Validation ---
+    // --- Step 2: Telegram Hash Validation ---
     const { hash, ...userData } = telegramUserData
     const dataCheckString = Object.keys(userData)
       .sort()
@@ -48,13 +50,14 @@ serve(async (req) => {
     const calculatedHash = createHmac('sha256', secretKey).update(dataCheckString).digest('hex')
 
     if (calculatedHash !== hash) {
+      console.warn('Hash validation failed. Incoming hash:', hash, 'Calculated hash:', calculatedHash);
       return new Response(JSON.stringify({ error: 'Invalid hash. Authentication failed.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-    // --- End Validation ---
-
+    
+    // --- Step 3: Initialize Supabase Admin Client ---
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -62,7 +65,7 @@ serve(async (req) => {
 
     const userEmail = `${userData.id}@telegram.user`;
 
-    // Check if a user with this Telegram ID already exists in profiles
+    // --- Step 4: Check for existing user and create/update profile ---
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
       .select('id')
@@ -70,7 +73,6 @@ serve(async (req) => {
       .single()
 
     if (existingProfile) {
-      // User exists, update their profile with the latest data from Telegram
       const { error: updateError } = await supabaseAdmin.from('profiles').update({
         first_name: userData.first_name,
         last_name: userData.last_name,
@@ -79,11 +81,10 @@ serve(async (req) => {
       }).eq('id', existingProfile.id)
       if (updateError) throw new Error(`Failed to update profile: ${updateError.message}`);
     } else {
-      // User does not exist, create a new auth.user entry.
       const { error: userError } = await supabaseAdmin.auth.admin.createUser({
         email: userEmail,
         password: generatePassword(),
-        email_confirm: true, // Auto-confirm email since it's a synthetic one
+        email_confirm: true,
         user_metadata: {
           first_name: userData.first_name,
           last_name: userData.last_name,
@@ -92,24 +93,21 @@ serve(async (req) => {
           username: userData.username,
         },
       })
-      // The `handle_new_user` trigger will automatically create the corresponding profile.
       if (userError && !userError.message.includes('already exists')) {
-        // Throw error only if it's not the "user already exists" error
         throw new Error(`Failed to create user: ${userError.message}`);
       }
     }
 
-    // Generate a magic link for the user to sign in
+    // --- Step 5: Generate Magic Link ---
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
         email: userEmail,
     });
     if (linkError) throw new Error(`Failed to generate magic link: ${linkError.message}`);
 
+    // --- Step 6: Send Magic Link via Telegram Bot ---
     const magicLink = linkData.properties.action_link;
     const messageText = `Click this link to log in to NRI's Marketplace: ${magicLink}`;
-
-    // Send the magic link to the user via the Telegram Bot API
     const telegramApiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
     const telegramResponse = await fetch(telegramApiUrl, {
         method: 'POST',
@@ -122,17 +120,20 @@ serve(async (req) => {
 
     if (!telegramResponse.ok) {
         const errorBody = await telegramResponse.json();
+        console.error('Telegram API error:', errorBody);
         throw new Error(`Failed to send Telegram message: ${errorBody.description || 'Unknown error'}`);
     }
 
+    // --- Success ---
     return new Response(JSON.stringify({ success: true, message: 'Login link sent to your Telegram.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
 
   } catch (error) {
-    console.error('Error in telegram-auth function:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    // --- Centralized Error Handling ---
+    console.error('Critical error in telegram-auth function:', error.message);
+    return new Response(JSON.stringify({ error: `An internal server error occurred. Details: ${error.message}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })
