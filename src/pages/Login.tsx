@@ -1,9 +1,7 @@
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import marketplaceLogo from '@/assets/marketplace.jpg';
+import { TelegramLoginButton } from '@/components/auth/TelegramLoginButton';
 
 const Login = () => {
   const logoUrl = marketplaceLogo;
@@ -29,26 +27,11 @@ const Login = () => {
           <CardHeader className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold">Welcome!</CardTitle>
             <CardDescription className="text-base">
-              Sign in or create an account to continue
+              Sign in or create an account with one click.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Auth
-              supabaseClient={supabase}
-              appearance={{
-                theme: ThemeSupa,
-                variables: {
-                  default: {
-                    colors: {
-                      brand: 'hsl(151 100% 24%)',
-                      brandAccent: 'hsl(151 100% 19%)',
-                    },
-                  },
-                },
-              }}
-              providers={['google']}
-              theme="light"
-            />
+            <TelegramLoginButton />
           </CardContent>
         </Card>
       </div>

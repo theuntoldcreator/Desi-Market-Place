@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner, toast as sonnerToast } from "@/components/ui/sonner";
+import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
@@ -18,7 +18,6 @@ import { useEffect } from "react";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AuthLayout from "./components/auth/AuthLayout";
 import AdminRoute from "./components/auth/AdminRoute";
-import { XmppProvider } from "./hooks/XmppProvider";
 
 const queryClient = new QueryClient();
 
@@ -28,47 +27,21 @@ const AppRoutes = () => {
   const session = useSession();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        const checkAndProvisionXmpp = async () => {
-          if (session) {
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('role, jid')
-              .eq('id', session.user.id)
-              .single();
+        if (session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
 
-            if (error) {
-              console.error("Error fetching profile:", error);
-              return;
-            }
-
-            if (profile?.role === 'admin') {
-              navigate('/admin', { replace: true });
-              return;
-            }
-
-            if (profile && !profile.jid) {
-              const toastId = sonnerToast.loading("Setting up your chat account...");
-              try {
-                console.log('User has no JID, provisioning XMPP account...');
-                const { error: invokeError } = await supabase.functions.invoke('create-xmpp-user');
-                if (invokeError) throw invokeError;
-                console.log('XMPP account provisioned successfully.');
-                sonnerToast.success("Chat account created!", { id: toastId, description: "You can now message other users." });
-                queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] });
-              } catch (e) {
-                console.error("Failed to provision XMPP account:", e);
-                sonnerToast.error("Chat setup failed", { id: toastId, description: "Could not create your chat account." });
-              }
-            }
-
-            if (event === 'SIGNED_IN' && profile?.role !== 'admin') {
-              navigate('/', { replace: true });
-            }
+          if (profile?.role === 'admin') {
+            navigate('/admin', { replace: true });
+          } else if (event === 'SIGNED_IN') {
+            navigate('/', { replace: true });
           }
-        };
-        checkAndProvisionXmpp();
+        }
       }
       
       if (event === 'SIGNED_OUT') {
@@ -113,9 +86,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <XmppProvider>
-          <AppRoutes />
-        </XmppProvider>
+        <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
