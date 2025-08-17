@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, MapPin, Info, Phone } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Info, MessageCircle, Send, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -55,6 +55,10 @@ export function ListingDetailModal({
   const conditionMap: { [key: string]: string } = { new: 'New', like_new: 'Like New', used: 'Used' };
   const categoryMap: { [key: string]: string } = { electronics: 'Electronics', books: 'Books & Study', furniture: 'Furniture', vehicles: 'Vehicles', clothing: 'Clothing', gaming: 'Gaming', free: 'Free Stuff' };
 
+  const contactParts = listing.contact?.match(/^([^:]+):(.*)$/);
+  const contactMethod = contactParts ? contactParts[1] : null;
+  const contactValue = contactParts ? contactParts[2] : null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
@@ -99,13 +103,32 @@ export function ListingDetailModal({
           </div>
           <Separator />
           
-          {listing.contact && (
+          {contactMethod && contactValue && (
             <>
               <div className="space-y-3">
                 <h2 className="text-lg font-semibold">Contact Seller</h2>
                 <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                  <Phone className="w-5 h-5 text-primary" />
-                  <p className="font-mono text-sm">{listing.contact}</p>
+                  {contactMethod === 'whatsapp' && (
+                    <Button asChild className="w-full">
+                      <a href={`https://wa.me/${contactValue.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+                        <MessageCircle className="w-5 h-5 mr-2" /> Chat on WhatsApp
+                      </a>
+                    </Button>
+                  )}
+                  {contactMethod === 'telegram' && (
+                    <Button asChild className="w-full">
+                      <a href={`https://t.me/${contactValue.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+                        <Send className="w-5 h-5 mr-2" /> Chat on Telegram
+                      </a>
+                    </Button>
+                  )}
+                  {contactMethod === 'email' && (
+                    <Button asChild variant="outline" className="w-full">
+                      <a href={`mailto:${contactValue}`} className="flex items-center justify-center">
+                        <Mail className="w-5 h-5 mr-2" /> {contactValue}
+                      </a>
+                    </Button>
+                  )}
                 </div>
                 <Alert variant="default" className="text-xs">
                   <Info className="h-4 w-4" />

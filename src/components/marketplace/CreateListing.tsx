@@ -37,6 +37,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', category: '', location: '', contact: '', condition: ''
   });
+  const [contactMethod, setContactMethod] = useState('');
   const [images, setImages] = useState<File[]>([]);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
@@ -45,6 +46,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     setFormData({ 
       title: '', description: '', price: '', category: '', location: '', contact: '', condition: '' 
     });
+    setContactMethod('');
     setImages([]);
     setViolation(null);
   };
@@ -63,8 +65,10 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
       );
 
       const { title, description, price, category, location, contact, condition } = formData;
+      const fullContact = `${contactMethod}:${contact}`;
       const { error: insertError } = await supabase.from('listings').insert({
-        title, description, category, location, condition, contact,
+        title, description, category, location, condition,
+        contact: fullContact,
         price: parseFloat(price),
         image_urls: imageUrls,
       });
@@ -151,6 +155,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   const validateForm = () => {
     const requiredFields = ['title', 'price', 'category', 'location', 'contact', 'condition'];
+    if (!contactMethod) return false;
     if (formData.price === '0') {
         const freeRequired = ['title', 'price', 'location', 'contact', 'condition'];
         return freeRequired.every(field => !!(formData as any)[field]);
@@ -253,11 +258,32 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
             <div className="space-y-4 pt-4 border-t">
               <Label className="font-semibold">Contact Info *</Label>
-              <Input id="contact" value={formData.contact} onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))} placeholder="WhatsApp, Telegram, or Email" />
+              <div className="grid grid-cols-3 gap-2">
+                <Select value={contactMethod} onValueChange={setContactMethod}>
+                  <SelectTrigger className="col-span-1"><SelectValue placeholder="Method" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                    <SelectItem value="telegram">Telegram</SelectItem>
+                    <SelectItem value="email">Email</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input 
+                  className="col-span-2"
+                  value={formData.contact} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))} 
+                  placeholder={
+                    contactMethod === 'whatsapp' ? 'Phone Number' :
+                    contactMethod === 'telegram' ? 'Username' :
+                    contactMethod === 'email' ? 'Email Address' :
+                    'Contact Detail'
+                  }
+                  disabled={!contactMethod}
+                />
+              </div>
               <Alert className="text-xs p-3">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Provide your preferred contact method. Be respectful and avoid sharing sensitive info.
+                  Please be respectful and do not post content that violates or harms other users. All interactions are subject to our community guidelines.
                 </AlertDescription>
               </Alert>
             </div>
