@@ -6,7 +6,7 @@ const SignInPage = () => {
     <div className="min-h-screen bg-marketplace-bg flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md mx-auto shadow-xl border-0 bg-gradient-card">
         <CardContent className="p-8">
-          <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" />
+          <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" afterSignInUrl="/" />
         </CardContent>
       </Card>
     </div>
