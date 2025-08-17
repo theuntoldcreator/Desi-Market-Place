@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
+import { EditListing } from './EditListing';
 
 interface ListingDetailModalProps {
   listing: Listing;
@@ -29,6 +30,7 @@ export function ListingDetailModal({
 }: ListingDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageLoading, setIsImageLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -89,7 +91,10 @@ export function ListingDetailModal({
 
   useEffect(() => {
     setIsImageLoading(true);
-  }, [currentImageIndex, listing?.image_urls]);
+    if (!isOpen) {
+      setIsEditing(false); // Reset edit state when modal closes
+    }
+  }, [currentImageIndex, listing?.image_urls, isOpen]);
 
   if (!listing) return null;
 
@@ -105,6 +110,10 @@ export function ListingDetailModal({
   const contactParts = listing.contact?.match(/^([^:]+):(.*)$/);
   const contactMethod = contactParts ? contactParts[1] : null;
   const contactValue = contactParts ? contactParts[2] : null;
+
+  if (isEditing) {
+    return <EditListing listing={listing} isOpen={isEditing} onClose={() => { setIsEditing(false); onClose(); }} />;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -129,11 +138,10 @@ export function ListingDetailModal({
                   <div className="space-y-3">
                     <h2 className="text-lg font-semibold">Manage Listing</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <Button variant="outline" disabled><Edit className="w-4 h-4 mr-2" /> Edit</Button>
+                      <Button variant="outline" onClick={() => setIsEditing(true)}><Edit className="w-4 h-4 mr-2" /> Edit</Button>
                       <Button variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => updateListingStatusMutation.mutate('sold')} disabled={updateListingStatusMutation.isPending || listing.status === 'sold'}><CheckCircle className="w-4 h-4 mr-2" /> Mark as Sold</Button>
                       <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" disabled={deleteListingMutation.isPending}><Trash2 className="w-4 h-4 mr-2" /> Delete</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete your listing and remove its data from our servers.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteListingMutation.mutate()}>Continue</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                     </div>
-                    <p className="text-xs text-muted-foreground text-center sm:text-left">Editing is coming soon!</p>
                   </div>
                 </>
               )}
