@@ -30,7 +30,11 @@ serve(async (req) => {
     const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN')
 
     if (!botToken) {
-      throw new Error('TELEGRAM_BOT_TOKEN is not set in environment variables.')
+      console.error('FATAL: TELEGRAM_BOT_TOKEN is not set in environment variables.');
+      return new Response(JSON.stringify({ error: 'Server configuration error: Missing bot token.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // --- Telegram Hash Validation ---
@@ -76,7 +80,6 @@ serve(async (req) => {
       if (updateError) throw new Error(`Failed to update profile: ${updateError.message}`);
     } else {
       // User does not exist, create a new auth.user entry.
-      // The `handle_new_user` trigger will automatically create the corresponding profile.
       const { error: userError } = await supabaseAdmin.auth.admin.createUser({
         email: userEmail,
         password: generatePassword(),
@@ -89,7 +92,11 @@ serve(async (req) => {
           username: userData.username,
         },
       })
-      if (userError) throw new Error(`Failed to create user: ${userError.message}`);
+      // The `handle_new_user` trigger will automatically create the corresponding profile.
+      if (userError && !userError.message.includes('already exists')) {
+        // Throw error only if it's not the "user already exists" error
+        throw new Error(`Failed to create user: ${userError.message}`);
+      }
     }
 
     // Generate a magic link for the user to sign in
@@ -113,13 +120,11 @@ serve(async (req) => {
         }),
     });
 
-    // Check if the message was sent successfully
     if (!telegramResponse.ok) {
         const errorBody = await telegramResponse.json();
         throw new Error(`Failed to send Telegram message: ${errorBody.description || 'Unknown error'}`);
     }
 
-    // Return a success response to the client
     return new Response(JSON.stringify({ success: true, message: 'Login link sent to your Telegram.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
