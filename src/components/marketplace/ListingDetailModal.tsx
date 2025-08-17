@@ -110,6 +110,7 @@ export function ListingDetailModal({
   const contactParts = listing.contact?.match(/^([^:]+):(.*)$/);
   const contactMethod = contactParts ? contactParts[1] : null;
   const contactValue = contactParts ? contactParts[2] : null;
+  const detailImageUrl = `${listing.image_urls[currentImageIndex]}?width=800&height=800&resize=contain`;
 
   if (isEditing) {
     return <EditListing listing={listing} isOpen={isEditing} onClose={() => { setIsEditing(false); onClose(); }} />;
@@ -122,7 +123,7 @@ export function ListingDetailModal({
         <div className="relative bg-muted flex items-center justify-center aspect-square sm:aspect-auto sm:w-1/2 sm:h-full sm:flex-shrink-0">
           {isImageLoading && <Skeleton className="absolute inset-0 w-full h-full z-10" />}
           {listing.status === 'sold' && <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">SOLD</div>}
-          <img src={listing.image_urls[currentImageIndex]} alt={listing.title} className={cn("w-full h-full object-contain z-10 transition-opacity duration-500", isImageLoading ? "opacity-0" : "opacity-100")} onLoad={() => setIsImageLoading(false)} onError={() => setIsImageLoading(false)} />
+          <img src={detailImageUrl} alt={listing.title} className={cn("w-full h-full object-contain z-10 transition-opacity duration-500", isImageLoading ? "opacity-0" : "opacity-100")} onLoad={() => setIsImageLoading(false)} onError={() => setIsImageLoading(false)} />
           {listing.image_urls.length > 1 && (<><Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button><Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={nextImage}><ChevronRight /></Button></>)}
         </div>
         <div className="flex-grow overflow-y-auto hide-scrollbar p-4 space-y-4 sm:w-1/2 sm:h-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-4 sm:pb-4">

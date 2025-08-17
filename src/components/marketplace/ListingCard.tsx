@@ -21,6 +21,8 @@ export function ListingCard({ id, title, price, image_urls, location, status, is
     toggleFavorite(!!is_favorited);
   };
 
+  const thumbnailUrl = `${image_urls[0]}?width=400&height=400&resize=cover`;
+
   return (
     <Card
       onClick={onClick}
@@ -45,7 +47,7 @@ export function ListingCard({ id, title, price, image_urls, location, status, is
         <AspectRatio ratio={1 / 1} className="bg-muted rounded-md overflow-hidden relative">
           {isImageLoading && <Skeleton className="absolute inset-0 w-full h-full z-10" />}
           <img
-            src={image_urls[0]}
+            src={thumbnailUrl}
             alt={title}
             className={cn(
               "w-full h-full object-cover transition-opacity duration-500",
