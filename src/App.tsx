@@ -13,8 +13,8 @@ import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminRoute from "./components/auth/AdminRoute";
-import { AuthProvider } from "./auth/AuthContext";
-import TelegramAuthProvider from "./components/auth/TelegramAuthProvider";
+import AuthLayout from "./components/auth/AuthLayout";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +30,10 @@ const AppRoutes = () => {
         <Route path="/chat/:conversationId" element={<Chat />} />
       </Route>
 
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<Login />} />
+      </Route>
+
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<Admin />} />
       </Route>
@@ -41,17 +45,13 @@ const AppRoutes = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <TelegramAuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AppRoutes />
-          </TooltipProvider>
-        </QueryClientProvider>
-      </TelegramAuthProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AppRoutes />
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 

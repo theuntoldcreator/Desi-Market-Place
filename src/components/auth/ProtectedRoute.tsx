@@ -1,12 +1,14 @@
+import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/auth/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute = () => {
-  const { user } = useAuth();
+  const { session, isLoading } = useSessionContext();
+  const userId = session?.user.id;
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [onlineCount, setOnlineCount] = useState(0);
 
@@ -19,11 +21,10 @@ const ProtectedRoute = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // This logic can remain as it's for presence, not auth
   useEffect(() => {
-    if (!user?.id) return;
+    if (!userId) return;
     const channel = supabase.channel('online-users', {
-      config: { presence: { key: user.id } },
+      config: { presence: { key: userId } },
     });
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -37,22 +38,18 @@ const ProtectedRoute = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [userId]);
 
-  // If there's no user, they can't access protected routes.
-  // In a real app, you might show a "Please open in Telegram" message.
-  if (!user) {
-     // For development, we allow access. In production, this would be more strict.
-    if (import.meta.env.PROD) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">Access Denied</h1>
-            <p className="mt-2">Please open this app within Telegram.</p>
-          </div>
-        </div>
-      );
-    }
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
   }
 
   return (
