@@ -1,7 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { verify } from 'https://deno.land/x/djwt@v2.8/mod.ts';
-import { corsHeaders } from '../_shared/cors.ts';
 import { hash } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET');
 const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
