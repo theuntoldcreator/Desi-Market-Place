@@ -15,6 +15,7 @@ import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
 import imageCompression from 'browser-image-compression';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@/context/AuthContext';
 
 interface CreateListingProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ const categories = [
 export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', category: '', location: '', contact: '', condition: ''
@@ -53,6 +55,8 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   const createListingMutation = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error('You must be logged in to create a listing.');
+
       const imageUploadFolder = uuidv4();
       const imageUrls = await Promise.all(
         images.map(async (file) => {
@@ -67,6 +71,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
       const { title, description, price, category, location, contact, condition } = formData;
       const fullContact = `${contactMethod}:${contact}`;
       const { error: insertError } = await supabase.from('listings').insert({
+        user_id: user.id,
         title, description, category, location, condition,
         contact: fullContact,
         price: parseFloat(price),
