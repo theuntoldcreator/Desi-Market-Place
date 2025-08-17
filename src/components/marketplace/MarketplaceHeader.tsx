@@ -2,10 +2,10 @@ import { Plus, Home, ShoppingBag, Heart, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { Link } from 'react-router-dom';
-import { SignedIn, SignedOut } from '@clerk/clerk-react';
 import marketplaceLogo from '@/assets/marketplace.jpg';
 import { NavLinkIcon } from '@/components/layout/NavLinkIcon';
 import { MobileSearchDialog } from '../marketplace/MobileSearchDialog';
+import { useSession } from '@supabase/auth-helpers-react';
 
 interface MarketplaceHeaderProps {
   onCreateListing: () => void;
@@ -14,6 +14,7 @@ interface MarketplaceHeaderProps {
 }
 
 export function MarketplaceHeader({ onCreateListing, searchQuery, onSearchChange }: MarketplaceHeaderProps) {
+  const session = useSession();
   const logoUrl = marketplaceLogo;
   return (
     <header className="sticky top-0 z-30 w-full border-b border-border bg-header-bg backdrop-blur-sm">
@@ -37,14 +38,13 @@ export function MarketplaceHeader({ onCreateListing, searchQuery, onSearchChange
           <Button onClick={onCreateListing} className="hidden lg:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
           <Button onClick={onCreateListing} size="icon" variant="outline" className="hidden sm:flex lg:hidden"><Plus className="w-4 h-4" /></Button>
           <Button onClick={onCreateListing} size="icon" className="flex sm:hidden"><Plus className="w-4 h-4" /></Button>
-          <SignedIn>
+          {session ? (
             <UserMenu />
-          </SignedIn>
-          <SignedOut>
+          ) : (
             <Button asChild>
-              <Link to="/sign-in">Login</Link>
+              <Link to="/login">Login</Link>
             </Button>
-          </SignedOut>
+          )}
         </div>
       </div>
     </header>

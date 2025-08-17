@@ -8,27 +8,23 @@ import NotFound from "./pages/NotFound";
 import MyListings from "./pages/MyListings";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
-import SignInPage from "./pages/SignIn";
-import SignUpPage from "./pages/SignUp";
+import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
-import { ClerkProvider } from "@clerk/clerk-react";
+import { SessionContextProvider } from "@supabase/auth-helpers-react";
+import { supabase } from "./integrations/supabase/client";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AuthLayout from "./components/auth/AuthLayout";
 import AdminRoute from "./components/auth/AdminRoute";
 
 const queryClient = new QueryClient();
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route element={<AuthLayout />}>
-        <Route path="/sign-in" element={<SignInPage />} />
-        <Route path="/sign-up" element={<SignUpPage />} />
-        <Route path="/login" element={<Navigate to="/sign-in" replace />} />
-        <Route path="/signup" element={<Navigate to="/sign-up" replace />} />
+        <Route path="/login" element={<Login />} />
       </Route>
       
       <Route element={<ProtectedRoute />}>
@@ -50,19 +46,8 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  if (!PUBLISHABLE_KEY) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="text-center p-8 bg-red-100 border border-red-400 rounded-lg">
-          <h1 className="text-2xl font-bold text-red-700">Configuration Error</h1>
-          <p className="mt-2 text-red-600">Clerk Publishable Key is missing. Please set <code className="bg-red-200 p-1 rounded">VITE_CLERK_PUBLISHABLE_KEY</code> in your environment variables.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+    <SessionContextProvider supabaseClient={supabase}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
@@ -70,7 +55,7 @@ const App = () => {
           <AppRoutes />
         </TooltipProvider>
       </QueryClientProvider>
-    </ClerkProvider>
+    </SessionContextProvider>
   );
 };
 

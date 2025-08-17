@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useSession } from '@supabase/auth-helpers-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Phone, Loader2, X, MapPin, Trash2, ImageIcon } from 'lucide-react';
@@ -42,7 +42,8 @@ const categories = [
 ];
 
 export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
-  const { userId } = useAuth();
+  const session = useSession();
+  const userId = session?.user.id;
   const queryClient = useQueryClient();
   const { toast } = useToast();
   

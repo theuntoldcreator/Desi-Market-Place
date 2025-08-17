@@ -1,11 +1,24 @@
-import { useUser } from '@clerk/clerk-react';
+import { useSessionContext, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 const AdminRoute = () => {
-  const { user, isLoaded } = useUser();
+  const { session, isLoading } = useSessionContext();
+  const supabase = useSupabaseClient();
 
-  if (!isLoaded) {
+  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ['profile', session?.user.id],
+    queryFn: async () => {
+      if (!session?.user.id) return null;
+      const { data, error } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !isLoading && !!session,
+  });
+
+  if (isLoading || isLoadingProfile) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -13,11 +26,9 @@ const AdminRoute = () => {
     );
   }
 
-  // Check for admin role in Clerk's public metadata.
-  // This is set by our `clerk-webhook` Edge Function when a user is created.
-  const isAdmin = user?.publicMetadata?.role === 'admin';
+  const isAdmin = profile?.role === 'admin';
 
-  if (!user || !isAdmin) {
+  if (!session || !isAdmin) {
     return <Navigate to="/" replace />;
   }
 

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
+import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Loader2, MessageSquare } from 'lucide-react';
@@ -32,7 +32,8 @@ const fetchConversations = async (userId: string): Promise<Conversation[]> => {
 };
 
 export default function Messages() {
-  const { userId } = useAuth();
+  const session = useSession();
+  const userId = session?.user.id;
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 

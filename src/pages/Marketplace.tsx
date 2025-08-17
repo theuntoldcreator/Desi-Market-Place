@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
+import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
 import { CreateListing } from '@/components/marketplace/CreateListing';
@@ -63,7 +63,8 @@ const fetchListings = async (userId: string | null | undefined, latestTimestamp?
 };
 
 export default function Marketplace() {
-  const { userId } = useAuth();
+  const session = useSession();
+  const userId = session?.user.id;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 

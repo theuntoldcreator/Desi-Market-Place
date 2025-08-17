@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
+import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, ArrowLeft, Send } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -58,7 +58,8 @@ const fetchMessages = async (conversationId: string): Promise<Message[]> => {
 
 export default function Chat() {
   const { conversationId } = useParams();
-  const { userId } = useAuth();
+  const session = useSession();
+  const userId = session?.user.id;
   const queryClient = useQueryClient();
   const [messageText, setMessageText] = useState('');
   const [chatMessages, setChatMessages] = useState<Message[]>([]);

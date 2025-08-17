@@ -1,14 +1,14 @@
-import { useAuth } from '@clerk/clerk-react';
+import { useSessionContext, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
-import { SupabaseSync } from './SupabaseSync';
 
 const ProtectedRoute = () => {
-  const { userId, isLoaded } = useAuth();
+  const { session, isLoading } = useSessionContext();
+  const supabaseClient = useSupabaseClient();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [onlineCount, setOnlineCount] = useState(0);
 
@@ -23,12 +23,12 @@ const ProtectedRoute = () => {
 
   // Online users count
   useEffect(() => {
-    if (!userId) return;
+    if (!session?.user.id) return;
 
-    const channel = supabase.channel('online-users', {
+    const channel = supabaseClient.channel('online-users', {
       config: {
         presence: {
-          key: userId,
+          key: session.user.id,
         },
       },
     });
@@ -47,9 +47,9 @@ const ProtectedRoute = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [session?.user.id, supabaseClient]);
 
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -57,13 +57,12 @@ const ProtectedRoute = () => {
     );
   }
 
-  if (!userId) {
-    return <Navigate to="/sign-in" replace />;
+  if (!session) {
+    return <Navigate to="/login" replace />;
   }
 
   return (
     <>
-      <SupabaseSync />
       <div className="flex flex-col min-h-dvh bg-gray-50/50">
         <div className="flex-grow pb-16 sm:pb-0">
           <Outlet />
