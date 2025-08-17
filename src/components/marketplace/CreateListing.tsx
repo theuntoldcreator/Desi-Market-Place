@@ -265,7 +265,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Listings are active for 20 days.
+                Listings are active for 1 day.
               </AlertDescription>
             </Alert>
           </div>

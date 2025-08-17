@@ -15,12 +15,12 @@ import { useDebounce } from 'use-debounce';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 
 const fetchListings = async (): Promise<Listing[]> => {
-  const twentyDaysAgo = subDays(new Date(), 20).toISOString();
+  const oneDayAgo = subDays(new Date(), 1).toISOString();
   const { data, error } = await supabase
     .from('listings')
     .select('*')
     .eq('status', 'active')
-    .gte('created_at', twentyDaysAgo)
+    .gte('created_at', oneDayAgo)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);

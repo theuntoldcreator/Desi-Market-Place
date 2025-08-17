@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, Tag, MapPin, Info, Phone } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Info, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -40,7 +40,7 @@ export function ListingDetailModal({
   };
 
   const creationDate = new Date(listing.created_at);
-  const expirationDate = addDays(creationDate, 20);
+  const expirationDate = addDays(creationDate, 1);
   const daysRemaining = differenceInDays(expirationDate, new Date());
 
   let expirationText = '';
