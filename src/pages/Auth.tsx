@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import marketplaceLogo from '@/assets/marketplace.jpg';
 
 const signUpSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -98,7 +99,15 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="mb-8 text-center">
+        <Link to="/" className="inline-flex items-center space-x-3 group">
+          <img src={marketplaceLogo} alt="NRI's Marketplace Logo" className="w-12 h-12 rounded-lg border border-gray-200 group-hover:opacity-80 transition-opacity" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground group-hover:text-primary transition-colors">
+            NRI's Marketplace
+          </h1>
+        </Link>
+      </div>
       <Tabs defaultValue="sign-in" className="w-full max-w-md">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="sign-in">Sign In</TabsTrigger>
