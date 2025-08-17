@@ -1,10 +1,7 @@
-import { useState } from 'react';
-import { Search, ShoppingBag, Laptop, BookOpen, Home, Car, Shirt, Gamepad2, Menu, Gift, Users } from 'lucide-react';
+import { Search, ShoppingBag, Laptop, BookOpen, Home, Car, Shirt, Gamepad2, Gift } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { Button } from '../ui/button';
 
 const categories = [
   { id: 'all', name: 'All Items', icon: ShoppingBag },
@@ -22,30 +19,26 @@ interface MarketplaceSidebarProps {
   onCategoryChange: (category: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onlineCount: number;
-  totalUsersCount?: number;
 }
 
 interface SidebarContentProps {
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
-  searchQuery?: string; // Make optional for reuse
-  onSearchChange?: (query: string) => void; // Make optional for reuse
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
   onLinkClick?: () => void;
-  onlineCount: number;
-  totalUsersCount?: number;
 }
 
-export const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick, onlineCount, totalUsersCount }: SidebarContentProps) => {
+export const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery, onSearchChange, onLinkClick }: SidebarContentProps) => {
   return (
     <div className="p-4 space-y-6">
-      <div className="space-y-4 hidden md:block"> {/* Hidden on mobile, shown on desktop */}
+      <div className="space-y-4 hidden md:block">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search items..." value={searchQuery} onChange={(e) => onSearchChange?.(e.target.value)} className="pl-10" />
         </div>
       </div>
-      <Separator className="hidden md:block" /> {/* Hide separator on mobile if search is hidden */}
+      <Separator className="hidden md:block" />
       <div className="space-y-2">
         <h3 className="text-sm font-semibold uppercase tracking-wide">Categories</h3>
         {categories.map((cat) => (
@@ -54,38 +47,14 @@ export const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery
           </button>
         ))}
       </div>
-      <Separator />
-      <div className="p-3 rounded-lg bg-muted/50 border text-sm space-y-2">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Users className="w-4 h-4" />
-            <span>Total Users</span>
-          </div>
-          <span className="font-semibold">{totalUsersCount ?? '...'}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <span className="relative flex h-2.5 w-2.5 ml-1 mr-0.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
-            </span>
-            <span>Online Now</span>
-          </div>
-          <span className="font-semibold">{onlineCount}</span>
-        </div>
-      </div>
     </div>
   );
 };
 
 export function MarketplaceSidebar(props: MarketplaceSidebarProps) {
   return (
-    <>
-      {/* Desktop */}
-      <div className="hidden sm:block w-1/5 border-r bg-white h-screen sticky top-16 shrink-0">
-        <SidebarContent {...props} />
-      </div>
-      {/* Mobile - Floating button removed */}
-    </>
+    <div className="hidden sm:block w-1/5 border-r bg-white h-screen sticky top-16 shrink-0">
+      <SidebarContent {...props} />
+    </div>
   );
 }

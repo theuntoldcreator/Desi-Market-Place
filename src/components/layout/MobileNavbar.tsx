@@ -1,30 +1,36 @@
-import { Home, ShoppingBag, Heart, MessageSquare } from 'lucide-react';
-import { NavLinkIcon } from '@/components/layout/NavLinkIcon';
+import { Home } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { MobileCategoriesSheet } from '@/components/marketplace/MobileCategoriesSheet'; // Import the new component
+import { MobileCategoriesSheet } from '@/components/marketplace/MobileCategoriesSheet';
 
 interface MobileNavbarProps {
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
-  onlineCount: number;
-  totalUsersCount?: number;
 }
 
-export function MobileNavbar({ selectedCategory, onCategoryChange, onlineCount, totalUsersCount }: MobileNavbarProps) {
+export function MobileNavbar({ selectedCategory, onCategoryChange }: MobileNavbarProps) {
+  const location = useLocation();
+  const isActive = (path: string) => location.pathname === path;
+
   return (
     <nav className={cn(
       "fixed bottom-0 left-0 right-0 z-40 bg-white border-t shadow-lg",
-      "grid grid-cols-5 items-center h-16 sm:hidden" // Changed to grid with 5 columns
+      "grid grid-cols-2 items-center h-16 sm:hidden"
     )}>
-      <NavLinkIcon to="/" icon={Home} label="Home" />
-      <NavLinkIcon to="/my-listings" icon={ShoppingBag} label="My Listings" />
-      <NavLinkIcon to="/favorites" icon={Heart} label="Favorites" />
-      <NavLinkIcon to="/messages" icon={MessageSquare} label="Messages" />
+      <Link to="/" className={cn(
+        "relative h-full flex flex-col items-center justify-center gap-1 transition-colors group",
+        isActive('/') ? 'text-primary' : 'text-muted-foreground hover:text-primary'
+      )}>
+        <Home className="h-6 w-6" />
+        <span className="text-xs mt-1">Home</span>
+        <div className={cn(
+          "absolute bottom-0 h-1 bg-primary rounded-t-sm transition-all duration-200",
+          isActive('/') ? 'w-1/2 opacity-100' : 'w-0 opacity-0 group-hover:w-1/2 group-hover:opacity-100'
+        )} />
+      </Link>
       <MobileCategoriesSheet 
         selectedCategory={selectedCategory} 
         onCategoryChange={onCategoryChange} 
-        onlineCount={onlineCount}
-        totalUsersCount={totalUsersCount}
       />
     </nav>
   );
