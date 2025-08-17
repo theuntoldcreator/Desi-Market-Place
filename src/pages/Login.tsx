@@ -1,12 +1,13 @@
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 const Login = () => {
   const { session, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -18,6 +19,13 @@ const Login = () => {
 
   if (session) {
     return <Navigate to="/" replace />;
+  }
+
+  // Construct the redirect URL to open the specific listing after login
+  const redirectTo = new URL(window.location.origin);
+  const listingId = location.state?.listingId;
+  if (listingId) {
+    redirectTo.searchParams.set('openListing', listingId);
   }
 
   return (
@@ -34,7 +42,7 @@ const Login = () => {
             appearance={{ theme: ThemeSupa }}
             providers={['google']}
             theme="light"
-            redirectTo={window.location.origin}
+            redirectTo={redirectTo.toString()}
           />
         </div>
       </div>

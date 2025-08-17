@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
@@ -13,7 +13,7 @@ import { Listing } from '@/lib/types';
 import { useDebounce } from 'use-debounce';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const fetchListings = async (userId?: string): Promise<Listing[]> => {
   let query = supabase
@@ -35,6 +35,7 @@ const fetchListings = async (userId?: string): Promise<Listing[]> => {
 export default function Marketplace() {
   const { session, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
@@ -49,11 +50,24 @@ export default function Marketplace() {
     staleTime: 1000 * 60,
   });
 
+  useEffect(() => {
+    const listingIdToOpen = searchParams.get('openListing');
+    if (listingIdToOpen && listings.length > 0) {
+      const listing = listings.find(l => l.id === parseInt(listingIdToOpen, 10));
+      if (listing) {
+        setSelectedListing(listing);
+        // Clean up the URL so the modal doesn't re-open on refresh
+        searchParams.delete('openListing');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [listings, searchParams, setSearchParams]);
+
   const handleCardClick = (listing: Listing) => {
     if (session) {
       setSelectedListing(listing);
     } else {
-      navigate('/login');
+      navigate('/login', { state: { listingId: listing.id } });
     }
   };
 
