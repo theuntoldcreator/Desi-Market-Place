@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import MyListings from "./pages/MyListings";
@@ -50,8 +50,6 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  const navigate = useNavigate();
-
   if (!PUBLISHABLE_KEY) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -64,7 +62,7 @@ const App = () => {
   }
 
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY} navigate={(to) => navigate(to)}>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
