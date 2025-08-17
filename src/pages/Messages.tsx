@@ -8,42 +8,27 @@ import { CreateListing } from '@/components/marketplace/CreateListing';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-
-type ProfileStub = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-};
-
-type ListingStub = {
-  title: string;
-  image_urls: string[];
-};
+import { cn } from '@/lib/utils';
 
 type Conversation = {
   id: string;
   updated_at: string;
-  listing: ListingStub;
-  buyer: ProfileStub;
-  seller: ProfileStub;
+  listing_id: number;
+  listing_title: string;
+  listing_image_url: string;
+  other_user_id: string;
+  other_user_first_name: string | null;
+  other_user_last_name: string | null;
+  other_user_avatar_url: string | null;
+  last_message_body: string | null;
+  last_message_created_at: string | null;
+  last_message_sender_id: string | null;
 };
 
 const fetchConversations = async (userId: string): Promise<Conversation[]> => {
-  const { data, error } = await supabase
-    .from('conversations')
-    .select(`
-      id,
-      updated_at,
-      listing:listings(title, image_urls),
-      buyer:public_profiles!buyer_id(id, first_name, last_name, avatar_url),
-      seller:public_profiles!seller_id(id, first_name, last_name, avatar_url)
-    `)
-    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-    .order('updated_at', { ascending: false });
-
+  const { data, error } = await supabase.rpc('get_user_conversations', { p_user_id: userId });
   if (error) throw new Error(error.message);
-  return data as unknown as Conversation[];
+  return data as Conversation[];
 };
 
 export default function Messages() {
@@ -72,24 +57,31 @@ export default function Messages() {
     return (
       <div className="space-y-2">
         {conversations.map((convo) => {
-          const otherUser = convo.buyer.id === session?.user?.id ? convo.seller : convo.buyer;
-          const fullName = `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim();
+          const fullName = `${convo.other_user_first_name || ''} ${convo.other_user_last_name || ''}`.trim();
           const fallback = fullName ? fullName[0].toUpperCase() : '?';
+          const lastMessagePrefix = convo.last_message_sender_id === session?.user?.id ? 'You: ' : '';
 
           return (
             <Link key={convo.id} to={`/chat/${convo.id}`} className="block">
               <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors">
                 <Avatar className="h-14 w-14">
-                  <AvatarImage src={otherUser.avatar_url || undefined} />
+                  <AvatarImage src={convo.other_user_avatar_url || undefined} />
                   <AvatarFallback>{fallback}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
+                <div className="flex-1 overflow-hidden">
                   <div className="flex justify-between">
-                    <p className="font-semibold">{fullName}</p>
-                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(convo.updated_at), { addSuffix: true })}</p>
+                    <p className="font-semibold truncate">{fullName}</p>
+                    {convo.last_message_created_at && (
+                      <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                        {formatDistanceToNow(new Date(convo.last_message_created_at), { addSuffix: true })}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
-                    Regarding: {convo.listing.title}
+                  <p className={cn("text-sm truncate", convo.last_message_body ? "text-muted-foreground" : "text-muted-foreground/50 italic")}>
+                    {convo.last_message_body 
+                      ? <>{lastMessagePrefix}{convo.last_message_body}</>
+                      : `Chat about "${convo.listing_title}"`
+                    }
                   </p>
                 </div>
               </div>

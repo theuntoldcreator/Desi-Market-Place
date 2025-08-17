@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, Mail, Phone, Calendar, Edit, Trash2, MapPin } from 'lucide-react';
+import { Loader2, User, Mail, Phone, Calendar, Edit, Trash2, MapPin, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { CreateListing } from '@/components/marketplace/CreateListing';
@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { EditProfile } from '@/components/auth/EditProfile';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { Toaster as Sonner, toast as sonnerToast } from "@/components/ui/sonner";
 
 const fetchProfile = async (supabase: any, userId: string) => {
   const { data, error } = await supabase
@@ -32,11 +33,25 @@ export default function Profile() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: profile, isLoading, isError } = useQuery({
+  const { data: profile, isLoading, isError, refetch: refetchProfile } = useQuery({
     queryKey: ['profile', session?.user?.id],
     queryFn: () => fetchProfile(supabase, session!.user.id),
     enabled: !!session,
     staleTime: 1000 * 60 * 5, // Cache profile data for 5 minutes
+  });
+
+  const provisionChatMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.functions.invoke('create-xmpp-user');
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      sonnerToast.success("Chat account created!", { description: "You can now message other users." });
+      refetchProfile();
+    },
+    onError: (error: any) => {
+      sonnerToast.error("Chat setup failed", { description: error.message || "Could not create your chat account." });
+    }
   });
 
   const deleteAccountMutation = useMutation({
@@ -105,6 +120,21 @@ export default function Profile() {
               {renderProfileDetail(Calendar, 'Date of Birth', profile.dob ? format(new Date(profile.dob), 'PPP') : null)}
               {renderProfileDetail(User, 'Gender', profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : null)}
             </div>
+            {!profile.jid && (
+                <div className="pt-6 border-t">
+                    <h3 className="font-semibold text-amber-700">Chat Account Not Found</h3>
+                    <p className="text-sm text-muted-foreground mt-1 mb-3">
+                        It looks like your chat account wasn't set up correctly. Click the button below to create it now.
+                    </p>
+                    <Button
+                        onClick={() => provisionChatMutation.mutate()}
+                        disabled={provisionChatMutation.isPending}
+                    >
+                        {provisionChatMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageSquare className="w-4 h-4 mr-2" />}
+                        Setup Chat Account
+                    </Button>
+                </div>
+            )}
           </CardContent>
           <CardFooter className="flex-col items-start">
             <div className="w-full pt-6 mt-6 border-t">
