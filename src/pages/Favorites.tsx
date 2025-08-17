@@ -46,10 +46,10 @@ const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
     return listings.map(l => ({ ...l, profile: null, isFavorited: true }));
   }
 
-  // Step 4: Fetch profiles for the sellers
+  // Step 4: Fetch profiles for the sellers from the secure view
   const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('*')
+    .from('public_profiles')
+    .select('id, first_name, last_name, avatar_url')
     .in('id', sellerIds);
 
   if (profilesError) throw new Error(profilesError.message);

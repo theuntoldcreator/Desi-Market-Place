@@ -23,7 +23,7 @@ const fetchMyListings = async (userId: string) => {
     .gte('created_at', twentyDaysAgo)
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  const { data: profile } = await supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', userId).single();
+  const { data: profile } = await supabase.from('public_profiles').select('first_name, last_name, avatar_url').eq('id', userId).single();
   return listings.map(listing => ({ ...listing, profile: profile || null }));
 };
 

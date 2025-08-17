@@ -38,7 +38,7 @@ const fetchListings = async (userId: string | undefined, latestTimestamp?: strin
   // Fetch profiles for all unique user_ids in the fetched listings
   const sellerIds = [...new Set(listings.map(l => l.user_id))];
   const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
+    .from('public_profiles')
     .select('id, first_name, last_name, avatar_url')
     .in('id', sellerIds);
   if (profilesError) console.error("Error fetching profiles:", profilesError.message);

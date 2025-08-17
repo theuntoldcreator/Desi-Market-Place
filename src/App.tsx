@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster as Sonner, toast as sonnerToast } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
@@ -49,14 +49,17 @@ const AppRoutes = () => {
             }
 
             if (profile && !profile.jid) {
+              const toastId = sonnerToast.loading("Setting up your chat account...");
               try {
                 console.log('User has no JID, provisioning XMPP account...');
                 const { error: invokeError } = await supabase.functions.invoke('create-xmpp-user');
                 if (invokeError) throw invokeError;
                 console.log('XMPP account provisioned successfully.');
+                sonnerToast.success("Chat account created!", { id: toastId, description: "You can now message other users." });
                 queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] });
               } catch (e) {
                 console.error("Failed to provision XMPP account:", e);
+                sonnerToast.error("Chat setup failed", { id: toastId, description: "Could not create your chat account." });
               }
             }
 
