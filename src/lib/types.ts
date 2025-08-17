@@ -11,4 +11,5 @@ export interface Listing {
   status: 'active' | 'sold';
   contact: string | null;
   updated_at: string | null; // timestamp with time zone
+  is_favorited?: boolean;
 }

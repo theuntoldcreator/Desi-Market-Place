@@ -8,26 +8,33 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, SortAsc, Loader2 } from 'lucide-react';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
-import { subDays } from 'date-fns';
 import { MarketplaceHeader } from '@/components/layout/MarketplaceHeader';
 import { Listing } from '@/lib/types';
 import { useDebounce } from 'use-debounce';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-const fetchListings = async (): Promise<Listing[]> => {
-  const oneDayAgo = subDays(new Date(), 1).toISOString();
-  const { data, error } = await supabase
+const fetchListings = async (userId?: string): Promise<Listing[]> => {
+  let query = supabase
     .from('listings')
-    .select('*')
+    .select('*, favorites ( user_id )')
     .eq('status', 'active')
-    .gte('created_at', oneDayAgo)
     .order('created_at', { ascending: false });
 
+  const { data, error } = await query;
+
   if (error) throw new Error(error.message);
-  return data || [];
+
+  return data.map(l => ({
+    ...l,
+    is_favorited: userId ? l.favorites.some(f => f.user_id === userId) : false,
+  })) || [];
 };
 
 export default function Marketplace() {
+  const { session, user } = useAuth();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
@@ -37,10 +44,18 @@ export default function Marketplace() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
   const { data: listings = [], isLoading, isError } = useQuery<Listing[]>({
-    queryKey: ['listings'],
-    queryFn: fetchListings,
+    queryKey: ['listings', user?.id],
+    queryFn: () => fetchListings(user?.id),
     staleTime: 1000 * 60,
   });
+
+  const handleCardClick = (listing: Listing) => {
+    if (session) {
+      setSelectedListing(listing);
+    } else {
+      navigate('/login');
+    }
+  };
 
   const normalizedSearchQuery = debouncedSearchQuery.toLowerCase().trim();
   const filteredListings = listings
@@ -57,7 +72,7 @@ export default function Marketplace() {
       <>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
           {filteredListings.slice(0, visibleCount).map((listing) => (
-            <ListingCard key={listing.id} {...listing} onClick={() => setSelectedListing(listing)} />
+            <ListingCard key={listing.id} {...listing} onClick={() => handleCardClick(listing)} />
           ))}
         </div>
         {visibleCount < filteredListings.length && <div className="text-center mt-8"><Button onClick={() => setVisibleCount(p => p + 12)} variant="outline" size="lg">Load More <ChevronDown className="w-4 h-4 ml-2" /></Button></div>}
