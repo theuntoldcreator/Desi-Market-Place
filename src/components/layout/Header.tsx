@@ -43,33 +43,48 @@ export function Header({ showSearch = false, searchQuery, onSearchChange, onCrea
 
   const navLinkClasses = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-      isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+      "group relative flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+      isActive 
+        ? "text-primary" 
+        : "text-muted-foreground hover:text-primary",
+      "after:content-[''] after:absolute after:bottom-1 after:left-0 after:h-[2px] after:bg-primary after:transition-all after:duration-300",
+      isActive ? "after:w-full" : "after:w-0 group-hover:after:w-full"
     );
 
   return (
     <header className="sticky top-0 z-30 w-full border-b border-border bg-header-bg backdrop-blur-sm">
-      <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link to="/" className="flex items-center sm:space-x-3">
-            <img src={logoUrl} alt="NRI's Marketplace Logo" className="hidden sm:block w-8 h-8 rounded-lg border border-gray-200" />
-            <h1 className="text-lg sm:text-xl font-bold text-foreground">
+      <div className="container mx-auto flex h-16 items-center px-4 sm:px-6">
+        {/* Left Section */}
+        <div className="flex flex-1 justify-start items-center">
+          <Link to="/" className="flex items-center space-x-3 mr-6">
+            <img src={logoUrl} alt="NRI's Marketplace Logo" className="w-8 h-8 rounded-lg border border-gray-200" />
+            <h1 className="hidden sm:block text-lg sm:text-xl font-bold text-foreground">
               NRI's Marketplace
             </h1>
           </Link>
+        </div>
+
+        {/* Center Section (Navigation) */}
+        <div className="hidden md:flex justify-center">
           {session && (
-            <nav className="hidden items-center gap-2 md:flex">
+            <nav className="flex items-center gap-4 lg:gap-6">
               <NavLink to="/" className={navLinkClasses} end>All Listings</NavLink>
               <NavLink to="/my-listings" className={navLinkClasses}>My Listings</NavLink>
               <NavLink to="/favorites" className={navLinkClasses}>Favorites</NavLink>
             </nav>
           )}
         </div>
-        
-        <div className="flex items-center gap-2 sm:gap-3">
+
+        {/* Right Section */}
+        <div className="flex flex-1 justify-end items-center gap-2 sm:gap-3">
           {showSearch && onSearchChange && <MobileSearchDialog searchQuery={searchQuery!} onSearchChange={onSearchChange} />}
-          {onCreateListing && <Button onClick={handleCreateClick} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>}
-          {onCreateListing && <Button onClick={handleCreateClick} size="icon" className="flex sm:hidden"><Plus className="w-4 h-4" /></Button>}
+          
+          {onCreateListing && (
+            <>
+              <Button onClick={handleCreateClick} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
+              <Button onClick={handleCreateClick} size="icon" className="flex sm:hidden"><Plus className="w-4 h-4" /></Button>
+            </>
+          )}
           
           {session ? (
             <DropdownMenu>
