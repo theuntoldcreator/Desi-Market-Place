@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 
-const TELEGRAM_BOT_NAME = "YOUR_BOT_USERNAME_HERE"; // IMPORTANT: Replace with your bot's username
+const TELEGRAM_BOT_NAME = "UNTeverything_bot"; // Using the correct bot username
 
 declare global {
   interface Window {

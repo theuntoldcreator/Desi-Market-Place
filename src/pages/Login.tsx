@@ -2,9 +2,87 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Link } from 'react-router-dom';
 import marketplaceLogo from '@/assets/marketplace.jpg';
 import { TelegramLoginButton } from '@/components/auth/TelegramLoginButton';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+
+// Add Telegram WebApp types for TypeScript
+declare global {
+  interface Window {
+    Telegram: {
+      WebApp: {
+        initData: string;
+        initDataUnsafe: {
+          user?: any;
+          hash?: string;
+        };
+        ready: () => void;
+      }
+    }
+  }
+}
 
 const Login = () => {
   const logoUrl = marketplaceLogo;
+  const { toast } = useToast();
+  const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(true); // Start true to check for mini app
+  const [statusMessage, setStatusMessage] = useState('Checking for Telegram session...');
+
+  useEffect(() => {
+    const handleTelegramAuth = async (user: any, hash: string) => {
+      setIsAutoLoggingIn(true);
+      setStatusMessage('Verifying your identity...');
+      try {
+        const authData = { ...user, hash };
+        const { error } = await supabase.functions.invoke('telegram-auth', {
+          body: authData,
+        });
+
+        if (error) throw new Error(error.message);
+        
+        setStatusMessage('Verification successful! Check your Telegram for a login link.');
+        toast({
+          title: "Check Your Telegram!",
+          description: "We've sent a magic link to your Telegram account to complete the login.",
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Login Failed',
+          description: error.message || 'An unexpected error occurred.',
+          variant: 'destructive',
+        });
+        setIsAutoLoggingIn(false); // Allow fallback to widget
+      }
+    };
+
+    // Check if running inside a Telegram Mini App
+    if (window.Telegram?.WebApp?.initData) {
+      window.Telegram.WebApp.ready();
+      const initData = window.Telegram.WebApp.initDataUnsafe;
+      if (initData.user && initData.hash) {
+        handleTelegramAuth(initData.user, initData.hash);
+      } else {
+        // No user data, probably not logged into Telegram
+        setIsAutoLoggingIn(false);
+      }
+    } else {
+      // Not in a mini app, show login widget
+      setIsAutoLoggingIn(false);
+    }
+  }, [toast]);
+
+  const renderLoginContent = () => {
+    if (isAutoLoggingIn) {
+      return (
+        <div className="text-center p-4">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3" />
+          <p className="font-semibold text-lg">{statusMessage}</p>
+        </div>
+      );
+    }
+    return <TelegramLoginButton />;
+  };
 
   return (
     <div className="min-h-screen bg-marketplace-bg flex flex-col items-center justify-center p-4">
@@ -31,7 +109,7 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <TelegramLoginButton />
+            {renderLoginContent()}
           </CardContent>
         </Card>
       </div>
