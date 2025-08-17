@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 
-const TELEGRAM_BOT_NAME = "NRIsMarketplaceBot"; // Replace with your bot's username
+const TELEGRAM_BOT_NAME = "YOUR_BOT_USERNAME_HERE"; // IMPORTANT: Replace with your bot's username
 
 declare global {
   interface Window {
@@ -57,7 +57,9 @@ export function TelegramLoginButton() {
     };
 
     return () => {
-      container?.removeChild(script);
+      if (container && container.contains(script)) {
+        container.removeChild(script);
+      }
     };
   }, [toast]);
 
