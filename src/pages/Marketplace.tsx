@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, SortAsc, Loader2 } from 'lucide-react';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
-import { MarketplaceHeader } from '@/components/layout/MarketplaceHeader';
+import { Header } from '@/components/layout/Header';
 import { Listing } from '@/lib/types';
 import { useDebounce } from 'use-debounce';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
@@ -56,7 +56,6 @@ export default function Marketplace() {
       const listing = listings.find(l => l.id === parseInt(listingIdToOpen, 10));
       if (listing) {
         setSelectedListing(listing);
-        // Clean up the URL so the modal doesn't re-open on refresh
         searchParams.delete('openListing');
         setSearchParams(searchParams, { replace: true });
       }
@@ -96,7 +95,12 @@ export default function Marketplace() {
 
   return (
     <div className="w-full">
-      <MarketplaceHeader onCreateListing={() => setShowCreateListing(true)} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+      <Header 
+        showSearch
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onCreateListing={() => setShowCreateListing(true)}
+      />
       <div className="flex">
         <MarketplaceSidebar selectedCategory={selectedCategory} onCategoryChange={setSelectedCategory} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 pb-24 sm:pb-8">

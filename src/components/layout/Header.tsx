@@ -1,6 +1,6 @@
-import { LogOut, Plus } from 'lucide-react';
+import { LogOut, Plus, Heart, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import marketplaceLogo from '@/assets/marketplace.jpg';
 import { MobileSearchDialog } from '../marketplace/MobileSearchDialog';
 import { useAuth } from '@/context/AuthContext';
@@ -14,21 +14,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
-interface MarketplaceHeaderProps {
-  onCreateListing: () => void;
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
+interface HeaderProps {
+  showSearch?: boolean;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  onCreateListing?: () => void;
 }
 
-export function MarketplaceHeader({ onCreateListing, searchQuery, onSearchChange }: MarketplaceHeaderProps) {
+export function Header({ showSearch = false, searchQuery, onSearchChange, onCreateListing }: HeaderProps) {
   const { session, user } = useAuth();
   const navigate = useNavigate();
   const logoUrl = marketplaceLogo;
 
   const handleCreateClick = () => {
     if (session) {
-      onCreateListing();
+      onCreateListing?.();
     } else {
       navigate('/login');
     }
@@ -38,6 +40,12 @@ export function MarketplaceHeader({ onCreateListing, searchQuery, onSearchChange
     await supabase.auth.signOut();
     navigate(0); // Refresh page to clear state
   };
+
+  const navLinkClasses = ({ isActive }: { isActive: boolean }) =>
+    cn(
+      "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+      isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+    );
 
   return (
     <header className="sticky top-0 z-30 w-full border-b border-border bg-header-bg backdrop-blur-sm">
@@ -49,12 +57,19 @@ export function MarketplaceHeader({ onCreateListing, searchQuery, onSearchChange
               NRI's Marketplace
             </h1>
           </Link>
+          {session && (
+            <nav className="hidden items-center gap-2 md:flex">
+              <NavLink to="/" className={navLinkClasses} end>All Listings</NavLink>
+              <NavLink to="/my-listings" className={navLinkClasses}>My Listings</NavLink>
+              <NavLink to="/favorites" className={navLinkClasses}>Favorites</NavLink>
+            </nav>
+          )}
         </div>
         
         <div className="flex items-center gap-2 sm:gap-3">
-          <MobileSearchDialog searchQuery={searchQuery} onSearchChange={onSearchChange} />
-          <Button onClick={handleCreateClick} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>
-          <Button onClick={handleCreateClick} size="icon" className="flex sm:hidden"><Plus className="w-4 h-4" /></Button>
+          {showSearch && onSearchChange && <MobileSearchDialog searchQuery={searchQuery!} onSearchChange={onSearchChange} />}
+          {onCreateListing && <Button onClick={handleCreateClick} className="hidden sm:flex"><Plus className="w-4 h-4 mr-2" />Create Listing</Button>}
+          {onCreateListing && <Button onClick={handleCreateClick} size="icon" className="flex sm:hidden"><Plus className="w-4 h-4" /></Button>}
           
           {session ? (
             <DropdownMenu>
@@ -75,6 +90,15 @@ export function MarketplaceHeader({ onCreateListing, searchQuery, onSearchChange
                     </p>
                   </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/my-listings')}>
+                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  <span>My Listings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/favorites')}>
+                  <Heart className="mr-2 h-4 w-4" />
+                  <span>Favorites</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />

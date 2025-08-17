@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./context/AuthContext";
 import Auth from "./pages/Auth";
+import MyListings from "./pages/MyListings";
+import Favorites from "./pages/Favorites";
 
 const queryClient = new QueryClient();
 
@@ -15,6 +17,8 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Auth />} />
+      <Route path="/my-listings" element={<MyListings />} />
+      <Route path="/favorites" element={<Favorites />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

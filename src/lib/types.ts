@@ -1,5 +1,6 @@
 export interface Listing {
   id: number; // bigint in DB
+  user_id: string; // uuid
   title: string;
   description: string | null;
   price: number;
