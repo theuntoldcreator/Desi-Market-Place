@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSession } from '@supabase/auth-helpers-react';
 import { supabase } from '@/integrations/supabase/client';
 
-const XMPP_WEBSOCKET_URL = import.meta.env.VITE_XMPP_WEBSOCKET_URL || 'wss://chat.nrimarketplace.icu:5280/xmpp-websocket';
+const XMPP_WEBSOCKET_URL = import.meta.env.VITE_XMPP_WEBSOCKET_URL || 'wss://chat.nrimarketplace.icu:5281/xmpp-websocket';
 const XMPP_DOMAIN = import.meta.env.VITE_XMPP_DOMAIN || 'chat.nrimarketplace.icu';
 
 interface XmppContextType {
