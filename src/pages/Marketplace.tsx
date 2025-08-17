@@ -48,6 +48,7 @@ export default function Marketplace() {
     queryKey: ['listings', user?.id],
     queryFn: () => fetchListings(user?.id),
     staleTime: 1000 * 60,
+    refetchInterval: 60000, // Poll every 1 minute
   });
 
   useEffect(() => {

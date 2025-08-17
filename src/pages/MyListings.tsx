@@ -33,6 +33,7 @@ export default function MyListings() {
     queryKey: ['userListings', user?.id],
     queryFn: () => fetchUserListings(user!.id),
     enabled: !!user,
+    refetchInterval: 60000, // Poll every 1 minute
   });
 
   if (!loading && !session) {

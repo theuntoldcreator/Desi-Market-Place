@@ -33,6 +33,7 @@ export default function Favorites() {
     queryKey: ['favoriteListings', user?.id],
     queryFn: () => fetchFavoriteListings(user!.id),
     enabled: !!user,
+    refetchInterval: 60000, // Poll every 1 minute
   });
 
   if (!loading && !session) {
