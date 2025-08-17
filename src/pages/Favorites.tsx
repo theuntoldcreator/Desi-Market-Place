@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSession } from '@supabase/auth-helpers-react';
+import { useAuth } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
@@ -14,11 +14,9 @@ import { subDays } from 'date-fns';
 import { Listing } from '@/lib/types';
 import { useDebounce } from 'use-debounce';
 
-
 const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
   const twentyDaysAgo = subDays(new Date(), 20).toISOString();
 
-  // Step 1: Get the user's favorite listing IDs
   const { data: favorites, error: favError } = await supabase
     .from('favorites')
     .select('listing_id')
@@ -29,7 +27,6 @@ const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
 
   const listingIds = favorites.map(f => f.listing_id);
 
-  // Step 2: Fetch the details for those listings
   const { data: listings, error: listingsError } = await supabase
     .from('listings')
     .select('*')
@@ -40,13 +37,11 @@ const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
   if (listingsError) throw new Error(listingsError.message);
   if (!listings || listings.length === 0) return [];
 
-  // Step 3: Get unique seller IDs from the listings
   const sellerIds = [...new Set(listings.map((l) => l.user_id).filter(Boolean))];
   if (sellerIds.length === 0) {
     return listings.map(l => ({ ...l, profile: null, isFavorited: true }));
   }
 
-  // Step 4: Fetch profiles for the sellers from the secure view
   const { data: profiles, error: profilesError } = await supabase
     .from('public_profiles')
     .select('id, first_name, last_name, avatar_url')
@@ -54,19 +49,17 @@ const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
 
   if (profilesError) throw new Error(profilesError.message);
 
-  // Step 5: Create a map for easy profile lookup
   const profilesMap = new Map(profiles?.map(p => [p.id, p]));
 
-  // Step 6: Combine listings with profiles
   return listings.map(listing => ({
     ...listing,
     profile: profilesMap.get(listing.user_id) || null,
-    isFavorited: true, // All listings on this page are favorites
+    isFavorited: true,
   }));
 };
 
 export default function Favorites() {
-  const session = useSession();
+  const { userId } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
@@ -75,49 +68,41 @@ export default function Favorites() {
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
 
   const { data: listings = [], isLoading, isError } = useQuery<Listing[]>({
-    queryKey: ['favorites', session?.user?.id],
-    queryFn: () => fetchFavoriteListings(session!.user.id),
-    enabled: !!session,
+    queryKey: ['favorites', userId],
+    queryFn: () => fetchFavoriteListings(userId!),
+    enabled: !!userId,
   });
 
-  // Supabase Realtime subscription for changes to favorited listings
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!userId) return;
 
     const favoritesChannel = supabase
-      .channel(`favorites_channel:${session.user.id}`)
+      .channel(`favorites_channel:${userId}`)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'listings', 
-      }, (payload) => {
-        queryClient.invalidateQueries({ queryKey: ['listings', session.user.id] });
-        queryClient.invalidateQueries({ queryKey: ['favorites', session.user.id] });
-        
-        if (payload.eventType === 'UPDATE') {
-          toast({ title: "Favorited Listing Updated!", description: `${(payload.old as Listing).title || 'An item you favorited'} has been updated.` });
-        } else if (payload.eventType === 'DELETE') {
-          toast({ title: "Favorited Listing Removed!", description: `${(payload.old as Listing).title || 'An item you favorited'} has been removed.` });
-        }
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['listings', userId] });
+        queryClient.invalidateQueries({ queryKey: ['favorites', userId] });
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(favoritesChannel);
     };
-  }, [queryClient, session?.user?.id, toast]);
-
+  }, [queryClient, userId]);
 
   const favoriteMutation = useMutation({
     mutationFn: async ({ listingId }: { listingId: number }) => {
-      if (!session) throw new Error("You must be logged in.");
-      await supabase.from('favorites').delete().match({ user_id: session.user.id, listing_id: listingId });
+      if (!userId) throw new Error("You must be logged in.");
+      await supabase.from('favorites').delete().match({ user_id: userId, listing_id: listingId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
       toast({ title: 'Removed from favorites' });
-      setSelectedListing(null); // Close modal on unfavorite
+      setSelectedListing(null);
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" })
   });
@@ -144,10 +129,7 @@ export default function Favorites() {
         {filteredListings.map((listing) => (
           <ListingCard
             key={listing.id}
-            title={listing.title}
-            price={listing.price}
-            image_urls={listing.image_urls}
-            location={listing.location}
+            {...listing}
             onClick={() => setSelectedListing(listing)}
           />
         ))}

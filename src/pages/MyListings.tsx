@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSession } from '@supabase/auth-helpers-react';
+import { useAuth } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
@@ -28,7 +28,7 @@ const fetchMyListings = async (userId: string) => {
 };
 
 export default function MyListings() {
-  const session = useSession();
+  const { userId } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
@@ -40,37 +40,30 @@ export default function MyListings() {
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
 
   const { data: listings = [], isLoading, isError } = useQuery({
-    queryKey: ['my-listings', session?.user?.id],
-    queryFn: () => fetchMyListings(session!.user.id),
-    enabled: !!session,
+    queryKey: ['my-listings', userId],
+    queryFn: () => fetchMyListings(userId!),
+    enabled: !!userId,
   });
 
-  // Supabase Realtime subscription for changes to user's own listings
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!userId) return;
 
     const myListingChannel = supabase
-      .channel(`my_listings_channel:${session.user.id}`)
+      .channel(`my_listings_channel:${userId}`)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'listings', 
-        filter: `user_id=eq.${session.user.id}` 
-      }, (payload) => {
-        queryClient.invalidateQueries({ queryKey: ['my-listings', session.user.id] });
-        if (payload.eventType === 'UPDATE') {
-          toast({ title: "Your Listing Updated!", description: `${payload.old.title || 'Your item'} has been updated.` });
-        } else if (payload.eventType === 'DELETE') {
-          toast({ title: "Your Listing Removed!", description: `${payload.old.title || 'Your item'} has been removed.` });
-        }
+        filter: `user_id=eq.${userId}` 
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['my-listings', userId] });
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(myListingChannel);
     };
-  }, [queryClient, session?.user?.id, toast]);
-
+  }, [queryClient, userId]);
 
   const markAsSoldMutation = useMutation({
     mutationFn: async (listing: any) => {
@@ -79,10 +72,10 @@ export default function MyListings() {
     },
     onSuccess: (_, listing) => {
       toast({ title: "Success!", description: "Listing marked as sold." });
-      queryClient.setQueryData(['my-listings', session?.user?.id], (oldData: any[] | undefined) =>
+      queryClient.setQueryData(['my-listings', userId], (oldData: any[] | undefined) =>
         oldData ? oldData.map(item => item.id === listing.id ? { ...item, status: 'sold' } : item) : []
       );
-      queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['listings', userId] });
     },
     onError: (error: Error) => toast({ title: "Error", description: error.message, variant: "destructive" }),
     onSettled: () => setListingToMarkAsSold(null)
@@ -90,7 +83,7 @@ export default function MyListings() {
 
   const deleteMutation = useMutation({
     mutationFn: async (listing: any) => {
-      if (!session || session.user.id !== listing.user_id) throw new Error("Unauthorized");
+      if (!userId || userId !== listing.user_id) throw new Error("Unauthorized");
       
       if (listing.image_urls && listing.image_urls.length > 0) {
         const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]).filter(Boolean);
@@ -131,11 +124,7 @@ export default function MyListings() {
         {filteredListings.map((listing) => (
           <ListingCard
             key={listing.id}
-            title={listing.title}
-            price={listing.price}
-            image_urls={listing.image_urls}
-            location={listing.location}
-            status={listing.status}
+            {...listing}
             onClick={() => setSelectedListing(listing)}
           />
         ))}

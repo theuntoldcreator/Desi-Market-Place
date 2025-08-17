@@ -8,60 +8,27 @@ import NotFound from "./pages/NotFound";
 import MyListings from "./pages/MyListings";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
-import Login from "./pages/Login";
-import AdminLogin from "./pages/AdminLogin";
+import SignInPage from "./pages/SignIn";
+import SignUpPage from "./pages/SignUp";
 import Admin from "./pages/Admin";
 import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
-import TelegramLogin from "./pages/TelegramLogin"; // Import the new page
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
-import { useEffect } from "react";
+import { ClerkProvider } from "@clerk/clerk-react";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AuthLayout from "./components/auth/AuthLayout";
 import AdminRoute from "./components/auth/AdminRoute";
 
 const queryClient = new QueryClient();
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 const AppRoutes = () => {
-  const supabase = useSupabaseClient();
-  const navigate = useNavigate();
-  const session = useSession();
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-
-          if (profile?.role === 'admin') {
-            navigate('/admin', { replace: true });
-          } else if (event === 'SIGNED_IN') {
-            navigate('/', { replace: true });
-          }
-        }
-      }
-      
-      if (event === 'SIGNED_OUT') {
-        navigate('/login', { replace: true });
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase, navigate]);
-
   return (
     <Routes>
       <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/telegram-login" element={<TelegramLogin />} /> {/* Add the new route */}
-        <Route path="/signup" element={<Navigate to="/login" replace />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/sign-in" element={<SignInPage />} />
+        <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/login" element={<Navigate to="/sign-in" replace />} />
+        <Route path="/signup" element={<Navigate to="/sign-up" replace />} />
       </Route>
       
       <Route element={<ProtectedRoute />}>
@@ -82,16 +49,37 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+const App = () => {
+  const navigate = useNavigate();
+
+  if (!PUBLISHABLE_KEY) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center p-8 bg-red-100 border border-red-400 rounded-lg">
+          <h1 className="text-2xl font-bold text-red-700">Configuration Error</h1>
+          <p className="mt-2 text-red-600">Clerk Publishable Key is missing. Please set <code className="bg-red-200 p-1 rounded">VITE_CLERK_PUBLISHABLE_KEY</code> in your environment variables.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY} navigate={(to) => navigate(to)}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppRoutes />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ClerkProvider>
+  );
+};
+
+const Root = () => (
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
 );
 
-export default App;
+export default Root;

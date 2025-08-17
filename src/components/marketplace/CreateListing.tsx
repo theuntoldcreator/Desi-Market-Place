@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useSession } from '@supabase/auth-helpers-react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'; // Import useQuery
+import { useAuth } from '@clerk/clerk-react';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, Phone, MapPin, Loader2, Info, Image as ImageIcon, Camera, GalleryHorizontal } from 'lucide-react';
+import { Upload, X, Phone, MapPin, Loader2, Info, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { cn, parsePhoneNumber } from '@/lib/utils'; // Import parsePhoneNumber
+import { cn, parsePhoneNumber } from '@/lib/utils';
 import { countries } from '@/lib/countries';
 import { Alert, AlertDescription } from '../ui/alert';
 import { validateText } from '@/lib/profanity';
@@ -32,7 +32,7 @@ const categories = [
 ];
 
 export function CreateListing({ isOpen, onClose }: CreateListingProps) {
-  const session = useSession();
+  const { userId } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
@@ -43,17 +43,16 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
 
-  // Fetch user profile to pre-fill location and phone number
   const { data: profile } = useQuery({
-    queryKey: ['profile', session?.user?.id],
+    queryKey: ['profile', userId],
     queryFn: async () => {
-      if (!session) return null;
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      if (!userId) return null;
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (error) throw new Error(error.message);
       return data;
     },
-    enabled: !!session,
-    staleTime: Infinity, // Profile data doesn't change often
+    enabled: !!userId,
+    staleTime: Infinity,
   });
 
   useEffect(() => {
@@ -86,11 +85,11 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   const createListingMutation = useMutation({
     mutationFn: async () => {
-      if (!session) throw new Error("You must be logged in to create a listing.");
+      if (!userId) throw new Error("You must be logged in to create a listing.");
 
       const imageUrls = await Promise.all(
         images.map(async (file) => {
-          const filePath = `${session.user.id}/${Date.now()}-${file.name.split('.').slice(0, -1).join('.')}.webp`; // Ensure .webp extension
+          const filePath = `${userId}/${Date.now()}-${file.name.split('.').slice(0, -1).join('.')}.webp`;
           const { error: uploadError } = await supabase.storage.from('listing_images').upload(filePath, file);
           if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
           const { data: { publicUrl } } = supabase.storage.from('listing_images').getPublicUrl(filePath);
@@ -103,7 +102,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         title, description, category, location, condition,
         price: parseFloat(price),
         image_urls: imageUrls,
-        user_id: session.user.id,
+        user_id: userId,
         contact: `${countryCode}${phoneNumber.replace(/\D/g, '')}`,
       });
 
@@ -111,8 +110,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Your listing has been created." });
-      console.log('Invalidating listings query after successful creation.'); // Debugging log
-      queryClient.invalidateQueries({ queryKey: ['listings', session?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['listings', userId] });
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       resetForm();
       onClose();
@@ -149,7 +147,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     toast({ title: "Processing images...", description: "Optimizing and converting images." });
 
     const processedFiles: File[] = [];
-    const maxTargetSize = 4 * 1024 * 1024; // 4MB
+    const maxTargetSize = 4 * 1024 * 1024;
 
     for (const file of newFilesToProcess) {
       if (images.length + processedFiles.length >= 5) {
@@ -161,28 +159,26 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
       if (file.size > maxTargetSize) {
         try {
           const options = {
-            maxSizeMB: 4, // Target max size
-            maxWidthOrHeight: 2560, // Max long edge
+            maxSizeMB: 4,
+            maxWidthOrHeight: 2560,
             useWebWorker: true,
-            fileType: 'image/webp', // Convert to WebP
-            quality: 0.8, // 80% quality
+            fileType: 'image/webp',
+            quality: 0.8,
           };
           const compressedFile = await imageCompression(file, options);
           finalFile = compressedFile;
           
-          // After compression, re-check if it's within the acceptable range
           if (finalFile.size > maxTargetSize) {
-            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (max 4MB). Current: ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "destructive" });
+            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (max 4MB).`, variant: "destructive" });
             continue;
           }
           toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
         } catch (error) {
           console.error("Image compression error:", error);
-          toast({ title: "Processing Failed", description: `Could not process image '${file.name}'. Please try another image.`, variant: "destructive" });
+          toast({ title: "Processing Failed", description: `Could not process image '${file.name}'.`, variant: "destructive" });
           continue;
         }
       } else {
-        // Image is already within 4MB
         toast({ title: "Image Accepted", description: `Image '${file.name}' accepted at ${(file.size / (1024 * 1024)).toFixed(2)} MB.` });
       }
 
@@ -238,7 +234,6 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
         <div className="flex-grow overflow-y-auto hide-scrollbar">
           <div className="p-4 space-y-6">
-            {/* Image Upload Section */}
             <div className="space-y-3">
               <Label className="font-semibold">Images (up to 5) *</Label>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -275,7 +270,6 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
               </div>
             </div>
 
-            {/* Form Fields Section */}
             <div className="space-y-4 pt-4 border-t">
               <Label className="font-semibold">Listing Details *</Label>
               <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="What are you selling?" />
@@ -307,7 +301,6 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
               </div>
             </div>
 
-            {/* Contact Info Section */}
             <div className="space-y-4 pt-4 border-t">
               <Label className="font-semibold">Contact Info *</Label>
               <div className="flex items-center gap-2">

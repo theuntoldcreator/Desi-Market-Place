@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useSession } from '@supabase/auth-helpers-react';
+import { useAuth } from '@clerk/clerk-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, Loader2, Upload, X, MapPin, Info, Image as ImageIcon, Trash2, Camera, GalleryHorizontal } from 'lucide-react';
+import { Phone, Loader2, X, MapPin, Trash2, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,7 +42,7 @@ const categories = [
 ];
 
 export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
-  const session = useSession();
+  const { userId } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
@@ -79,7 +79,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
   const updateListingMutation = useMutation({
     mutationFn: async (values: typeof formData) => {
-      if (!listing || !session) throw new Error("Authentication error.");
+      if (!listing || !userId) throw new Error("Authentication error.");
 
       if (imagesToDelete.length > 0) {
         const imagePaths = imagesToDelete.map(url => new URL(url).pathname.split('/listing_images/')[1]).filter(Boolean);
@@ -90,7 +90,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
       const newUploadedUrls = await Promise.all(
         newImages.map(async (file) => {
-          const filePath = `${session.user.id}/${Date.now()}-${file.name.split('.').slice(0, -1).join('.')}.webp`; // Ensure .webp extension
+          const filePath = `${userId}/${Date.now()}-${file.name.split('.').slice(0, -1).join('.')}.webp`;
           const { error } = await supabase.storage.from('listing_images').upload(filePath, file);
           if (error) throw new Error(`Image upload failed: ${error.message}`);
           const { data: { publicUrl } } = supabase.storage.from('listing_images').getPublicUrl(filePath);
@@ -127,7 +127,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      if (!listing || !session || session.user.id !== listing.user_id) throw new Error("Unauthorized");
+      if (!listing || !userId || userId !== listing.user_id) throw new Error("Unauthorized");
       
       if (listing.image_urls && listing.image_urls.length > 0) {
         const imagePaths = listing.image_urls.map((url: string) => new URL(url).pathname.split('/listing_images/')[1]).filter(Boolean);
@@ -173,7 +173,7 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
     toast({ title: "Processing images...", description: "Optimizing and converting images." });
 
     const processedFiles: File[] = [];
-    const maxTargetSize = 4 * 1024 * 1024; // 4MB
+    const maxTargetSize = 4 * 1024 * 1024;
 
     for (const file of newFilesToProcess) {
       if (existingImageUrls.length + newImages.length + processedFiles.length >= 5) {
@@ -185,28 +185,26 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
       if (file.size > maxTargetSize) {
         try {
           const options = {
-            maxSizeMB: 4, // Target max size
-            maxWidthOrHeight: 2560, // Max long edge
+            maxSizeMB: 4,
+            maxWidthOrHeight: 2560,
             useWebWorker: true,
-            fileType: 'image/webp', // Convert to WebP
-            quality: 0.8, // 80% quality
+            fileType: 'image/webp',
+            quality: 0.8,
           };
           const compressedFile = await imageCompression(file, options);
           finalFile = compressedFile;
 
-          // After compression, re-check if it's within the acceptable range
           if (finalFile.size > maxTargetSize) {
-            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (max 4MB). Current: ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.`, variant: "destructive" });
+            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (max 4MB).`, variant: "destructive" });
             continue;
           }
           toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
         } catch (error) {
           console.error("Image compression error:", error);
-          toast({ title: "Processing Failed", description: `Could not process image '${file.name}'. Please try another image.`, variant: "destructive" });
+          toast({ title: "Processing Failed", description: `Could not process image '${file.name}'.`, variant: "destructive" });
           continue;
         }
       } else {
-        // Image is already within 4MB
         toast({ title: "Image Accepted", description: `Image '${file.name}' accepted at ${(file.size / (1024 * 1024)).toFixed(2)} MB.` });
       }
 
@@ -261,7 +259,6 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
 
           <div className="flex-grow overflow-y-auto hide-scrollbar">
             <div className="p-4 space-y-6">
-              {/* Image Management Section */}
               <div className="space-y-3">
                 <Label className="font-semibold">Images (up to 5) *</Label>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -302,7 +299,6 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                 </div>
               </div>
 
-              {/* Form Fields Section */}
               <div className="space-y-4 pt-4 border-t">
                 <Label className="font-semibold">Listing Details *</Label>
                 <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="What are you selling?" />
@@ -334,7 +330,6 @@ export function EditListing({ isOpen, onClose, listing }: EditListingProps) {
                 </div>
               </div>
 
-              {/* Contact Info Section */}
               <div className="space-y-4 pt-4 border-t">
                 <Label className="font-semibold">Contact Info *</Label>
                 <div className="flex items-center gap-2">

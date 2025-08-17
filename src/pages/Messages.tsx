@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useSession } from '@supabase/auth-helpers-react';
+import { useAuth } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Loader2, MessageSquare } from 'lucide-react';
@@ -32,14 +32,14 @@ const fetchConversations = async (userId: string): Promise<Conversation[]> => {
 };
 
 export default function Messages() {
-  const session = useSession();
+  const { userId } = useAuth();
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: conversations = [], isLoading, isError } = useQuery<Conversation[]>({
-    queryKey: ['conversations', session?.user?.id],
-    queryFn: () => fetchConversations(session!.user.id),
-    enabled: !!session,
+    queryKey: ['conversations', userId],
+    queryFn: () => fetchConversations(userId!),
+    enabled: !!userId,
   });
 
   const renderContent = () => {
@@ -59,7 +59,7 @@ export default function Messages() {
         {conversations.map((convo) => {
           const fullName = `${convo.other_user_first_name || ''} ${convo.other_user_last_name || ''}`.trim();
           const fallback = fullName ? fullName[0].toUpperCase() : '?';
-          const lastMessagePrefix = convo.last_message_sender_id === session?.user?.id ? 'You: ' : '';
+          const lastMessagePrefix = convo.last_message_sender_id === userId ? 'You: ' : '';
 
           return (
             <Link key={convo.id} to={`/chat/${convo.id}`} className="block">

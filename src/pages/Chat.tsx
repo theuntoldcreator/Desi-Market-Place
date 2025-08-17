@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSession } from '@supabase/auth-helpers-react';
+import { useAuth } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, ArrowLeft, Send } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -58,7 +58,7 @@ const fetchMessages = async (conversationId: string): Promise<Message[]> => {
 
 export default function Chat() {
   const { conversationId } = useParams();
-  const session = useSession();
+  const { userId } = useAuth();
   const queryClient = useQueryClient();
   const [messageText, setMessageText] = useState('');
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
@@ -66,8 +66,8 @@ export default function Chat() {
 
   const { data: conversation, isLoading: isLoadingConversation, isError: isErrorConversation } = useQuery<ConversationDetails>({
     queryKey: ['conversation', conversationId],
-    queryFn: () => fetchConversationDetails(conversationId!, session!.user.id),
-    enabled: !!session && !!conversationId,
+    queryFn: () => fetchConversationDetails(conversationId!, userId!),
+    enabled: !!userId && !!conversationId,
   });
 
   const { data: initialMessages, isLoading: isLoadingMessages } = useQuery<Message[]>({
@@ -97,7 +97,7 @@ export default function Chat() {
             }
             return [...prevMessages, payload.new];
           });
-          queryClient.invalidateQueries({ queryKey: ['conversations', session?.user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['conversations', userId] });
         }
       )
       .subscribe();
@@ -105,27 +105,27 @@ export default function Chat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, queryClient, session?.user?.id]);
+  }, [conversationId, queryClient, userId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
   const handleSend = async () => {
-    if (messageText.trim() && session) {
+    if (messageText.trim() && userId) {
       const textToSend = messageText.trim();
       setMessageText('');
       
       await supabase.from('messages').insert({
         conversation_id: conversationId,
-        sender_id: session.user.id,
+        sender_id: userId,
         body: textToSend,
       });
     }
   };
 
   const otherUser = conversation 
-    ? (conversation.buyer.id === session?.user?.id ? conversation.seller : conversation.buyer)
+    ? (conversation.buyer.id === userId ? conversation.seller : conversation.buyer)
     : null;
 
   if (isLoadingConversation || isLoadingMessages) return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -151,10 +151,10 @@ export default function Chat() {
 
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
         {chatMessages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.sender_id === session?.user?.id ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-xs lg:max-w-md p-3 rounded-2xl ${msg.sender_id === session?.user?.id ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-background rounded-bl-none'}`}>
+          <div key={msg.id} className={`flex ${msg.sender_id === userId ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-xs lg:max-w-md p-3 rounded-2xl ${msg.sender_id === userId ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-background rounded-bl-none'}`}>
               <p className="text-sm">{msg.body}</p>
-              <p className={`text-xs mt-1 ${msg.sender_id === session?.user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'} text-right`}>
+              <p className={`text-xs mt-1 ${msg.sender_id === userId ? 'text-primary-foreground/70' : 'text-muted-foreground'} text-right`}>
                 {format(new Date(msg.created_at), 'p')}
               </p>
             </div>

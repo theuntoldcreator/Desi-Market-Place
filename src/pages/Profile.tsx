@@ -1,5 +1,6 @@
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUser } from '@clerk/clerk-react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,7 +13,7 @@ import { EditProfile } from '@/components/auth/EditProfile';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 
-const fetchProfile = async (supabase: any, userId: string) => {
+const fetchProfile = async (userId: string) => {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -23,8 +24,7 @@ const fetchProfile = async (supabase: any, userId: string) => {
 };
 
 export default function Profile() {
-  const session = useSession();
-  const supabase = useSupabaseClient();
+  const { user, isLoaded } = useUser();
   const { toast } = useToast();
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -32,23 +32,25 @@ export default function Profile() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: profile, isLoading, isError } = useQuery({
-    queryKey: ['profile', session?.user?.id],
-    queryFn: () => fetchProfile(supabase, session!.user.id),
-    enabled: !!session,
-    staleTime: 1000 * 60 * 5, // Cache profile data for 5 minutes
+    queryKey: ['profile', user?.id],
+    queryFn: () => fetchProfile(user!.id),
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
   });
 
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
-        const { error } = await supabase.functions.invoke('delete-user');
-        if (error) throw error;
+        // This now needs to be handled by Clerk.
+        // We'll call the deleteSelf method on the user object.
+        if (!user) throw new Error("Not authenticated");
+        await user.delete();
     },
     onSuccess: () => {
         toast({ title: "Account Deleted", description: "Your account and all associated data have been permanently deleted." });
-        supabase.auth.signOut();
+        // Clerk will handle redirecting the user after deletion.
     },
     onError: (error: any) => {
-        toast({ title: "Deletion Failed", description: error.message || "Could not delete your account. Please try again.", variant: "destructive" });
+        toast({ title: "Deletion Failed", description: error.message || "Could not delete your account.", variant: "destructive" });
     },
     onSettled: () => {
         setShowDeleteConfirm(false);
@@ -66,15 +68,15 @@ export default function Profile() {
   );
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || !isLoaded) {
       return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
-    if (isError || !profile) {
+    if (isError || !profile || !user) {
       return <div className="text-center py-16 text-destructive">Failed to load your profile.</div>;
     }
 
-    const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-    const fallback = fullName ? fullName[0].toUpperCase() : session?.user.email?.[0].toUpperCase();
+    const fullName = user.fullName;
+    const fallback = user.firstName?.[0] || user.primaryEmailAddress?.emailAddress[0];
 
     return (
       <>
@@ -88,17 +90,17 @@ export default function Profile() {
           <CardContent className="space-y-6">
             <div className="flex items-center gap-6">
               <Avatar className="w-24 h-24">
-                <AvatarImage src={profile.avatar_url} alt={fullName} />
-                <AvatarFallback className="text-4xl">{fallback}</AvatarFallback>
+                <AvatarImage src={user.imageUrl} alt={fullName || ''} />
+                <AvatarFallback className="text-4xl">{fallback?.toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="space-y-1">
                 <h2 className="text-2xl font-bold">{fullName}</h2>
-                <p className="text-muted-foreground">{session?.user.email}</p>
+                <p className="text-muted-foreground">{user.primaryEmailAddress?.emailAddress}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t">
               {renderProfileDetail(User, 'Full Name', fullName)}
-              {renderProfileDetail(Mail, 'Email', session?.user.email)}
+              {renderProfileDetail(Mail, 'Email', user.primaryEmailAddress?.emailAddress)}
               {renderProfileDetail(Phone, 'Phone Number', profile.phone_number)}
               {renderProfileDetail(MapPin, 'Location', profile.location)}
               {renderProfileDetail(Calendar, 'Date of Birth', profile.dob ? format(new Date(profile.dob), 'PPP') : null)}
@@ -109,7 +111,7 @@ export default function Profile() {
             <div className="w-full pt-6 mt-6 border-t">
                 <h3 className="font-semibold text-destructive">Danger Zone</h3>
                 <p className="text-sm text-muted-foreground mt-1 mb-3">
-                    Deleting your account is permanent. All of your data, including listings and profile information, will be removed. This action cannot be undone.
+                    Deleting your account is permanent. All of your data will be removed. This action cannot be undone.
                 </p>
                 <Button
                     type="button"

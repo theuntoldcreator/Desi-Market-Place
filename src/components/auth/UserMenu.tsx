@@ -1,5 +1,4 @@
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useQuery } from '@tanstack/react-query';
+import { useUser, SignOutButton } from '@clerk/clerk-react';
 import { LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -7,36 +6,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
 
 export function UserMenu() {
-  const session = useSession();
-  const supabase = useSupabaseClient();
+  const { user } = useUser();
 
-  const { data: profile } = useQuery({
-    queryKey: ['profile', session?.user?.id],
-    queryFn: async () => {
-      if (!session) return null;
-      const { data, error } = await supabase.from('profiles').select('first_name, last_name, avatar_url').eq('id', session.user.id).single();
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    enabled: !!session,
-  });
+  if (!user) return null;
 
-  const handleLogout = () => {
-    supabase.auth.signOut();
-  };
-
-  if (!session) return null;
-
-  const fullName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '';
-  const fallback = fullName ? fullName[0].toUpperCase() : session.user.email?.[0].toUpperCase();
+  const fullName = user.fullName;
+  const email = user.primaryEmailAddress?.emailAddress;
+  const fallback = user.firstName?.[0] || email?.[0];
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={profile?.avatar_url} alt={fullName || session.user.email} />
-            <AvatarFallback>{fallback}</AvatarFallback>
+            <AvatarImage src={user.imageUrl} alt={fullName || email} />
+            <AvatarFallback>{fallback?.toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -44,16 +28,18 @@ export function UserMenu() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{fullName}</p>
-            <p className="text-xs leading-none text-muted-foreground">{session.user.email}</p>
+            <p className="text-xs leading-none text-muted-foreground">{email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link to="/profile"><User className="mr-2 h-4 w-4" /><span>Profile</span></Link></DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
-        </DropdownMenuItem>
+        <SignOutButton>
+          <DropdownMenuItem>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </DropdownMenuItem>
+        </SignOutButton>
       </DropdownMenuContent>
     </DropdownMenu>
   );

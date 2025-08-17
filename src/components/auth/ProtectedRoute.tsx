@@ -1,13 +1,14 @@
-import { useSessionContext } from '@supabase/auth-helpers-react';
+import { useAuth } from '@clerk/clerk-react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
+import { SupabaseSync } from './SupabaseSync';
 
 const ProtectedRoute = () => {
-  const { session, isLoading } = useSessionContext();
+  const { userId, isLoaded } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [onlineCount, setOnlineCount] = useState(0);
 
@@ -22,12 +23,12 @@ const ProtectedRoute = () => {
 
   // Online users count
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!userId) return;
 
     const channel = supabase.channel('online-users', {
       config: {
         presence: {
-          key: session.user.id,
+          key: userId,
         },
       },
     });
@@ -38,7 +39,7 @@ const ProtectedRoute = () => {
         setOnlineCount(Object.keys(presenceState).length);
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED' && session) {
+        if (status === 'SUBSCRIBED') {
           await channel.track({ online_at: new Date().toISOString() });
         }
       });
@@ -46,9 +47,9 @@ const ProtectedRoute = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session]);
+  }, [userId]);
 
-  if (isLoading) {
+  if (!isLoaded) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -56,22 +57,25 @@ const ProtectedRoute = () => {
     );
   }
 
-  if (!session) {
-    return <Navigate to="/login" replace />;
+  if (!userId) {
+    return <Navigate to="/sign-in" replace />;
   }
 
   return (
-    <div className="flex flex-col min-h-dvh bg-gray-50/50">
-      <div className="flex-grow pb-16 sm:pb-0">
-        <Outlet />
+    <>
+      <SupabaseSync />
+      <div className="flex flex-col min-h-dvh bg-gray-50/50">
+        <div className="flex-grow pb-16 sm:pb-0">
+          <Outlet />
+        </div>
+        <MobileNavbar
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          onlineCount={onlineCount}
+          totalUsersCount={totalUsersCount ?? undefined}
+        />
       </div>
-      <MobileNavbar
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        onlineCount={onlineCount}
-        totalUsersCount={totalUsersCount ?? undefined}
-      />
-    </div>
+    </>
   );
   };
 
