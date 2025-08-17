@@ -13,6 +13,7 @@ import AdminLogin from "./pages/AdminLogin";
 import Admin from "./pages/Admin";
 import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
+import TelegramLogin from "./pages/TelegramLogin"; // Import the new page
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useEffect } from "react";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -58,6 +59,7 @@ const AppRoutes = () => {
     <Routes>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
+        <Route path="/telegram-login" element={<TelegramLogin />} /> {/* Add the new route */}
         <Route path="/signup" element={<Navigate to="/login" replace />} />
         <Route path="/admin/login" element={<AdminLogin />} />
       </Route>
