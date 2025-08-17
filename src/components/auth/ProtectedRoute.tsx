@@ -1,14 +1,12 @@
-import { useSessionContext, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/auth/AuthContext';
 
 const ProtectedRoute = () => {
-  const { session, isLoading } = useSessionContext();
-  const supabaseClient = useSupabaseClient();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [onlineCount, setOnlineCount] = useState(0);
 
@@ -21,44 +19,40 @@ const ProtectedRoute = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Online users count
+  // This logic can remain as it's for presence, not auth
   useEffect(() => {
-    if (!session?.user.id) return;
-
-    const channel = supabaseClient.channel('online-users', {
-      config: {
-        presence: {
-          key: session.user.id,
-        },
-      },
+    if (!user?.id) return;
+    const channel = supabase.channel('online-users', {
+      config: { presence: { key: user.id } },
     });
-
     channel
       .on('presence', { event: 'sync' }, () => {
-        const presenceState = channel.presenceState();
-        setOnlineCount(Object.keys(presenceState).length);
+        setOnlineCount(Object.keys(channel.presenceState()).length);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({ online_at: new Date().toISOString() });
         }
       });
-
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session?.user.id, supabaseClient]);
+  }, [user?.id]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return <Navigate to="/login" replace />;
+  // If there's no user, they can't access protected routes.
+  // In a real app, you might show a "Please open in Telegram" message.
+  if (!user) {
+     // For development, we allow access. In production, this would be more strict.
+    if (import.meta.env.PROD) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Access Denied</h1>
+            <p className="mt-2">Please open this app within Telegram.</p>
+          </div>
+        </div>
+      );
+    }
   }
 
   return (
@@ -76,6 +70,6 @@ const ProtectedRoute = () => {
       </div>
     </>
   );
-  };
+};
 
 export default ProtectedRoute;
