@@ -33,7 +33,7 @@ const fetchListings = async (userId?: string): Promise<Listing[]> => {
 };
 
 export default function Marketplace() {
-  const { session, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -63,11 +63,7 @@ export default function Marketplace() {
   }, [listings, searchParams, setSearchParams]);
 
   const handleCardClick = (listing: Listing) => {
-    if (session) {
-      setSelectedListing(listing);
-    } else {
-      navigate('/login', { state: { listingId: listing.id } });
-    }
+    setSelectedListing(listing);
   };
 
   const normalizedSearchQuery = debouncedSearchQuery.toLowerCase().trim();
