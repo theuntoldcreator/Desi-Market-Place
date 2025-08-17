@@ -86,8 +86,13 @@ export default function Chat() {
     queryKey: ['messages', conversationId],
     queryFn: () => fetchMessages(conversationId!),
     enabled: !!conversationId,
-    onSuccess: (data) => setChatMessages(data),
   });
+
+  useEffect(() => {
+    if (initialMessages) {
+      setChatMessages(initialMessages);
+    }
+  }, [initialMessages]);
 
   useEffect(() => {
     if (!conversationId) return;
