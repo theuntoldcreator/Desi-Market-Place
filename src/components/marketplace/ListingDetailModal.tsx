@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Pencil, Tag, MapPin, Check, Trash2, Info, Loader2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Tag, MapPin, Info, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -10,68 +9,24 @@ import { Separator } from '../ui/separator';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Listing } from '@/lib/types';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 interface ListingDetailModalProps {
   listing: Listing;
   isOpen: boolean;
-  isOwner: boolean;
   onClose: () => void;
-  onFavoriteToggle?: (id: number, isFavorited: boolean) => void;
-  onEdit?: () => void;
-  onMarkAsSold?: () => void;
-  onDelete?: () => void;
 }
 
 export function ListingDetailModal({
   listing,
   isOpen,
-  isOwner,
   onClose,
-  onFavoriteToggle,
-  onEdit,
-  onMarkAsSold,
-  onDelete,
 }: ListingDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageLoading, setIsImageLoading] = useState(true);
-  const [isCreatingChat, setIsCreatingChat] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     setIsImageLoading(true);
   }, [currentImageIndex, listing?.image_urls]);
-
-  const handleStartChat = async () => {
-    setIsCreatingChat(true);
-    try {
-      const { data, error } = await supabase.rpc('get_or_create_conversation', {
-        p_listing_id: listing.id,
-        p_seller_id: listing.user_id,
-      });
-
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        const conversationId = data[0].id;
-        navigate(`/chat/${conversationId}`);
-        onClose();
-      } else {
-        throw new Error("Could not create or find conversation.");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to start conversation.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreatingChat(false);
-    }
-  };
 
   if (!listing) return null;
 
@@ -83,9 +38,6 @@ export function ListingDetailModal({
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev - 1 + listing.image_urls.length) % listing.image_urls.length);
   };
-
-  const fullName = `${listing.profile?.first_name || ''} ${listing.profile?.last_name || ''}`.trim() || 'Unknown User';
-  const fallback = fullName?.[0]?.toUpperCase();
 
   const creationDate = new Date(listing.created_at);
   const expirationDate = addDays(creationDate, 20);
@@ -146,49 +98,26 @@ export function ListingDetailModal({
             </div>
           </div>
           <Separator />
-          <div className="flex items-center gap-3">
-            <Avatar className="w-12 h-12"><AvatarImage src={listing.profile?.avatar_url || undefined} /><AvatarFallback>{fallback}</AvatarFallback></Avatar>
-            <div>
-              <p className="font-semibold">{fullName}</p>
-              <p className="text-sm text-muted-foreground">Seller Information</p>
-            </div>
-          </div>
-          <Separator />
-          {isOwner ? (
-            <div className="space-y-2">
-              {listing.status !== 'sold' ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" onClick={onEdit}><Pencil className="w-4 h-4 mr-2" />Edit</Button>
-                  <Button onClick={onMarkAsSold}><Tag className="w-4 h-4 mr-2" />Mark as Sold</Button>
-                </div>
-              ) : (
-                <>
-                  <Button disabled className="w-full"><Check className="w-4 h-4 mr-2" />Item Sold</Button>
-                  <Button variant="ghost" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={onDelete}><Trash2 className="w-4 h-4 mr-2" />Delete Listing</Button>
-                </>
-              )}
-            </div>
-          ) : (
-            listing.status !== 'sold' && (
+          
+          {listing.contact && (
+            <>
               <div className="space-y-3">
-                <div className="space-y-2">
-                  <Button
-                    className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
-                    onClick={handleStartChat}
-                    disabled={isCreatingChat}
-                  >
-                    {isCreatingChat ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageSquare className="w-4 h-4 mr-2" />}
-                    {isCreatingChat ? 'Starting Chat...' : 'Message Seller'}
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={() => onFavoriteToggle?.(listing.id, listing.isFavorited || false)}>
-                    <Heart className={cn("w-4 h-4 mr-2", listing.isFavorited && "fill-destructive text-destructive")} />
-                    {listing.isFavorited ? 'Saved' : 'Save'}
-                  </Button>
+                <h2 className="text-lg font-semibold">Contact Seller</h2>
+                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                  <Phone className="w-5 h-5 text-primary" />
+                  <p className="font-mono text-sm">{listing.contact}</p>
                 </div>
+                <Alert variant="default" className="text-xs">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Contact the seller using the information provided. Always practice safety when meeting or transacting.
+                  </AlertDescription>
+                </Alert>
               </div>
-            )
+              <Separator />
+            </>
           )}
-          <Separator />
+
           <div className="space-y-3">
             <h2 className="text-lg font-semibold">Details</h2>
             <div className="text-sm space-y-2">

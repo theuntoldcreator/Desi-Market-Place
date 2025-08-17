@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useSession } from '@supabase/auth-helpers-react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X, Phone, MapPin, Loader2, Info, Image as ImageIcon } from 'lucide-react';
+import { X, Loader2, Info, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,12 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { cn, parsePhoneNumber } from '@/lib/utils';
-import { countries } from '@/lib/countries';
+import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '../ui/alert';
 import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
 import imageCompression from 'browser-image-compression';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CreateListingProps {
   isOpen: boolean;
@@ -32,53 +31,19 @@ const categories = [
 ];
 
 export function CreateListing({ isOpen, onClose }: CreateListingProps) {
-  const session = useSession();
-  const userId = session?.user.id;
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
-    title: '', description: '', price: '', category: '', location: '', countryCode: '+1', phoneNumber: '', condition: ''
+    title: '', description: '', price: '', category: '', location: '', contact: '', condition: ''
   });
   const [images, setImages] = useState<File[]>([]);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
 
-  const { data: profile } = useQuery({
-    queryKey: ['profile', userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    enabled: !!userId,
-    staleTime: Infinity,
-  });
-
-  useEffect(() => {
-    if (profile) {
-      const { countryCode, localNumber } = parsePhoneNumber(profile.phone_number);
-      setFormData(prev => ({
-        ...prev,
-        location: profile.location || '',
-        countryCode: countryCode,
-        phoneNumber: localNumber,
-      }));
-    }
-  }, [profile]);
-
   const resetForm = () => {
-    const { countryCode, localNumber } = parsePhoneNumber(profile?.phone_number);
     setFormData({ 
-      title: '', 
-      description: '', 
-      price: '', 
-      category: '', 
-      location: profile?.location || '', 
-      countryCode: countryCode, 
-      phoneNumber: localNumber, 
-      condition: '' 
+      title: '', description: '', price: '', category: '', location: '', contact: '', condition: '' 
     });
     setImages([]);
     setViolation(null);
@@ -86,11 +51,10 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   const createListingMutation = useMutation({
     mutationFn: async () => {
-      if (!userId) throw new Error("You must be logged in to create a listing.");
-
+      const imageUploadFolder = uuidv4();
       const imageUrls = await Promise.all(
         images.map(async (file) => {
-          const filePath = `${userId}/${Date.now()}-${file.name.split('.').slice(0, -1).join('.')}.webp`;
+          const filePath = `${imageUploadFolder}/${Date.now()}-${file.name.split('.').slice(0, -1).join('.')}.webp`;
           const { error: uploadError } = await supabase.storage.from('listing_images').upload(filePath, file);
           if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
           const { data: { publicUrl } } = supabase.storage.from('listing_images').getPublicUrl(filePath);
@@ -98,21 +62,18 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         })
       );
 
-      const { title, description, price, category, location, countryCode, phoneNumber, condition } = formData;
+      const { title, description, price, category, location, contact, condition } = formData;
       const { error: insertError } = await supabase.from('listings').insert({
-        title, description, category, location, condition,
+        title, description, category, location, condition, contact,
         price: parseFloat(price),
         image_urls: imageUrls,
-        user_id: userId,
-        contact: `${countryCode}${phoneNumber.replace(/\D/g, '')}`,
       });
 
       if (insertError) throw new Error(`Failed to create listing: ${insertError.message}`);
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Your listing has been created." });
-      queryClient.invalidateQueries({ queryKey: ['listings', userId] });
-      queryClient.invalidateQueries({ queryKey: ['my-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
       resetForm();
       onClose();
     },
@@ -173,34 +134,25 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
             toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (max 4MB).`, variant: "destructive" });
             continue;
           }
-          toast({ title: "Image Compressed", description: `Image '${file.name}' compressed to ${(finalFile.size / (1024 * 1024)).toFixed(2)} MB.` });
         } catch (error) {
           console.error("Image compression error:", error);
           toast({ title: "Processing Failed", description: `Could not process image '${file.name}'.`, variant: "destructive" });
           continue;
         }
-      } else {
-        toast({ title: "Image Accepted", description: `Image '${file.name}' accepted at ${(file.size / (1024 * 1024)).toFixed(2)} MB.` });
       }
-
       processedFiles.push(finalFile);
     }
 
     setImages(prev => [...prev, ...processedFiles]);
-    if (processedFiles.length > 0) {
-      toast({ title: "Images Ready", description: `${processedFiles.length} image(s) processed successfully.` });
-    } else {
-      toast({ title: "No Images Added", description: "No images met the size requirements." });
-    }
     setIsProcessingImages(false);
   };
 
   const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index));
 
   const validateForm = () => {
-    const requiredFields = ['title', 'price', 'category', 'location', 'phoneNumber', 'condition'];
+    const requiredFields = ['title', 'price', 'category', 'location', 'contact', 'condition'];
     if (formData.price === '0') {
-        const freeRequired = ['title', 'price', 'location', 'phoneNumber', 'condition'];
+        const freeRequired = ['title', 'price', 'location', 'contact', 'condition'];
         return freeRequired.every(field => !!(formData as any)[field]);
     }
     return requiredFields.every(field => !!(formData as any)[field]);
@@ -287,10 +239,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))} placeholder="Location" className="pl-10" />
-                </div>
+                <Input id="location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))} placeholder="Location" />
                 <Select value={formData.condition} onValueChange={(value) => setFormData(prev => ({ ...prev, condition: value }))}>
                   <SelectTrigger><SelectValue placeholder="Condition" /></SelectTrigger>
                   <SelectContent>
@@ -304,20 +253,11 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
             <div className="space-y-4 pt-4 border-t">
               <Label className="font-semibold">Contact Info *</Label>
-              <div className="flex items-center gap-2">
-                <Select value={formData.countryCode} onValueChange={(value) => setFormData(prev => ({ ...prev, countryCode: value }))}>
-                  <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{countries.map(c => <SelectItem key={c.code} value={c.dial_code}>{`${c.code} ${c.dial_code}`}</SelectItem>)}</SelectContent>
-                </Select>
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="contact" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} placeholder="Phone Number" className="pl-10" />
-                </div>
-              </div>
+              <Input id="contact" value={formData.contact} onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))} placeholder="WhatsApp, Telegram, or Email" />
               <Alert className="text-xs p-3">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Your number is used for WhatsApp chat. Be respectful and avoid sharing sensitive info.
+                  Provide your preferred contact method. Be respectful and avoid sharing sensitive info.
                 </AlertDescription>
               </Alert>
             </div>
@@ -325,7 +265,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Listings are active for 20 days. You can manage them from 'My Listings'.
+                Listings are active for 20 days.
               </AlertDescription>
             </Alert>
           </div>

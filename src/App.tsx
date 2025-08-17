@@ -5,39 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import MyListings from "./pages/MyListings";
-import Favorites from "./pages/Favorites";
-import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
-import Messages from "./pages/Messages";
-import Chat from "./pages/Chat";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
-import AdminRoute from "./components/auth/AdminRoute";
-import AuthLayout from "./components/auth/AuthLayout";
-import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Index />} />
-        <Route path="/my-listings" element={<MyListings />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/messages" element={<Messages />} />
-        <Route path="/chat/:conversationId" element={<Chat />} />
-      </Route>
-
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-      </Route>
-
-      <Route element={<AdminRoute />}>
-        <Route path="/admin" element={<Admin />} />
-      </Route>
-
+      <Route path="/" element={<Index />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
