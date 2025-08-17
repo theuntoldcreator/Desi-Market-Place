@@ -81,7 +81,7 @@ serve(async (req) => {
         if (prosodyResponse.status === 409) { // 409 Conflict
              console.warn(`XMPP user ${userId} already exists in Prosody. Proceeding to update profile.`);
         } else {
-            throw new Error(`Could not create chat account due to a server communication error.`);
+            throw new Error(`Prosody server returned an error. Status: ${prosodyResponse.status}. Body: ${errorBody}`);
         }
     } else {
         console.log(`Successfully created XMPP user for ${userId} in Prosody.`);
