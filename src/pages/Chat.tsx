@@ -38,40 +38,15 @@ const fetchConversationDetails = async (conversationId: string, userId: string):
     .select(`
       id,
       listing:listings(id, title, image_urls),
-      buyer:public_profiles!buyer_id(id, first_name, last_name, avatar_url),
-      seller:public_profiles!seller_id(id, first_name, last_name, avatar_url)
+      buyer:public_profiles!buyer_id(id, first_name, last_name, avatar_url, jid),
+      seller:public_profiles!seller_id(id, first_name, last_name, avatar_url, jid)
     `)
     .eq('id', conversationId)
     .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
     .single();
 
   if (error) throw new Error(error.message);
-  
-  // We need the JID which is not in the public view, so we fetch the full profiles of both users.
-  // RLS ensures we can only fetch our own full profile, but we need the other user's JID.
-  // For now, we will fetch the JIDs separately. A better solution might be an RPC function.
-  const { data: fullConversation, error: fullError } = await supabase
-    .from('conversations')
-    .select('buyer_id, seller_id')
-    .eq('id', conversationId)
-    .single();
-  
-  if (fullError) throw new Error(fullError.message);
-
-  const { data: profilesWithJid, error: jidError } = await supabase
-    .from('profiles')
-    .select('id, jid')
-    .in('id', [fullConversation.buyer_id, fullConversation.seller_id]);
-
-  if (jidError) throw new Error(jidError.message);
-
-  const jidMap = new Map(profilesWithJid.map(p => [p.id, p.jid]));
-
-  return {
-    ...data,
-    buyer: { ...data.buyer, jid: jidMap.get(data.buyer.id) },
-    seller: { ...data.seller, jid: jidMap.get(data.seller.id) },
-  } as unknown as ConversationDetails;
+  return data as unknown as ConversationDetails;
 };
 
 export default function Chat() {
