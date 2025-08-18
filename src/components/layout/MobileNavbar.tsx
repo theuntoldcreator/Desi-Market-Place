@@ -31,13 +31,17 @@ export function MobileNavbar({ selectedCategory, onCategoryChange }: MobileNavba
       {navItems.map(item => (
         <Link key={item.path} to={item.path} className={cn(
           "relative h-full flex flex-col items-center justify-center gap-1 transition-colors group",
-          isActive(item.path) ? 'text-primary' : 'text-muted-foreground hover:text-primary'
+          isActive(item.path) 
+            ? 'text-primary' 
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted rounded-md' // Changed hover text and added light grey background
         )}>
           <item.icon className="h-6 w-6" />
           <span className="text-xs mt-1">{item.label}</span>
           <div className={cn(
-            "absolute bottom-0 h-1 bg-primary rounded-t-sm transition-all duration-200",
-            isActive(item.path) ? 'w-1/2 opacity-100' : 'w-0 opacity-0 group-hover:w-1/2 group-hover:opacity-100'
+            "absolute bottom-0 h-1 rounded-t-sm transition-all duration-200",
+            isActive(item.path) 
+              ? 'bg-primary w-1/2 opacity-100' 
+              : 'bg-muted-foreground w-0 opacity-0 group-hover:w-1/2 group-hover:opacity-100' // Changed hover underline to grey
           )} />
         </Link>
       ))}

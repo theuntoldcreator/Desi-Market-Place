@@ -3,6 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { SidebarContent } from '@/components/layout/MarketplaceSidebar';
+import { cn } from '@/lib/utils'; // Import cn utility
 
 interface MobileCategoriesSheetProps {
   selectedCategory: string;
@@ -19,10 +20,19 @@ export function MobileCategoriesSheet({ selectedCategory, onCategoryChange }: Mo
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button variant="ghost" className="relative h-full flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors group">
+        <Button 
+          variant="ghost" 
+          className={cn(
+            "relative h-full flex flex-col items-center justify-center gap-1 transition-colors group",
+            "text-muted-foreground hover:bg-muted hover:text-foreground" // Override ghost variant's hover styles
+          )}
+        >
           <Menu className="h-6 w-6" />
           <span className="text-xs mt-1">Categories</span>
-          <div className="absolute bottom-0 h-1 bg-primary rounded-t-sm transition-all duration-200 w-0 opacity-0 group-hover:w-1/2 group-hover:opacity-100" />
+          <div className={cn(
+            "absolute bottom-0 h-1 rounded-t-sm transition-all duration-200",
+            "bg-muted-foreground w-0 opacity-0 group-hover:w-1/2 group-hover:opacity-100" // Changed hover underline to grey
+          )} />
         </Button>
       </SheetTrigger>
       <SheetContent 
