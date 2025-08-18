@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import { useFavorite } from '@/hooks/use-favorite';
 import { Listing } from '@/lib/types';
 import { OptimizedImage } from './OptimizedImage';
