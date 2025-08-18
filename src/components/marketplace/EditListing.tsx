@@ -206,6 +206,12 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
                 <Select value={contactMethod} onValueChange={setContactMethod}><SelectTrigger className="col-span-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="whatsapp">WhatsApp</SelectItem><SelectItem value="telegram">Telegram</SelectItem><SelectItem value="email">Email</SelectItem></SelectContent></Select>
                 <Input className="col-span-2" value={formData.contact} onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))} disabled={!contactMethod} />
               </div>
+              <Alert className="text-xs p-3">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Please provide the correct contact detail for your chosen method (e.g., phone number for WhatsApp, username for Telegram).
+                </AlertDescription>
+              </Alert>
             </div>
           </div>
         </div>

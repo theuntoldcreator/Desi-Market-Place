@@ -288,6 +288,12 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
               <Alert className="text-xs p-3">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
+                  Please provide the correct contact detail for your chosen method (e.g., phone number for WhatsApp, username for Telegram).
+                </AlertDescription>
+              </Alert>
+              <Alert className="text-xs p-3">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
                   Please be respectful and do not post content that violates or harms other users. All interactions are subject to our community guidelines.
                 </AlertDescription>
               </Alert>

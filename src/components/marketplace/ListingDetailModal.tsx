@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2, MessageSquare, Send, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -134,7 +134,7 @@ export function ListingDetailModal({
               </div>
               <Separator />
               <div className="space-y-3"><h2 className="text-lg font-semibold">Details</h2><div className="text-sm space-y-2"><div className="flex justify-between"><span>Category</span><span className="text-muted-foreground capitalize">{categoryMap[listing.category] || listing.category}</span></div>{listing.condition && <div className="flex justify-between"><span>Condition</span><span className="text-muted-foreground">{conditionMap[listing.condition]}</span></div>}<Tooltip><TooltipTrigger asChild><div className="flex justify-between cursor-help"><span>Listing Status</span><span className="text-muted-foreground">{expirationText}</span></div></TooltipTrigger><TooltipContent><p>Expires on {format(expirationDate, 'PPP')}</p></TooltipContent></Tooltip></div>{listing.description && <p className="text-sm text-foreground/80 pt-2">{listing.description}</p>}</div>
-              {isOwner && (
+              {isOwner ? (
                 <>
                   <Separator />
                   <div className="space-y-3">
@@ -144,6 +144,54 @@ export function ListingDetailModal({
                       <Button variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => updateListingStatusMutation.mutate('sold')} disabled={updateListingStatusMutation.isPending || listing.status === 'sold'}><CheckCircle className="w-4 h-4 mr-2" /> Mark as Sold</Button>
                       <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" disabled={deleteListingMutation.isPending}><Trash2 className="w-4 h-4 mr-2" /> Delete</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete your listing and remove its data from our servers.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteListingMutation.mutate()}>Continue</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                     </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold">Contact Seller</h2>
+                    {(() => {
+                      if (!listing.contact) return <p className="text-sm text-muted-foreground">The seller has not provided contact information.</p>;
+                      const parts = listing.contact.split(':');
+                      if (parts.length < 2) return <p className="text-sm text-muted-foreground">Contact: {listing.contact}</p>;
+                      
+                      const [method, ...detailParts] = parts;
+                      const detail = detailParts.join(':');
+                      
+                      let href = '';
+                      let text = '';
+                      let Icon;
+
+                      switch (method) {
+                        case 'whatsapp':
+                          href = `https://wa.me/${detail.replace(/\D/g, '')}`;
+                          text = 'Contact on WhatsApp';
+                          Icon = MessageSquare;
+                          break;
+                        case 'telegram':
+                          href = `https://t.me/${detail}`;
+                          text = 'Contact on Telegram';
+                          Icon = Send;
+                          break;
+                        case 'email':
+                          href = `mailto:${detail}`;
+                          text = 'Contact via Email';
+                          Icon = Mail;
+                          break;
+                        default:
+                          return <p className="text-sm text-muted-foreground">Contact: {listing.contact}</p>;
+                      }
+
+                      return (
+                        <Button asChild size="lg" className="w-full">
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                            <Icon className="w-5 h-5" />
+                            {text}
+                          </a>
+                        </Button>
+                      );
+                    })()}
                   </div>
                 </>
               )}
