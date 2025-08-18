@@ -14,12 +14,12 @@ export default function PrivacyPolicy() {
           </Link>
         </div>
         <div className="bg-white p-8 rounded-lg shadow-sm prose prose-sm max-w-none">
-          <h1>Privacy Policy for NRI Marketplace</h1>
+          <h1>Privacy Policy & Community Guidelines for NRI Marketplace</h1>
           <p><strong>Last Updated:</strong> {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
 
           <h2>1. Introduction</h2>
           <p>
-            Welcome to NRI Marketplace. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.
+            Welcome to NRI Marketplace. We are committed to protecting your privacy and fostering a safe community. This document outlines our privacy practices and the rules for using our platform.
           </p>
 
           <h2>2. Information We Collect</h2>
@@ -43,17 +43,22 @@ export default function PrivacyPolicy() {
             <li>Monitor and analyze usage and trends to improve your experience with the platform.</li>
           </ul>
 
-          <h2>4. Disclosure of Your Information</h2>
+          <h2>4. Our Business Model</h2>
+          <p>
+            NRI Marketplace is a community-driven platform provided as a free service. <strong>We do not monetize your personal data or charge fees for listings.</strong> Our primary goal is to provide a safe and efficient way for individuals to connect and exchange goods.
+          </p>
+
+          <h2>5. Disclosure of Your Information</h2>
           <p>
             We do not sell, trade, or otherwise transfer to outside parties your personally identifiable information. Your listing details, including contact information you provide, will be visible to other users to facilitate transactions.
           </p>
 
-          <h2>5. Security of Your Information</h2>
+          <h2>6. Security of Your Information</h2>
           <p>
             We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable, and no method of data transmission can be guaranteed against any interception or other type of misuse.
           </p>
 
-          <h2>6. Disclaimer of Liability</h2>
+          <h2>7. Disclaimer of Liability</h2>
           <p>
             <strong>
               NRI Marketplace functions solely as a platform to connect buyers and sellers. We are not involved in the actual transaction between users. As a result, we have no control over the quality, safety, morality, or legality of any aspect of the items listed, the truth or accuracy of the listings, the ability of sellers to sell items, or the ability of buyers to pay for items.
@@ -65,7 +70,24 @@ export default function PrivacyPolicy() {
             </strong>
           </p>
 
-          <h2>7. Contact Us</h2>
+          <h2>8. Community Guidelines: Do's and Don'ts</h2>
+          <p>To ensure a safe and positive experience for everyone, we ask that you adhere to the following guidelines:</p>
+          <h3>Do:</h3>
+          <ul>
+            <li><strong>Be Respectful:</strong> Treat all users with courtesy. Harassment, hate speech, or bullying will not be tolerated.</li>
+            <li><strong>Communicate Clearly:</strong> Provide accurate descriptions for your listings and communicate honestly with others.</li>
+            <li><strong>Follow Safety Guidelines:</strong> Prioritize your safety. Meet in public places, inspect items before payment, and never share unnecessary personal financial information.</li>
+            <li><strong>Report Issues:</strong> If you encounter suspicious activity, a problematic user, or an inappropriate listing, please report it immediately.</li>
+          </ul>
+          <h3>Don't:</h3>
+          <ul>
+            <li><strong>Post Prohibited Items:</strong> Do not list illegal items, weapons, drugs, counterfeit goods, or any other items that violate our content policy.</li>
+            <li><strong>Engage in Scams:</strong> Do not attempt to defraud other users. This includes misrepresenting items or using fake payment methods.</li>
+            <li><strong>Share Sensitive Information:</strong> Do not share personal information that is not necessary for the transaction, such as bank account details or government ID numbers.</li>
+            <li><strong>Spam:</strong> Do not post repetitive listings or send unsolicited messages to other users.</li>
+          </ul>
+
+          <h2>9. Contact Us</h2>
           <p>
             If you have questions or comments about this Privacy Policy, please contact us through the platform's designated support channels.
           </p>
