@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '../ui/alert';
 import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
-import imageCompression from 'browser-image-compression';
 import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '@/context/AuthContext';
 import { listingSchema, ListingFormValues } from '@/lib/schemas';
@@ -127,6 +126,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     setIsProcessingImages(true);
     toast({ title: "Processing images...", description: "Optimizing and converting images." });
 
+    const imageCompression = (await import('browser-image-compression')).default;
     const processedFiles: File[] = [];
     const maxTargetSize = 4 * 1024 * 1024;
 

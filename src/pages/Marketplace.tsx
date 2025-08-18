@@ -13,6 +13,8 @@ import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useAuth } from '@/context/AuthContext';
 import { useSearchParams } from 'react-router-dom';
 import { MarkAsSoldBanner } from '@/components/marketplace/MarkAsSoldBanner';
+import { LcpImagePreloader } from '@/components/marketplace/LcpImagePreloader';
+import { transformSupabaseUrl } from '@/lib/utils';
 
 const CreateListing = lazy(() => import('@/components/marketplace/CreateListing').then(module => ({ default: module.CreateListing })));
 const ListingDetailModal = lazy(() => import('@/components/marketplace/ListingDetailModal').then(module => ({ default: module.ListingDetailModal })));
@@ -101,6 +103,16 @@ export default function Marketplace() {
                  ))
     .sort((a, b) => sortBy === 'price-low' ? a.price - b.price : sortBy === 'price-high' ? b.price - a.price : 0);
 
+  const lcpImageUrl = useMemo(() => {
+    if (filteredListings && filteredListings.length > 0) {
+      const firstImage = filteredListings[0].image_urls[0];
+      if (firstImage) {
+        return transformSupabaseUrl(firstImage, { width: 400, height: 400, resize: 'cover', quality: 65 });
+      }
+    }
+    return '';
+  }, [filteredListings]);
+
   const renderContent = () => {
     if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (isError) return <div className="text-center py-16 text-destructive">Failed to load listings.</div>;
@@ -125,6 +137,7 @@ export default function Marketplace() {
 
   return (
     <div className="w-full">
+      {lcpImageUrl && <LcpImagePreloader imageUrl={lcpImageUrl} />}
       <Header 
         showSearch
         searchQuery={searchQuery}

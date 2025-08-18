@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '../ui/alert';
 import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
-import imageCompression from 'browser-image-compression';
 import { Listing } from '@/lib/types';
 import { listingSchema, ListingFormValues } from '@/lib/schemas';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -125,6 +124,7 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
     setIsProcessingImages(true);
     toast({ title: "Processing images...", description: "Optimizing and converting images." });
 
+    const imageCompression = (await import('browser-image-compression')).default;
     const processedFiles: File[] = [];
     for (const file of newFilesToProcess) {
       if (existingImages.length + newImages.length + processedFiles.length >= 5) {
