@@ -13,6 +13,7 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/integrations/firebase/client';
@@ -30,6 +31,18 @@ const getSupabaseProfiles = async (userIds: string[]): Promise<Map<string, UserP
   return profileMap;
 };
 
+// Define the shape of the raw conversation data from Firestore
+interface FirebaseConversation {
+  participants: string[];
+  listingId: string;
+  listingTitle: string;
+  listingImageUrl: string;
+  lastMessage: string | null;
+  lastMessageAt: Timestamp;
+  lastMessageSenderId: string;
+  readBy?: string[];
+}
+
 // Hook to get all conversations for the current user
 export const useConversations = () => {
   const { user } = useAuth();
@@ -39,13 +52,18 @@ export const useConversations = () => {
       if (!user) return [];
       const q = query(collection(db, 'conversations'), where('participants', 'array-contains', user.id), orderBy('lastMessageAt', 'desc'));
       const querySnapshot = await getDocs(q);
-      const conversations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Cast the data to our defined type
+      const conversations = querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() as FirebaseConversation 
+      }));
 
-      const otherUserIds = conversations.map(c => c.participants.find((id: string) => id !== user.id)).filter(Boolean);
+      const otherUserIds = conversations.map(c => c.participants.find((id: string) => id !== user.id)).filter(Boolean) as string[];
       const profiles = await getSupabaseProfiles(otherUserIds);
 
       return conversations.map(c => {
-        const otherUserId = c.participants.find((id: string) => id !== user.id);
+        const otherUserId = c.participants.find((id: string) => id !== user.id)!;
         const otherUser = profiles.get(otherUserId) || { id: '', firstName: 'Unknown', lastName: 'User', avatarUrl: null };
         return {
           id: c.id,
@@ -57,7 +75,7 @@ export const useConversations = () => {
             text: c.lastMessage,
             createdAt: c.lastMessageAt,
             senderId: c.lastMessageSenderId,
-            read: c.lastMessageSenderId === user.id || c.readBy?.includes(user.id),
+            read: c.lastMessageSenderId === user.id || (c.readBy?.includes(user.id) ?? false),
           } : null,
         };
       });

@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 // IMPORTANT: Create a .env file in your project root and add your Firebase credentials.
 const firebaseConfig = {
