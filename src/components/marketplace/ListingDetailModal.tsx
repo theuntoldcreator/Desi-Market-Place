@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
 import { EditListing } from './EditListing';
-import { useStartConversation } from '@/hooks/use-firebase-messaging';
+import { useEnsureConversation } from '@/hooks/use-firebase-messaging';
 
 interface ListingDetailModalProps {
   listing: Listing;
@@ -37,10 +37,10 @@ export function ListingDetailModal({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isOwner = user?.id === listing?.user_id;
-  const startConversation = useStartConversation();
+  const ensureConversation = useEnsureConversation();
 
   const handleStartConversation = () => {
-    startConversation.mutate(
+    ensureConversation.mutate(
       { listingId: listing.id, sellerId: listing.user_id },
       {
         onSuccess: (conversationId) => {
@@ -149,8 +149,8 @@ export function ListingDetailModal({
                 <>
                   <div className="space-y-3">
                     <h2 className="text-lg font-semibold">Contact Seller</h2>
-                    <Button onClick={handleStartConversation} className="w-full" disabled={startConversation.isPending}>
-                      {startConversation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageCircle className="w-5 h-5 mr-2" />}
+                    <Button onClick={handleStartConversation} className="w-full" disabled={ensureConversation.isPending}>
+                      {ensureConversation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageCircle className="w-5 h-5 mr-2" />}
                       Message Seller
                     </Button>
                     <Alert variant="default" className="text-xs"><Info className="h-4 w-4" /><AlertDescription>Start a conversation directly on the platform. Always practice safety when meeting or transacting.</AlertDescription></Alert>

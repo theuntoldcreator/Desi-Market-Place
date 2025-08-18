@@ -10,13 +10,9 @@ import {
   orderBy,
   onSnapshot,
   doc,
+  setDoc,
   getDoc,
-  limit,
-  startAfter,
-  QueryDocumentSnapshot,
-  DocumentData,
   updateDoc,
-  arrayUnion,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/integrations/firebase/client';
@@ -41,15 +37,15 @@ export const useConversations = () => {
     queryKey: ['conversations', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const q = query(collection(db, 'conversations'), where('userIds', 'array-contains', user.id));
+      const q = query(collection(db, 'conversations'), where('participants', 'array-contains', user.id), orderBy('lastMessageAt', 'desc'));
       const querySnapshot = await getDocs(q);
       const conversations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      const otherUserIds = conversations.map(c => c.userIds.find((id: string) => id !== user.id)).filter(Boolean);
+      const otherUserIds = conversations.map(c => c.participants.find((id: string) => id !== user.id)).filter(Boolean);
       const profiles = await getSupabaseProfiles(otherUserIds);
 
       return conversations.map(c => {
-        const otherUserId = c.userIds.find((id: string) => id !== user.id);
+        const otherUserId = c.participants.find((id: string) => id !== user.id);
         const otherUser = profiles.get(otherUserId) || { id: '', firstName: 'Unknown', lastName: 'User', avatarUrl: null };
         return {
           id: c.id,
@@ -57,7 +53,12 @@ export const useConversations = () => {
           listingTitle: c.listingTitle,
           listingImageUrl: c.listingImageUrl,
           otherUser,
-          lastMessage: c.lastMessage || null,
+          lastMessage: c.lastMessage ? {
+            text: c.lastMessage,
+            createdAt: c.lastMessageAt,
+            senderId: c.lastMessageSenderId,
+            read: c.lastMessageSenderId === user.id || c.readBy?.includes(user.id),
+          } : null,
         };
       });
     },
@@ -101,23 +102,20 @@ export const useSendMessage = () => {
       }
 
       const messagesCol = collection(db, 'conversations', conversationId, 'messages');
-      const newMessage = {
+      await addDoc(messagesCol, {
         senderId: user.id,
         text,
         imageUrl,
         createdAt: serverTimestamp(),
-      };
-      await addDoc(messagesCol, newMessage);
+      });
 
       // Update last message on conversation
       const conversationRef = doc(db, 'conversations', conversationId);
       await updateDoc(conversationRef, {
-        lastMessage: {
-          text: text || 'Image',
-          createdAt: serverTimestamp(),
-          senderId: user.id,
-          read: false,
-        }
+        lastMessage: text || 'Image',
+        lastMessageAt: serverTimestamp(),
+        lastMessageSenderId: user.id,
+        readBy: [user.id],
       });
     },
     onSuccess: () => {
@@ -126,34 +124,36 @@ export const useSendMessage = () => {
   });
 };
 
-// Hook to start a new conversation
-export const useStartConversation = () => {
+// Hook to ensure a conversation exists and get its ID
+export const useEnsureConversation = () => {
   const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ listingId, sellerId }: { listingId: number; sellerId: string }) => {
       if (!user || user.id === sellerId) throw new Error("Cannot start conversation with yourself.");
 
-      const userIds = [user.id, sellerId].sort();
-      const q = query(collection(db, 'conversations'), where('listingId', '==', String(listingId)), where('userIds', '==', userIds));
-      const existing = await getDocs(q);
+      const participants = [user.id, sellerId].sort();
+      const conversationId = `${listingId}-${participants[0]}-${participants[1]}`;
+      const conversationRef = doc(db, 'conversations', conversationId);
+      
+      const docSnap = await getDoc(conversationRef);
 
-      if (!existing.empty) {
-        return existing.docs[0].id;
+      if (!docSnap.exists()) {
+        const listing = await supabase.from('listings').select('title, image_urls').eq('id', listingId).single();
+        if (listing.error) throw listing.error;
+
+        await setDoc(conversationRef, {
+          listingId: String(listingId),
+          listingTitle: listing.data.title,
+          listingImageUrl: listing.data.image_urls[0],
+          participants,
+          createdAt: serverTimestamp(),
+          lastMessage: null,
+          lastMessageAt: serverTimestamp(),
+        });
       }
 
-      const listing = await supabase.from('listings').select('title, image_urls').eq('id', listingId).single();
-      if (listing.error) throw listing.error;
-
-      const newConversation = await addDoc(collection(db, 'conversations'), {
-        listingId: String(listingId),
-        listingTitle: listing.data.title,
-        listingImageUrl: listing.data.image_urls[0],
-        userIds: userIds,
-        createdAt: serverTimestamp(),
-      });
-
-      return newConversation.id;
+      return conversationId;
     },
   });
 };
