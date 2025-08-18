@@ -38,6 +38,7 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', category: '', location: '', contact: '', condition: ''
   });
+  const [contactMethod, setContactMethod] = useState('');
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [imagesToRemove, setImagesToRemove] = useState<string[]>([]);
@@ -55,6 +56,7 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
         contact: listing.contact?.split(':')[1] || '',
         condition: listing.condition || '',
       });
+      setContactMethod(listing.contact?.split(':')[0] || '');
       setExistingImages(listing.image_urls);
       setNewImages([]);
       setImagesToRemove([]);
@@ -87,7 +89,7 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
 
       // 4. Update listing data in the database
       const { title, description, price, category, location, contact, condition } = formData;
-      const fullContact = `telegram:${contact}`;
+      const fullContact = `${contactMethod}:${contact}`;
       const { error: updateError } = await supabase.from('listings').update({
         title, description, category, location, condition,
         contact: fullContact,
@@ -199,19 +201,11 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
               </div>
             </div>
             <div className="space-y-4 pt-4 border-t">
-              <Label className="font-semibold" htmlFor="telegram-contact-edit">Contact Info *</Label>
-              <Input 
-                id="telegram-contact-edit"
-                value={formData.contact} 
-                onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))} 
-                placeholder="Enter your Telegram username"
-              />
-              <Alert className="text-xs p-3">
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Buyers will contact you on Telegram. Please enter your username without the '@' symbol.
-                </AlertDescription>
-              </Alert>
+              <Label className="font-semibold">Contact Info *</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Select value={contactMethod} onValueChange={setContactMethod}><SelectTrigger className="col-span-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="whatsapp">WhatsApp</SelectItem><SelectItem value="telegram">Telegram</SelectItem><SelectItem value="email">Email</SelectItem></SelectContent></Select>
+                <Input className="col-span-2" value={formData.contact} onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))} disabled={!contactMethod} />
+              </div>
             </div>
           </div>
         </div>

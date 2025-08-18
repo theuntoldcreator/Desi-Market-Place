@@ -9,6 +9,8 @@ import { AuthProvider } from "./context/AuthContext";
 import Auth from "./pages/Auth";
 import MyListings from "./pages/MyListings";
 import Favorites from "./pages/Favorites";
+import Messages from "./pages/Messages";
+import Conversation from "./pages/Conversation";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +21,8 @@ const AppRoutes = () => {
       <Route path="/login" element={<Auth />} />
       <Route path="/my-listings" element={<MyListings />} />
       <Route path="/favorites" element={<Favorites />} />
+      <Route path="/messages" element={<Messages />} />
+      <Route path="/messages/:id" element={<Conversation />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -39,7 +43,7 @@ const App = () => {
 };
 
 const Root = () => (
-  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+  <BrowserRouter>
     <App />
   </BrowserRouter>
 );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
@@ -14,25 +14,16 @@ import { useDebounce } from 'use-debounce';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { MarkAsSoldBanner } from '@/components/marketplace/MarkAsSoldBanner';
 
 const fetchListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase
     .from('listings_with_profiles_and_favorites')
     .select('*')
+    .eq('status', 'active')
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
   return data || [];
-};
-
-const shuffleArray = <T,>(array: T[]): T[] => {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
 };
 
 export default function Marketplace() {
@@ -54,27 +45,6 @@ export default function Marketplace() {
     refetchInterval: 60000, // Poll every 1 minute
   });
 
-  const { data: userHasActiveListings } = useQuery({
-    queryKey: ['userHasActiveListings', user?.id],
-    queryFn: async () => {
-      if (!user) return false;
-      const { count, error } = await supabase
-        .from('listings')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('status', 'active');
-      if (error) {
-        console.error("Error checking for active listings:", error);
-        return false;
-      }
-      return (count ?? 0) > 0;
-    },
-    enabled: !!user,
-    staleTime: 1000 * 60 * 5, // Check every 5 minutes
-  });
-
-  const shuffledListings = useMemo(() => shuffleArray(listings), [listings]);
-
   useEffect(() => {
     const listingIdToOpen = searchParams.get('openListing');
     if (listingIdToOpen && listings.length > 0) {
@@ -92,13 +62,9 @@ export default function Marketplace() {
   };
 
   const normalizedSearchQuery = debouncedSearchQuery.toLowerCase().trim();
-  const filteredListings = shuffledListings
+  const filteredListings = listings
     .filter(l => (selectedCategory === 'all' || l.category.toLowerCase() === selectedCategory) &&
-                 (!normalizedSearchQuery || 
-                  l.title.toLowerCase().includes(normalizedSearchQuery) || 
-                  l.location.toLowerCase().includes(normalizedSearchQuery) ||
-                  String(l.id).includes(normalizedSearchQuery)
-                 ))
+                 (!normalizedSearchQuery || l.title.toLowerCase().includes(normalizedSearchQuery) || l.location.toLowerCase().includes(normalizedSearchQuery)))
     .sort((a, b) => sortBy === 'price-low' ? a.price - b.price : sortBy === 'price-high' ? b.price - a.price : 0);
 
   const renderContent = () => {
@@ -129,7 +95,6 @@ export default function Marketplace() {
       <div className="flex">
         <MarketplaceSidebar selectedCategory={selectedCategory} onCategoryChange={setSelectedCategory} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 pb-24 sm:pb-8">
-          {userHasActiveListings && <MarkAsSoldBanner />}
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold">{selectedCategory === 'all' ? 'All Listings' : selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}</h2>
