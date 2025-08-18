@@ -1,6 +1,7 @@
 import { AlertTriangle, Shield, Eye } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
 
 export function DisclaimerSection() {
   return (
@@ -45,6 +46,9 @@ export function DisclaimerSection() {
               <strong>Disclaimer:</strong> NRI Marketplace is not responsible for transactions between users. 
               We provide a platform to connect buyers and sellers, but all dealings are at your own risk. 
               Please report suspicious activity to our support team.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              By using our service, you agree to our <Link to="/privacy-policy" className="underline hover:text-primary">Privacy Policy</Link>.
             </p>
           </div>
         </CardContent>

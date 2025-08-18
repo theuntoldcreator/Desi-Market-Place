@@ -9,6 +9,7 @@ import { AuthProvider } from "./context/AuthContext";
 import Auth from "./pages/Auth";
 import MyListings from "./pages/MyListings";
 import Favorites from "./pages/Favorites";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Auth />} />
       <Route path="/my-listings" element={<MyListings />} />
       <Route path="/favorites" element={<Favorites />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
