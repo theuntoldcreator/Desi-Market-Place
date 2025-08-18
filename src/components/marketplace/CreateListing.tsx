@@ -151,8 +151,8 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     newImageStates.forEach(async (imageState) => {
       try {
         const options = {
-          maxSizeMB: 4,
-          maxWidthOrHeight: 2560,
+          maxSizeMB: 2,
+          maxWidthOrHeight: 1920,
           useWebWorker: true,
           fileType: 'image/webp',
           quality: 0.8,

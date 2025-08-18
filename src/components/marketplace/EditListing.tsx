@@ -151,7 +151,7 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
     newStates.forEach(async (imageState) => {
       try {
         const options = {
-          maxSizeMB: 4, maxWidthOrHeight: 2560, useWebWorker: true, fileType: 'image/webp', quality: 0.8,
+          maxSizeMB: 2, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/webp', quality: 0.8,
           onProgress: (p: number) => {
             setNewImageStates(current => current.map(s => s.id === imageState.id ? { ...s, progress: p } : s));
           },
