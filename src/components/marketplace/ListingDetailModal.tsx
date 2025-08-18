@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, MapPin, Info, MessageCircle, Edit, Trash2, CheckCircle, Lock, Loader2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -16,7 +16,6 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
 import { EditListing } from './EditListing';
-import { useEnsureConversation } from '@/hooks/use-firebase-messaging';
 
 interface ListingDetailModalProps {
   listing: Listing;
@@ -37,22 +36,6 @@ export function ListingDetailModal({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isOwner = user?.id === listing?.user_id;
-  const ensureConversation = useEnsureConversation();
-
-  const handleStartConversation = () => {
-    ensureConversation.mutate(
-      { listingId: listing.id, sellerId: listing.user_id },
-      {
-        onSuccess: (conversationId) => {
-          onClose();
-          navigate(`/messages/${conversationId}`);
-        },
-        onError: (error) => {
-          toast({ title: "Error", description: `Could not start conversation: ${error.message}`, variant: "destructive" });
-        },
-      }
-    );
-  };
 
   const handleLoginClick = () => {
     onClose();
@@ -145,19 +128,6 @@ export function ListingDetailModal({
             <>
               <div className="space-y-1"><h1 className="text-2xl font-bold tracking-tight">{listing.title}</h1><p className="text-2xl font-bold">{listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}</p><div className="text-sm text-muted-foreground flex items-center gap-2 pt-1"><MapPin className="w-4 h-4" /><span>{listing.location}</span><span className="mx-1">&middot;</span><span>Posted {formatDistanceToNow(creationDate, { addSuffix: true })}</span></div></div>
               <Separator />
-              {!isOwner && (
-                <>
-                  <div className="space-y-3">
-                    <h2 className="text-lg font-semibold">Contact Seller</h2>
-                    <Button onClick={handleStartConversation} className="w-full" disabled={ensureConversation.isPending}>
-                      {ensureConversation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageCircle className="w-5 h-5 mr-2" />}
-                      Message Seller
-                    </Button>
-                    <Alert variant="default" className="text-xs"><Info className="h-4 w-4" /><AlertDescription>Start a conversation directly on the platform. Always practice safety when meeting or transacting.</AlertDescription></Alert>
-                  </div>
-                  <Separator />
-                </>
-              )}
               <div className="space-y-3"><h2 className="text-lg font-semibold">Details</h2><div className="text-sm space-y-2"><div className="flex justify-between"><span>Category</span><span className="text-muted-foreground capitalize">{categoryMap[listing.category] || listing.category}</span></div>{listing.condition && <div className="flex justify-between"><span>Condition</span><span className="text-muted-foreground">{conditionMap[listing.condition]}</span></div>}<Tooltip><TooltipTrigger asChild><div className="flex justify-between cursor-help"><span>Listing Status</span><span className="text-muted-foreground">{expirationText}</span></div></TooltipTrigger><TooltipContent><p>Expires on {format(expirationDate, 'PPP')}</p></TooltipContent></Tooltip></div>{listing.description && <p className="text-sm text-foreground/80 pt-2">{listing.description}</p>}</div>
               {isOwner && (
                 <>
