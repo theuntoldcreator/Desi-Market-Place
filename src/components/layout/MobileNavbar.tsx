@@ -2,6 +2,7 @@ import { Home, Heart, ShoppingBag } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { MobileCategoriesSheet } from '@/components/marketplace/MobileCategoriesSheet';
+import { useAuth } from '@/context/AuthContext';
 
 interface MobileNavbarProps {
   selectedCategory: string;
@@ -10,18 +11,22 @@ interface MobileNavbarProps {
 
 export function MobileNavbar({ selectedCategory, onCategoryChange }: MobileNavbarProps) {
   const location = useLocation();
+  const { session } = useAuth();
   const isActive = (path: string) => location.pathname.startsWith(path);
 
   const navItems = [
     { path: '/', label: 'Home', icon: Home },
-    { path: '/favorites', label: 'Favorites', icon: Heart },
-    { path: '/my-listings', label: 'My Listings', icon: ShoppingBag },
+    ...(session ? [
+      { path: '/favorites', label: 'Favorites', icon: Heart },
+      { path: '/my-listings', label: 'My Listings', icon: ShoppingBag },
+    ] : [])
   ];
 
   return (
     <nav className={cn(
       "fixed bottom-0 left-0 right-0 z-40 bg-white border-t shadow-lg",
-      "grid grid-cols-4 items-center h-16 sm:hidden"
+      "grid items-center h-16 sm:hidden",
+      session ? "grid-cols-4" : "grid-cols-2"
     )}>
       {navItems.map(item => (
         <Link key={item.path} to={item.path} className={cn(
