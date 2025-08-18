@@ -109,8 +109,13 @@ export default function Marketplace() {
     return (
       <>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
-          {filteredListings.slice(0, visibleCount).map((listing) => (
-            <ListingCard key={listing.id} {...listing} onClick={() => handleCardClick(listing)} />
+          {filteredListings.slice(0, visibleCount).map((listing, index) => (
+            <ListingCard 
+              key={listing.id} 
+              {...listing} 
+              onClick={() => handleCardClick(listing)}
+              isPriority={index < 4}
+            />
           ))}
         </div>
         {visibleCount < filteredListings.length && <div className="text-center mt-8"><Button onClick={() => setVisibleCount(p => p + 12)} variant="outline" size="lg">Load More <ChevronDown className="w-4 h-4 ml-2" /></Button></div>}

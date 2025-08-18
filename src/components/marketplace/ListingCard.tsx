@@ -10,9 +10,10 @@ import { Listing } from '@/lib/types';
 
 interface ListingCardProps extends Listing {
   onClick: () => void;
+  isPriority?: boolean;
 }
 
-export function ListingCard({ id, title, price, image_urls, location, status, is_favorited, onClick }: ListingCardProps) {
+export function ListingCard({ id, title, price, image_urls, location, status, is_favorited, onClick, isPriority = false }: ListingCardProps) {
   const [isImageLoading, setIsImageLoading] = useState(true);
   const { toggleFavorite, isLoading: isFavoriting } = useFavorite(id);
 
@@ -53,7 +54,8 @@ export function ListingCard({ id, title, price, image_urls, location, status, is
               "w-full h-full object-cover transition-opacity duration-500",
               isImageLoading ? "opacity-0" : "opacity-100"
             )}
-            loading="lazy"
+            loading={isPriority ? 'eager' : 'lazy'}
+            fetchPriority={isPriority ? 'high' : 'auto'}
             onLoad={() => setIsImageLoading(false)}
             onError={() => setIsImageLoading(false)}
           />
