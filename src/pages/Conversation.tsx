@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChat } from '@/realtime/components/realtime-chat';
 import { ChatMessage, Message } from '@/lib/types';
+import { useRealtimeMessages } from '@/realtime/hooks/use-realtime-messages';
 
 const fetchConversationDetails = async (conversationId: string, currentUserId: string) => {
   const { data: fullData, error: fullError } = await supabase
@@ -42,6 +43,9 @@ export default function Conversation() {
   const navigate = useNavigate();
   const { user, session, loading: authLoading } = useAuth();
 
+  // This hook now keeps our message cache updated in real-time.
+  useRealtimeMessages(conversationId!);
+
   const { 
     data: infiniteMessages, 
     isLoading: messagesLoading,
@@ -57,7 +61,7 @@ export default function Conversation() {
     enabled: !!conversationId && !!user,
   });
 
-  const initialChatMessages = useMemo(() => {
+  const chatMessages = useMemo(() => {
     if (!infiniteMessages) return [];
     return infiniteMessages.pages.flat().map(transformDbMessageToChatMessage);
   }, [infiniteMessages]);
@@ -69,19 +73,12 @@ export default function Conversation() {
 
   const currentUsername = user ? `${user.user_metadata.first_name || ''} ${user.user_metadata.last_name || ''}`.trim() || 'You' : '';
 
-  const handleSendMessage = async (content: string): Promise<ChatMessage | null> => {
-    if (!conversationId || !user) return null;
+  const handleSendMessage = async (content: string) => {
+    if (!conversationId || !user) return;
     try {
-      const persistedMessage = await sendMessageMutation.mutateAsync({ conversationId, body: content });
-      return {
-        id: persistedMessage.id,
-        content: persistedMessage.body,
-        user: { name: currentUsername },
-        createdAt: persistedMessage.created_at,
-      };
+      await sendMessageMutation.mutateAsync({ conversationId, body: content });
     } catch (error) {
       console.error("Failed to send message:", error);
-      return null;
     }
   };
 
@@ -116,10 +113,9 @@ export default function Conversation() {
           <div className="flex-grow flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
         ) : (
           <RealtimeChat
-            roomName={conversationId!}
             username={currentUsername}
-            initialMessages={initialChatMessages}
-            onSendMessage={handleSendMessage}
+            messages={chatMessages}
+            onSend={handleSendMessage}
             fetchNextPage={fetchNextPage}
             hasNextPage={!!hasNextPage}
             isFetchingNextPage={isFetchingNextPage}

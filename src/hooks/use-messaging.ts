@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { Message } from '@/lib/types';
 
 // Hook to get all conversations for the current user
 export const useConversations = () => {
@@ -72,8 +73,32 @@ export const useSendMessage = () => {
       if (error) throw new Error(error.message);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (newMessage, { conversationId }) => {
+      // Invalidate conversations list to show recent activity
       queryClient.invalidateQueries({ queryKey: ['conversations', user?.id] });
+
+      // Optimistically update the messages list for the sender for an instant UI update.
+      const profileData = {
+        first_name: user?.user_metadata.first_name || '',
+        last_name: user?.user_metadata.last_name || '',
+        avatar_url: user?.user_metadata.avatar_url || null,
+      };
+      const messageWithProfile = { ...newMessage, profiles: profileData };
+
+      queryClient.setQueryData(['messages', conversationId], (oldData: any) => {
+        if (!oldData) return { pages: [[messageWithProfile]], pageParams: [0] };
+
+        const lastPageIndex = oldData.pages.length - 1;
+        const lastPage = oldData.pages[lastPageIndex];
+        
+        const newPages = [...oldData.pages];
+        newPages[lastPageIndex] = [...lastPage, messageWithProfile];
+
+        return {
+          ...oldData,
+          pages: newPages,
+        };
+      });
     },
   });
 };

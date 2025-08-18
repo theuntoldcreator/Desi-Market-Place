@@ -1,31 +1,27 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import { ChatMessageItem } from '@/realtime/components/chat-message'
 import { useChatScroll } from '@/realtime/hooks/use-chat-scroll'
-import { useRealtimeChat } from '@/realtime/hooks/use-realtime-chat'
 import type { ChatMessage } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Send, Loader2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
 
 interface RealtimeChatProps {
-  roomName: string
   username: string
-  initialMessages: ChatMessage[]
-  onSendMessage: (content: string) => Promise<ChatMessage | null>
+  messages: ChatMessage[]
+  onSend: (content: string) => Promise<void>
   fetchNextPage: () => void
   hasNextPage: boolean
   isFetchingNextPage: boolean
 }
 
 export const RealtimeChat = ({
-  roomName,
   username,
-  initialMessages = [],
-  onSendMessage,
+  messages = [],
+  onSend,
   fetchNextPage,
   hasNextPage,
   isFetchingNextPage,
@@ -33,24 +29,8 @@ export const RealtimeChat = ({
   const { containerRef, scrollToBottom } = useChatScroll()
   const { ref: loadMoreRef, inView } = useInView({ threshold: 0 })
 
-  const {
-    messages: realtimeMessages,
-    sendMessage,
-    isConnected,
-  } = useRealtimeChat({
-    roomName,
-  })
   const [newMessage, setNewMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
-
-  const allMessages = useMemo(() => {
-    const messageMap = new Map<string, ChatMessage>()
-    initialMessages.forEach(msg => messageMap.set(msg.id, msg))
-    realtimeMessages.forEach(msg => messageMap.set(msg.id, msg))
-    
-    const uniqueMessages = Array.from(messageMap.values())
-    return uniqueMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-  }, [initialMessages, realtimeMessages])
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -59,25 +39,23 @@ export const RealtimeChat = ({
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   useEffect(() => {
+    // Auto-scroll when a new message is sent by the current user
     if (isSending) {
       scrollToBottom()
     }
-  }, [allMessages.length, scrollToBottom, isSending])
+  }, [messages.length, scrollToBottom, isSending])
 
   const handleSendMessage = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      if (!newMessage.trim() || !isConnected || isSending) return
+      if (!newMessage.trim() || isSending) return
 
       setIsSending(true)
-      const persistedMessage = await onSendMessage(newMessage)
-      if (persistedMessage) {
-        sendMessage(persistedMessage)
-        setNewMessage('')
-      }
+      await onSend(newMessage)
+      setNewMessage('')
       setIsSending(false)
     },
-    [newMessage, isConnected, isSending, onSendMessage, sendMessage]
+    [newMessage, isSending, onSend]
   )
 
   return (
@@ -88,14 +66,14 @@ export const RealtimeChat = ({
             {isFetchingNextPage && <Loader2 className="w-5 h-5 animate-spin text-primary" />}
           </div>
         )}
-        {allMessages.length === 0 ? (
-          <div className="text-center text-sm text-muted-foreground">
+        {messages.length === 0 && !isFetchingNextPage && (
+          <div className="text-center text-sm text-muted-foreground pt-4">
             No messages yet. Start the conversation!
           </div>
-        ) : null}
+        )}
         <div className="space-y-1">
-          {allMessages.map((message, index) => {
-            const prevMessage = index > 0 ? allMessages[index - 1] : null
+          {messages.map((message, index) => {
+            const prevMessage = index > 0 ? messages[index - 1] : null
             const showHeader = !prevMessage || prevMessage.user.name !== message.user.name
 
             return (
@@ -121,12 +99,12 @@ export const RealtimeChat = ({
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
-          disabled={!isConnected || isSending}
+          disabled={isSending}
         />
         <Button
           className="aspect-square rounded-full"
           type="submit"
-          disabled={!isConnected || isSending || !newMessage.trim()}
+          disabled={isSending || !newMessage.trim()}
         >
           {isSending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
         </Button>
