@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '../ui/alert';
@@ -154,15 +154,15 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-2xl sm:h-auto sm:max-h-[95vh] sm:rounded-lg flex flex-col overflow-hidden [&>button]:hidden">
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-4">
-          <div className="space-y-1">
-            <DialogTitle className="text-xl">Edit Listing</DialogTitle>
-            <DialogDescription>Update the details of your item.</DialogDescription>
-          </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full"><X className="w-5 h-5" /></Button>
+          <DialogTitle className="text-lg font-semibold">Edit Listing</DialogTitle>
+          <Button onClick={form.handleSubmit(onSubmit)} disabled={updateListingMutation.isPending || isProcessingImages} size="sm">
+            {updateListingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update'}
+          </Button>
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex-grow overflow-y-auto hide-scrollbar">
-            <div className="p-4 space-y-6">
+            <div className="p-4 space-y-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4">
               <div className="space-y-3">
                 <FormLabel className="font-semibold">Images (up to 5) *</FormLabel>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -207,13 +207,6 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
             </div>
           </form>
         </Form>
-        <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4 flex justify-end gap-2">
-          <Button onClick={onClose} className="w-full sm:w-auto text-destructive border-destructive hover:text-destructive hover:bg-destructive/10" variant="outline">Cancel</Button>
-          <Button onClick={form.handleSubmit(onSubmit)} disabled={updateListingMutation.isPending || isProcessingImages}>
-            {updateListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {updateListingMutation.isPending ? 'Updating...' : 'Update Listing'}
-          </Button>
-        </DialogFooter>
         <ProfanityViolationModal isOpen={!!violation} onClose={() => setViolation(null)} violation={violation!} />
       </DialogContent>
     </Dialog>
