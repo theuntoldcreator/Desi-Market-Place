@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 const queryClient = new QueryClient();
 
 // Lazy load page components
-const Index = lazy(() => import("./pages/Index"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
 const MyListings = lazy(() => import("./pages/MyListings"));
@@ -27,7 +27,7 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route path="/" element={<Marketplace />} />
         <Route path="/login" element={<Auth />} />
         <Route path="/my-listings" element={<MyListings />} />
         <Route path="/favorites" element={<Favorites />} />
