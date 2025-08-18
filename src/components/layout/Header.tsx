@@ -1,4 +1,4 @@
-import { LogOut, Plus, Heart, ShoppingBag, MessageSquare } from 'lucide-react';
+import { LogOut, Plus, Heart, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import marketplaceLogo from '@/assets/marketplace.jpg';
@@ -71,7 +71,6 @@ export function Header({ showSearch = false, searchQuery, onSearchChange, onCrea
               <NavLink to="/" className={navLinkClasses} end>All Listings</NavLink>
               <NavLink to="/my-listings" className={navLinkClasses}>My Listings</NavLink>
               <NavLink to="/favorites" className={navLinkClasses}>Favorites</NavLink>
-              <NavLink to="/messages" className={navLinkClasses}>Messages</NavLink>
             </nav>
           )}
         </div>
@@ -114,10 +113,6 @@ export function Header({ showSearch = false, searchQuery, onSearchChange, onCrea
                 <DropdownMenuItem onClick={() => navigate('/favorites')}>
                   <Heart className="mr-2 h-4 w-4" />
                   <span>Favorites</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/messages')}>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  <span>Messages</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
