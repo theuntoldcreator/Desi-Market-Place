@@ -1,23 +1,20 @@
-import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
+import { CreateListing } from '@/components/marketplace/CreateListing';
 import { DisclaimerSection } from '@/components/marketplace/DisclaimerSection';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, SortAsc, Loader2 } from 'lucide-react';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
+import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { Header } from '@/components/layout/Header';
 import { Listing } from '@/lib/types';
 import { useDebounce } from 'use-debounce';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useAuth } from '@/context/AuthContext';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MarkAsSoldBanner } from '@/components/marketplace/MarkAsSoldBanner';
-import { LcpImagePreloader } from '@/components/marketplace/LcpImagePreloader';
-import { transformSupabaseUrl } from '@/lib/utils';
-
-const CreateListing = lazy(() => import('@/components/marketplace/CreateListing').then(module => ({ default: module.CreateListing })));
-const ListingDetailModal = lazy(() => import('@/components/marketplace/ListingDetailModal').then(module => ({ default: module.ListingDetailModal })));
 
 const fetchListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase
@@ -40,6 +37,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 
 export default function Marketplace() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -103,16 +101,6 @@ export default function Marketplace() {
                  ))
     .sort((a, b) => sortBy === 'price-low' ? a.price - b.price : sortBy === 'price-high' ? b.price - a.price : 0);
 
-  const lcpImageUrl = useMemo(() => {
-    if (filteredListings && filteredListings.length > 0) {
-      const firstImage = filteredListings[0].image_urls[0];
-      if (firstImage) {
-        return transformSupabaseUrl(firstImage, { width: 400, height: 400, resize: 'cover', quality: 65 });
-      }
-    }
-    return '';
-  }, [filteredListings]);
-
   const renderContent = () => {
     if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (isError) return <div className="text-center py-16 text-destructive">Failed to load listings.</div>;
@@ -137,7 +125,6 @@ export default function Marketplace() {
 
   return (
     <div className="w-full">
-      {lcpImageUrl && <LcpImagePreloader imageUrl={lcpImageUrl} />}
       <Header 
         showSearch
         searchQuery={searchQuery}
@@ -161,17 +148,13 @@ export default function Marketplace() {
           <DisclaimerSection />
         </main>
       </div>
-      <Suspense fallback={null}>
-        <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
-      </Suspense>
+      <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
       {selectedListing && (
-        <Suspense fallback={null}>
-          <ListingDetailModal
-            listing={selectedListing}
-            isOpen={!!selectedListing}
-            onClose={() => setSelectedListing(null)}
-          />
-        </Suspense>
+        <ListingDetailModal
+          listing={selectedListing}
+          isOpen={!!selectedListing}
+          onClose={() => setSelectedListing(null)}
+        />
       )}
       <MobileNavbar selectedCategory={selectedCategory} onCategoryChange={setSelectedCategory} />
     </div>
