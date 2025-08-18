@@ -97,7 +97,7 @@ export default function Marketplace() {
                  (!normalizedSearchQuery || 
                   l.title.toLowerCase().includes(normalizedSearchQuery) || 
                   l.location.toLowerCase().includes(normalizedSearchQuery) ||
-                  String(l.id).includes(normalizedSearchQuery)
+                  String(l.id).padStart(4, '0').includes(normalizedSearchQuery)
                  ))
     .sort((a, b) => sortBy === 'price-low' ? a.price - b.price : sortBy === 'price-high' ? b.price - a.price : 0);
 

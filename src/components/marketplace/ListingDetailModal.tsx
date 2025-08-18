@@ -110,6 +110,7 @@ export function ListingDetailModal({
   const conditionMap: { [key: string]: string } = { new: 'New', like_new: 'Like New', used: 'Used' };
   const categoryMap: { [key: string]: string } = { electronics: 'Electronics', books: 'Books & Study', furniture: 'Furniture', vehicles: 'Vehicles', clothing: 'Clothing', gaming: 'Gaming', free: 'Free Stuff' };
   const detailImageUrl = `${listing.image_urls[currentImageIndex]}?width=800&height=800&resize=contain`;
+  const formattedId = String(listing.id).padStart(4, '0');
 
   if (isEditing) {
     return <EditListing listing={listing} isOpen={isEditing} onClose={() => { setIsEditing(false); onClose(); }} />;
@@ -135,7 +136,7 @@ export function ListingDetailModal({
                 <div className="text-sm text-muted-foreground flex items-center gap-2 pt-1"><MapPin className="w-4 h-4" /><span>{listing.location}</span><span className="mx-1">&middot;</span><span>Posted {formatDistanceToNow(creationDate, { addSuffix: true })}</span></div>
               </div>
               <Separator />
-              <div className="space-y-3"><h2 className="text-lg font-semibold">Details</h2><div className="text-sm space-y-2"><div className="flex justify-between"><span>Item ID</span><span className="text-muted-foreground font-mono">{String(listing.id).padStart(6, '0')}</span></div><div className="flex justify-between"><span>Category</span><span className="text-muted-foreground capitalize">{categoryMap[listing.category] || listing.category}</span></div>{listing.condition && <div className="flex justify-between"><span>Condition</span><span className="text-muted-foreground">{conditionMap[listing.condition]}</span></div>}<Tooltip><TooltipTrigger asChild><div className="flex justify-between cursor-help"><span>Listing Status</span><span className="text-muted-foreground">{expirationText}</span></div></TooltipTrigger><TooltipContent><p>Expires on {format(expirationDate, 'PPP')}</p></TooltipContent></Tooltip></div>{listing.description && <p className="text-sm text-foreground/80 pt-2">{listing.description}</p>}</div>
+              <div className="space-y-3"><h2 className="text-lg font-semibold">Details</h2><div className="text-sm space-y-2"><div className="flex justify-between"><span>Item ID</span><span className="text-muted-foreground font-mono">{formattedId}</span></div><div className="flex justify-between"><span>Category</span><span className="text-muted-foreground capitalize">{categoryMap[listing.category] || listing.category}</span></div>{listing.condition && <div className="flex justify-between"><span>Condition</span><span className="text-muted-foreground">{conditionMap[listing.condition]}</span></div>}<Tooltip><TooltipTrigger asChild><div className="flex justify-between cursor-help"><span>Listing Status</span><span className="text-muted-foreground">{expirationText}</span></div></TooltipTrigger><TooltipContent><p>Expires on {format(expirationDate, 'PPP')}</p></TooltipContent></Tooltip></div>{listing.description && <p className="text-sm text-foreground/80 pt-2">{listing.description}</p>}</div>
               {isOwner ? (
                 <>
                   <Separator />
@@ -161,7 +162,7 @@ export function ListingDetailModal({
 
                       if (method === 'telegram' && detail) {
                         const href = `https://t.me/${detail}`;
-                        const prefilledMessage = `Hi, I’m interested in "${listing.title}" ($${listing.price}). Item ID: ${listing.id}.`;
+                        const prefilledMessage = `Hi, I'm interested in your listing. Please verify the item with ID: ${formattedId} ("${listing.title}").`;
                         
                         const handleCopy = () => {
                           navigator.clipboard.writeText(prefilledMessage).then(() => {
