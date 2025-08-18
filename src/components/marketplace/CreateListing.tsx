@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Loader2, Info, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
@@ -16,6 +17,8 @@ import { ProfanityViolationModal } from './ProfanityViolationModal';
 import imageCompression from 'browser-image-compression';
 import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '@/context/AuthContext';
+import { listingSchema, ListingFormValues } from '@/lib/schemas';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 interface CreateListingProps {
   isOpen: boolean;
@@ -36,23 +39,36 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  const [formData, setFormData] = useState({
-    title: '', description: '', price: '', category: '', location: '', contact: '', condition: ''
-  });
   const [images, setImages] = useState<File[]>([]);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
 
+  const form = useForm<ListingFormValues>({
+    resolver: zodResolver(listingSchema),
+    defaultValues: {
+      title: '', description: '', price: undefined, category: '', location: '', contact: '', condition: ''
+    },
+    mode: 'onChange',
+  });
+
+  const priceValue = form.watch('price');
+
+  useEffect(() => {
+    if (priceValue === 0) {
+      form.setValue('category', 'free', { shouldValidate: true });
+    } else if (form.getValues('category') === 'free') {
+      form.setValue('category', '', { shouldValidate: true });
+    }
+  }, [priceValue, form]);
+
   const resetForm = () => {
-    setFormData({ 
-      title: '', description: '', price: '', category: '', location: '', contact: '', condition: '' 
-    });
+    form.reset();
     setImages([]);
     setViolation(null);
   };
 
   const createListingMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (data: ListingFormValues) => {
       if (!user) throw new Error('You must be logged in to create a listing.');
 
       const imageUploadFolder = uuidv4();
@@ -66,13 +82,13 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         })
       );
 
-      const { title, description, price, category, location, contact, condition } = formData;
+      const { title, description, price, category, location, contact, condition } = data;
       const fullContact = `telegram:${contact}`;
       const { error: insertError } = await supabase.from('listings').insert({
         user_id: user.id,
         title, description, category, location, condition,
         contact: fullContact,
-        price: parseFloat(price),
+        price: price,
         image_urls: imageUrls,
       });
 
@@ -89,23 +105,19 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
     }
   });
 
-  const handlePublish = () => {
-    if (!validateForm()) {
-      toast({ title: "Missing Fields", description: "Please fill all required fields.", variant: "destructive" });
-      return;
-    }
+  const onSubmit = (data: ListingFormValues) => {
     if (images.length === 0) {
       toast({ title: "Missing Images", description: "Please upload at least one image.", variant: "destructive" });
       return;
     }
 
-    const textValidationResult = validateText(formData.title, formData.description);
+    const textValidationResult = validateText(data.title, data.description || '');
     if (textValidationResult.isProfane) {
       setViolation({ field: textValidationResult.field, word: textValidationResult.word });
       return;
     }
 
-    createListingMutation.mutate();
+    createListingMutation.mutate(data);
   };
 
   const handleImageUpload = async (files: FileList) => {
@@ -156,28 +168,6 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index));
 
-  const validateForm = () => {
-    const requiredFields = ['title', 'price', 'category', 'location', 'contact', 'condition'];
-    if (formData.price === '0') {
-        const freeRequired = ['title', 'price', 'location', 'contact', 'condition'];
-        return freeRequired.every(field => !!(formData as any)[field]);
-    }
-    return requiredFields.every(field => !!(formData as any)[field]);
-  };
-
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newPrice = e.target.value;
-    setFormData(prev => {
-        if (newPrice === '0') {
-            return { ...prev, price: newPrice, category: 'free' };
-        }
-        if (prev.price === '0' && newPrice !== '0') {
-            return { ...prev, price: newPrice, category: '' };
-        }
-        return { ...prev, price: newPrice };
-    });
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && (resetForm(), onClose())}>
       <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-2xl sm:h-auto sm:max-h-[95vh] sm:rounded-lg flex flex-col overflow-hidden [&>button]:hidden">
@@ -192,106 +182,73 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
           </Button>
         </div>
 
-        <div className="flex-grow overflow-y-auto hide-scrollbar">
-          <div className="p-4 space-y-6">
-            <div className="space-y-3">
-              <Label className="font-semibold">Images (up to 5) *</Label>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                {images.map((image, index) => (
-                  <div key={index} className="relative group aspect-square">
-                    <img src={URL.createObjectURL(image)} alt={`Upload ${index + 1}`} className="w-full h-full object-cover rounded-lg border" />
-                    <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}>
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-                {images.length < 5 && (
-                  <label 
-                    htmlFor="image-upload-create"
-                    className={cn(
-                      "border-2 border-dashed rounded-lg py-4 px-6 text-center transition-all flex flex-col items-center justify-center gap-2 cursor-pointer",
-                      images.length === 0 ? "col-span-full aspect-video min-h-[100px]" : "col-span-1 aspect-square min-h-[100px]"
-                    )}
-                  >
-                    <input 
-                      id="image-upload-create" 
-                      type="file" 
-                      multiple 
-                      accept="image/*" 
-                      onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} 
-                      className="hidden" 
-                      disabled={images.length >= 5 || isProcessingImages}
-                    />
-                    <ImageIcon className="w-10 h-10 text-muted-foreground" />
-                    <p className="font-medium text-primary text-lg">Add Photos</p>
-                    <p className="text-sm text-muted-foreground">Max 5 images.</p>
-                  </label>
-                )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-grow overflow-y-auto hide-scrollbar">
+            <div className="p-4 space-y-6">
+              <div className="space-y-3">
+                <FormLabel className="font-semibold">Images (up to 5) *</FormLabel>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                  {images.map((image, index) => (
+                    <div key={index} className="relative group aspect-square">
+                      <img src={URL.createObjectURL(image)} alt={`Upload ${index + 1}`} className="w-full h-full object-cover rounded-lg border" />
+                      <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  {images.length < 5 && (
+                    <label 
+                      htmlFor="image-upload-create"
+                      className={cn(
+                        "border-2 border-dashed rounded-lg py-4 px-6 text-center transition-all flex flex-col items-center justify-center gap-2 cursor-pointer",
+                        images.length === 0 ? "col-span-full aspect-video min-h-[100px]" : "col-span-1 aspect-square min-h-[100px]"
+                      )}
+                    >
+                      <input 
+                        id="image-upload-create" 
+                        type="file" 
+                        multiple 
+                        accept="image/*" 
+                        onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} 
+                        className="hidden" 
+                        disabled={images.length >= 5 || isProcessingImages}
+                      />
+                      <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                      <p className="font-medium text-primary text-lg">Add Photos</p>
+                      <p className="text-sm text-muted-foreground">Max 5 images.</p>
+                    </label>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-4 pt-4 border-t">
-              <Label className="font-semibold">Listing Details *</Label>
-              <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="What are you selling?" />
-              <Textarea id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Describe your item (optional)" rows={4} />
-              <div className="grid grid-cols-2 gap-4">
-                <Input id="price" type="number" value={formData.price} onChange={handlePriceChange} placeholder="Price ($)" min="0" />
-                <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))} disabled={formData.price === '0'}>
-                  <SelectTrigger>
-                      <SelectValue placeholder="Category">
-                          {formData.price === '0' ? 'Free Stuff' : undefined}
-                      </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>{categories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
-                </Select>
+              <div className="space-y-4 pt-4 border-t">
+                <FormLabel className="font-semibold">Listing Details *</FormLabel>
+                <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormControl><Input placeholder="What are you selling?" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormControl><Textarea placeholder="Describe your item (optional)" rows={4} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormControl><Input type="number" placeholder="Price ($)" min="0" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="category" render={({ field }) => (<FormItem><Select onValueChange={field.onChange} value={field.value} disabled={priceValue === 0}><FormControl><SelectTrigger><SelectValue placeholder="Category">{priceValue === 0 ? 'Free Stuff' : undefined}</SelectValue></SelectTrigger></FormControl><SelectContent>{categories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormControl><Input placeholder="Location" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="condition" render={({ field }) => (<FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Condition" /></SelectTrigger></FormControl><SelectContent><SelectItem value="new">New</SelectItem><SelectItem value="like_new">Like New</SelectItem><SelectItem value="used">Used</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input id="location" value={formData.location} onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))} placeholder="Location" />
-                <Select value={formData.condition} onValueChange={(value) => setFormData(prev => ({ ...prev, condition: value }))}>
-                  <SelectTrigger><SelectValue placeholder="Condition" /></SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="new">New</SelectItem>
-                      <SelectItem value="like_new">Like New</SelectItem>
-                      <SelectItem value="used">Used</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            <div className="space-y-4 pt-4 border-t">
-              <Label className="font-semibold" htmlFor="telegram-contact">Contact Info *</Label>
-              <Input 
-                id="telegram-contact"
-                value={formData.contact} 
-                onChange={(e) => setFormData(prev => ({ ...prev, contact: e.target.value }))} 
-                placeholder="Enter your Telegram username"
-              />
-              <Alert className="text-xs p-3">
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Buyers will contact you on Telegram. Please enter your username without the '@' symbol.
-                </AlertDescription>
-              </Alert>
-              <Alert className="text-xs p-3">
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Please be respectful and do not post content that violates or harms other users. All interactions are subject to our community guidelines.
-                </AlertDescription>
-              </Alert>
+              <div className="space-y-4 pt-4 border-t">
+                <FormField control={form.control} name="contact" render={({ field }) => (<FormItem><FormLabel className="font-semibold">Contact Info *</FormLabel><FormControl><Input placeholder="Enter your Telegram username" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <Alert className="text-xs p-3"><Info className="h-4 w-4" /><AlertDescription>Buyers will contact you on Telegram. Please enter your username without the '@' symbol.</AlertDescription></Alert>
+                <Alert className="text-xs p-3"><Info className="h-4 w-4" /><AlertDescription>Please be respectful and do not post content that violates or harms other users. All interactions are subject to our community guidelines.</AlertDescription></Alert>
+              </div>
+              
+              <Alert><Info className="h-4 w-4" /><AlertDescription>Listings are active for 7 days.</AlertDescription></Alert>
             </div>
-            
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Listings are active for 7 days.
-              </AlertDescription>
-            </Alert>
-          </div>
-        </div>
+          </form>
+        </Form>
 
         <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4 flex justify-end gap-2">
           <Button onClick={onClose} className="w-full sm:w-auto" variant="outline">Cancel</Button>
-          <Button onClick={handlePublish} disabled={createListingMutation.isPending || !validateForm() || isProcessingImages}>
+          <Button onClick={form.handleSubmit(onSubmit)} disabled={createListingMutation.isPending || isProcessingImages}>
             {createListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {createListingMutation.isPending ? 'Publishing...' : 'Publish Listing'}
           </Button>
