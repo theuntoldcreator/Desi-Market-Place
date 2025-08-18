@@ -15,21 +15,15 @@ import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-const fetchListings = async (userId?: string): Promise<Listing[]> => {
-  let query = supabase
-    .from('listings')
-    .select('*, favorites ( user_id )')
+const fetchListings = async (): Promise<Listing[]> => {
+  const { data, error } = await supabase
+    .from('listings_with_profiles_and_favorites')
+    .select('*')
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 
-  const { data, error } = await query;
-
   if (error) throw new Error(error.message);
-
-  return data.map(l => ({
-    ...l,
-    is_favorited: userId ? l.favorites.some(f => f.user_id === userId) : false,
-  })) || [];
+  return data || [];
 };
 
 export default function Marketplace() {
@@ -46,7 +40,7 @@ export default function Marketplace() {
 
   const { data: listings = [], isLoading, isError } = useQuery<Listing[]>({
     queryKey: ['listings', user?.id],
-    queryFn: () => fetchListings(user?.id),
+    queryFn: fetchListings,
     staleTime: 1000 * 60,
     refetchInterval: 60000, // Poll every 1 minute
   });

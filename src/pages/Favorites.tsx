@@ -9,20 +9,15 @@ import { useState } from 'react';
 import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { useNavigate } from 'react-router-dom';
 
-const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
+const fetchFavoriteListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase
-    .from('listings')
-    .select('*, favorites!inner(user_id)') // Query listings...
-    .eq('favorites.user_id', userId)      // ...that are favorited by the current user.
+    .from('listings_with_profiles_and_favorites')
+    .select('*')
+    .eq('is_favorited', true)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-
-  // The query now returns Listing objects directly.
-  return data?.map(listing => ({
-    ...listing,
-    is_favorited: true, // We know it's favorited because of the query.
-  })) || [];
+  return data || [];
 };
 
 export default function Favorites() {
@@ -32,7 +27,7 @@ export default function Favorites() {
 
   const { data: listings = [], isLoading, isError } = useQuery<Listing[]>({
     queryKey: ['favoriteListings', user?.id],
-    queryFn: () => fetchFavoriteListings(user!.id),
+    queryFn: fetchFavoriteListings,
     enabled: !!user,
     refetchInterval: 60000, // Poll every 1 minute
   });
