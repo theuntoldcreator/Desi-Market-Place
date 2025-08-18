@@ -208,7 +208,7 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
           </form>
         </Form>
         <DialogFooter className="p-4 border-t bg-background sticky bottom-0 z-10 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4 flex justify-end gap-2">
-          <Button onClick={onClose} className="w-full sm:w-auto" variant="outline">Cancel</Button>
+          <Button onClick={onClose} className="w-full sm:w-auto text-destructive border-destructive hover:text-destructive hover:bg-destructive/10" variant="outline">Cancel</Button>
           <Button onClick={form.handleSubmit(onSubmit)} disabled={updateListingMutation.isPending || isProcessingImages}>
             {updateListingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {updateListingMutation.isPending ? 'Updating...' : 'Update Listing'}
