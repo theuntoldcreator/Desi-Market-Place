@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
   const { data, error } = await supabase
     .from('listings')
-    .select('*, favorites!inner(user_id)') // Query listings...
+    .select('*, favorites!inner(user_id), profiles ( first_name, last_name, avatar_url )') // Query listings...
     .eq('favorites.user_id', userId)      // ...that are favorited by the current user.
     .order('created_at', { ascending: false });
 

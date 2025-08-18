@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useNavigate } from 'react-router-dom';
 import { EditListing } from './EditListing';
 import { useStartConversation } from '@/hooks/use-messaging';
+import { SellerInfo } from './SellerInfo';
 
 interface ListingDetailModalProps {
   listing: Listing;
@@ -150,11 +151,23 @@ export function ListingDetailModal({
               <Separator />
               {!isOwner && (
                 <>
+                  {listing.profiles && (
+                    <>
+                      <div className="space-y-3">
+                        <h2 className="text-lg font-semibold">Seller Information</h2>
+                        <SellerInfo
+                          firstName={listing.profiles.first_name}
+                          lastName={listing.profiles.last_name}
+                          avatarUrl={listing.profiles.avatar_url}
+                        />
+                      </div>
+                      <Separator />
+                    </>
+                  )}
                   <div className="space-y-3">
-                    <h2 className="text-lg font-semibold">Contact Seller</h2>
                     <Button onClick={handleStartConversation} className="w-full" disabled={startConversation.isPending}>
                       {startConversation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageCircle className="w-5 h-5 mr-2" />}
-                      Message Seller
+                      Message {listing.profiles?.first_name || 'Seller'}
                     </Button>
                     <Alert variant="default" className="text-xs"><Info className="h-4 w-4" /><AlertDescription>Start a conversation directly on the platform. Always practice safety when meeting or transacting.</AlertDescription></Alert>
                   </div>
