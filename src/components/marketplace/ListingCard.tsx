@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { MapPin, Heart } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, transformSupabaseUrl } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '../ui/button';
 import { useFavorite } from '@/hooks/use-favorite';
@@ -22,7 +22,7 @@ export function ListingCard({ id, title, price, image_urls, location, status, is
     toggleFavorite(!!is_favorited);
   };
 
-  const thumbnailUrl = `${image_urls[0]}?width=400&height=400&resize=cover`;
+  const thumbnailUrl = transformSupabaseUrl(image_urls[0], { width: 400, height: 400, resize: 'cover', quality: 65 });
 
   return (
     <Card

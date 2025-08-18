@@ -1,20 +1,21 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ListingCard } from '@/components/marketplace/ListingCard';
-import { CreateListing } from '@/components/marketplace/CreateListing';
 import { DisclaimerSection } from '@/components/marketplace/DisclaimerSection';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, SortAsc, Loader2 } from 'lucide-react';
 import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
-import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
 import { Header } from '@/components/layout/Header';
 import { Listing } from '@/lib/types';
 import { useDebounce } from 'use-debounce';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useAuth } from '@/context/AuthContext';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { MarkAsSoldBanner } from '@/components/marketplace/MarkAsSoldBanner';
+
+const CreateListing = lazy(() => import('@/components/marketplace/CreateListing').then(module => ({ default: module.CreateListing })));
+const ListingDetailModal = lazy(() => import('@/components/marketplace/ListingDetailModal').then(module => ({ default: module.ListingDetailModal })));
 
 const fetchListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase
@@ -37,7 +38,6 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 
 export default function Marketplace() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,13 +148,17 @@ export default function Marketplace() {
           <DisclaimerSection />
         </main>
       </div>
-      <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
+      <Suspense fallback={null}>
+        <CreateListing isOpen={showCreateListing} onClose={() => setShowCreateListing(false)} />
+      </Suspense>
       {selectedListing && (
-        <ListingDetailModal
-          listing={selectedListing}
-          isOpen={!!selectedListing}
-          onClose={() => setSelectedListing(null)}
-        />
+        <Suspense fallback={null}>
+          <ListingDetailModal
+            listing={selectedListing}
+            isOpen={!!selectedListing}
+            onClose={() => setSelectedListing(null)}
+          />
+        </Suspense>
       )}
       <MobileNavbar selectedCategory={selectedCategory} onCategoryChange={setSelectedCategory} />
     </div>

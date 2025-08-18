@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2, Send, Copy, Shield } from 'lucide-react';
@@ -15,8 +15,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
-import { EditListing } from './EditListing';
 import { Label } from '../ui/label';
+import { transformSupabaseUrl } from '@/lib/utils';
+
+const EditListing = lazy(() => import('./EditListing').then(module => ({ default: module.EditListing })));
 
 interface ListingDetailModalProps {
   listing: Listing;
@@ -109,11 +111,15 @@ export function ListingDetailModal({
   let expirationText = daysRemaining < 0 ? 'Expired' : daysRemaining === 0 ? 'Expires today' : `Expires in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`;
   const conditionMap: { [key: string]: string } = { new: 'New', like_new: 'Like New', used: 'Used' };
   const categoryMap: { [key: string]: string } = { electronics: 'Electronics', books: 'Books & Study', furniture: 'Furniture', vehicles: 'Vehicles', clothing: 'Clothing', gaming: 'Gaming', free: 'Free Stuff' };
-  const detailImageUrl = `${listing.image_urls[currentImageIndex]}?width=800&height=800&resize=contain`;
+  const detailImageUrl = transformSupabaseUrl(listing.image_urls[currentImageIndex], { width: 800, height: 800, resize: 'contain', quality: 65 });
   const formattedId = String(listing.id).padStart(4, '0');
 
   if (isEditing) {
-    return <EditListing listing={listing} isOpen={isEditing} onClose={() => { setIsEditing(false); onClose(); }} />;
+    return (
+      <Suspense fallback={<div className="w-screen h-dvh flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+        <EditListing listing={listing} isOpen={isEditing} onClose={() => { setIsEditing(false); onClose(); }} />
+      </Suspense>
+    );
   }
 
   return (

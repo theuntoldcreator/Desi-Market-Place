@@ -5,9 +5,10 @@ import { ListingCard } from '@/components/marketplace/ListingCard';
 import { Header } from '@/components/layout/Header';
 import { Loader2, Heart } from 'lucide-react';
 import { Listing } from '@/lib/types';
-import { useState } from 'react';
-import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal';
+import { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const ListingDetailModal = lazy(() => import('@/components/marketplace/ListingDetailModal').then(module => ({ default: module.ListingDetailModal })));
 
 const fetchFavoriteListings = async (): Promise<Listing[]> => {
   const { data, error } = await supabase
@@ -68,11 +69,13 @@ export default function Favorites() {
         {renderContent()}
       </main>
       {selectedListing && (
-        <ListingDetailModal
-          listing={selectedListing}
-          isOpen={!!selectedListing}
-          onClose={() => setSelectedListing(null)}
-        />
+        <Suspense fallback={null}>
+          <ListingDetailModal
+            listing={selectedListing}
+            isOpen={!!selectedListing}
+            onClose={() => setSelectedListing(null)}
+          />
+        </Suspense>
       )}
     </div>
   );

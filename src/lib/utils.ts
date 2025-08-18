@@ -21,3 +21,28 @@ export const parsePhoneNumber = (fullNumber: string | null | undefined) => {
   }
   return { countryCode: '+1', localNumber: fullNumber }; // Default to +1 if no match
 };
+
+// New function for image optimization
+export const transformSupabaseUrl = (
+  url: string,
+  options: { width: number; height: number; resize?: 'cover' | 'contain' | 'fill'; quality?: number }
+): string => {
+  if (!url) return '';
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.pathname.includes('/object/public/')) {
+      const transformedPath = urlObj.pathname.replace('/object/public/', '/render/image/public/');
+      const params = new URLSearchParams({
+        width: String(options.width),
+        height: String(options.height),
+        resize: options.resize || 'cover',
+        quality: String(options.quality || 65),
+      });
+      return `${urlObj.origin}${transformedPath}?${params.toString()}`;
+    }
+    return url;
+  } catch (error) {
+    console.error("Invalid URL for transformation:", url, error);
+    return url;
+  }
+};
