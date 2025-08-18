@@ -4,13 +4,18 @@ import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDrZOQB6bElkrGenF0RVua0Uk3zChSv9D8",
-  authDomain: "desi-market-place.firebaseapp.com",
-  projectId: "desi-market-place",
-  storageBucket: "desi-market-place.appspot.com",
-  messagingSenderId: "911068949400",
-  appId: "1:911068949400:web:eec79dc6a3fb76c4dc59ed"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
+
+// Basic validation to ensure environment variables are set
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  throw new Error("Firebase configuration is missing. Please set up your .env file.");
+}
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
