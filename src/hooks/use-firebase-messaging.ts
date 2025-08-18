@@ -21,6 +21,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ConversationPreview, Message, UserProfile } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import { useToast } from './use-toast';
 
 // Helper to fetch Supabase profiles
 const getSupabaseProfiles = async (userIds: string[]): Promise<Map<string, UserProfile>> => {
@@ -144,11 +145,21 @@ export const useSendMessage = () => {
 
 // Hook to ensure a conversation exists and get its ID
 export const useEnsureConversation = () => {
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ listingId, sellerId }: { listingId: number; sellerId: string }) => {
-      if (!user || user.id === sellerId) throw new Error("Cannot start conversation with yourself.");
+      if (!user) throw new Error("You must be logged in.");
+      if (!firebaseUser) {
+        toast({
+          title: "Chat Error",
+          description: "Could not connect to the chat service. Please try logging out and back in.",
+          variant: "destructive",
+        });
+        throw new Error("Not authenticated with chat service.");
+      }
+      if (user.id === sellerId) throw new Error("Cannot start conversation with yourself.");
 
       const participants = [user.id, sellerId].sort();
       const conversationId = `${listingId}-${participants[0]}-${participants[1]}`;

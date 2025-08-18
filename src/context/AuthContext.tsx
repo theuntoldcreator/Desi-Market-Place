@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { auth as firebaseAuth } from '@/integrations/firebase/client';
 import { signInWithCustomToken, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   session: Session | null;
@@ -23,6 +24,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const signInToFirebase = async (currentSession: Session) => {
@@ -37,6 +39,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         console.error("Firebase sign-in error:", error);
         setFirebaseUser(null);
+        toast({
+          title: "Chat Connection Failed",
+          description: "There was a problem connecting to the real-time chat service. Messaging may not work correctly.",
+          variant: "destructive",
+        });
       }
     };
 
@@ -64,7 +71,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   return (
     <AuthContext.Provider value={{ session, user, firebaseUser, loading }}>
