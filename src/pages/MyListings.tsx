@@ -10,9 +10,14 @@ import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal'
 import { useNavigate } from 'react-router-dom';
 
 const fetchUserListings = async (userId: string): Promise<Listing[]> => {
-  const { data, error } = await supabase.rpc('get_listings_with_details');
+  const { data, error } = await supabase
+    .from('listings_with_profiles_and_favorites')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
   if (error) throw new Error(error.message);
-  return ((data as any) || []).filter((l: Listing) => l.user_id === userId);
+  return data || [];
 };
 
 export default function MyListings() {
@@ -24,7 +29,7 @@ export default function MyListings() {
     queryKey: ['userListings', user?.id],
     queryFn: () => fetchUserListings(user!.id),
     enabled: !!user,
-    refetchInterval: 60000,
+    refetchInterval: 60000, // Poll every 1 minute
   });
 
   if (!loading && !session) {

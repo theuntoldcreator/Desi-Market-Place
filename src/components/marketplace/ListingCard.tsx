@@ -1,17 +1,20 @@
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { MapPin, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '../ui/button';
 import { useFavorite } from '@/hooks/use-favorite';
 import { Listing } from '@/lib/types';
-import { OptimizedImage } from './OptimizedImage';
 
 interface ListingCardProps extends Listing {
   onClick: () => void;
   isPriority?: boolean;
 }
 
-export function ListingCard({ id, title, price, images, location, status, is_favorited, onClick, isPriority = false }: ListingCardProps) {
+export function ListingCard({ id, title, price, image_urls, location, status, is_favorited, onClick, isPriority = false }: ListingCardProps) {
+  const [isImageLoading, setIsImageLoading] = useState(true);
   const { toggleFavorite, isLoading: isFavoriting } = useFavorite(id);
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -19,7 +22,7 @@ export function ListingCard({ id, title, price, images, location, status, is_fav
     toggleFavorite(!!is_favorited);
   };
 
-  const firstImage = images?.[0];
+  const thumbnailUrl = `${image_urls[0]}?width=400&height=400&resize=cover`;
 
   return (
     <Card
@@ -42,21 +45,21 @@ export function ListingCard({ id, title, price, images, location, status, is_fav
         </div>
       )}
       <CardContent className="p-3 space-y-3">
-        {firstImage ? (
-          <OptimizedImage
-            path={firstImage.path}
+        <AspectRatio ratio={1 / 1} className="bg-muted rounded-md overflow-hidden relative">
+          {isImageLoading && <Skeleton className="absolute inset-0 w-full h-full z-10" />}
+          <img
+            src={thumbnailUrl}
             alt={title}
-            blurhash={firstImage.blurhash}
-            width={firstImage.width}
-            height={firstImage.height}
-            sha256={firstImage.sha256}
-            priority={isPriority}
-            sizes="(max-width: 640px) 48vw, (max-width: 1024px) 31vw, (max-width: 1440px) 23vw, 360px"
-            className="rounded-md"
+            className={cn(
+              "w-full h-full object-cover transition-opacity duration-500",
+              isImageLoading ? "opacity-0" : "opacity-100"
+            )}
+            loading={isPriority ? 'eager' : 'lazy'}
+            fetchPriority={isPriority ? 'high' : 'auto'}
+            onLoad={() => setIsImageLoading(false)}
+            onError={() => setIsImageLoading(false)}
           />
-        ) : (
-          <div className="aspect-[4/3] bg-muted rounded-md" />
-        )}
+        </AspectRatio>
         
         <div className="space-y-1">
           <p className="font-bold text-lg text-primary">

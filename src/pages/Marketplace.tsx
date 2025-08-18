@@ -13,13 +13,17 @@ import { Listing } from '@/lib/types';
 import { useDebounce } from 'use-debounce';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 import { useAuth } from '@/context/AuthContext';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MarkAsSoldBanner } from '@/components/marketplace/MarkAsSoldBanner';
 
 const fetchListings = async (): Promise<Listing[]> => {
-  const { data, error } = await supabase.rpc('get_listings_with_details');
+  const { data, error } = await supabase
+    .from('listings_with_profiles_and_favorites')
+    .select('*')
+    .order('created_at', { ascending: false });
+
   if (error) throw new Error(error.message);
-  return (data as any) || [];
+  return data || [];
 };
 
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -33,6 +37,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 
 export default function Marketplace() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,7 +51,7 @@ export default function Marketplace() {
     queryKey: ['listings', user?.id],
     queryFn: fetchListings,
     staleTime: 1000 * 60,
-    refetchInterval: 60000,
+    refetchInterval: 60000, // Poll every 1 minute
   });
 
   const { data: userHasActiveListings } = useQuery({
@@ -65,7 +70,7 @@ export default function Marketplace() {
       return (count ?? 0) > 0;
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // Check every 5 minutes
   });
 
   const shuffledListings = useMemo(() => shuffleArray(listings), [listings]);

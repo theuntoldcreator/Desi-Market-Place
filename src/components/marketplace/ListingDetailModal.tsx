@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Send, Copy, Shield } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2, Send, Copy, Shield } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '../ui/separator';
+import { Skeleton } from '../ui/skeleton';
+import { Alert, AlertDescription } from '../ui/alert';
 import { Listing } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,8 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
 import { EditListing } from './EditListing';
-import { Label } from '@/components/ui/label';
-import { OptimizedImage } from './OptimizedImage';
+import { Label } from '../ui/label';
 
 interface ListingDetailModalProps {
   listing: Listing;
@@ -29,6 +30,7 @@ export function ListingDetailModal({
   onClose,
 }: ListingDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isImageLoading, setIsImageLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const { user } = useAuth();
@@ -63,7 +65,18 @@ export function ListingDetailModal({
 
   const deleteListingMutation = useMutation({
     mutationFn: async () => {
-      // The trigger will handle storage deletion
+      if (listing.image_urls && listing.image_urls.length > 0) {
+        const folderPath = new URL(listing.image_urls[0]).pathname.split('/').slice(4, -1).join('/');
+        if (folderPath) {
+          const { data: files, error: listError } = await supabase.storage.from('listing_images').list(folderPath);
+          if (listError) console.error('Error listing files:', listError);
+          if (files && files.length > 0) {
+            const filePaths = files.map(file => `${folderPath}/${file.name}`);
+            const { error: removeError } = await supabase.storage.from('listing_images').remove(filePaths);
+            if (removeError) console.error('Error removing images:', removeError);
+          }
+        }
+      }
       const { error } = await supabase.from('listings').delete().eq('id', listing.id);
       if (error) throw error;
     },
@@ -79,15 +92,16 @@ export function ListingDetailModal({
   });
 
   useEffect(() => {
+    setIsImageLoading(true);
     if (!isOpen) {
-      setIsEditing(false);
+      setIsEditing(false); // Reset edit state when modal closes
     }
-  }, [isOpen]);
+  }, [currentImageIndex, listing?.image_urls, isOpen]);
 
   if (!listing) return null;
 
-  const nextImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % (listing.images?.length || 1)); };
-  const prevImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + (listing.images?.length || 1)) % (listing.images?.length || 1)); };
+  const nextImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % listing.image_urls.length); };
+  const prevImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + listing.image_urls.length) % listing.image_urls.length); };
 
   const creationDate = new Date(listing.created_at);
   const expirationDate = addDays(creationDate, 7);
@@ -95,8 +109,8 @@ export function ListingDetailModal({
   let expirationText = daysRemaining < 0 ? 'Expired' : daysRemaining === 0 ? 'Expires today' : `Expires in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`;
   const conditionMap: { [key: string]: string } = { new: 'New', like_new: 'Like New', used: 'Used' };
   const categoryMap: { [key: string]: string } = { electronics: 'Electronics', books: 'Books & Study', furniture: 'Furniture', vehicles: 'Vehicles', clothing: 'Clothing', gaming: 'Gaming', free: 'Free Stuff' };
+  const detailImageUrl = `${listing.image_urls[currentImageIndex]}?width=800&height=800&resize=contain`;
   const formattedId = String(listing.id).padStart(4, '0');
-  const currentImage = listing.images?.[currentImageIndex];
 
   if (isEditing) {
     return <EditListing listing={listing} isOpen={isEditing} onClose={() => { setIsEditing(false); onClose(); }} />;
@@ -107,21 +121,10 @@ export function ListingDetailModal({
       <DialogContent className="w-screen h-dvh max-w-full p-0 gap-0 rounded-none sm:max-w-4xl sm:max-h-[90vh] sm:rounded-2xl flex flex-col sm:flex-row overflow-hidden" showCloseButton={false}>
         <div className="absolute top-4 right-4 z-20"><Button variant="ghost" size="icon" className="bg-background/50 border border-primary text-primary rounded-full hover:bg-primary/10 hover:text-black" onClick={onClose}><X className="h-5 w-5" /></Button></div>
         <div className="relative bg-muted flex items-center justify-center aspect-square sm:aspect-auto sm:w-1/2 sm:h-full sm:flex-shrink-0">
+          {isImageLoading && <Skeleton className="absolute inset-0 w-full h-full z-10" />}
           {listing.status === 'sold' && <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold z-20">SOLD</div>}
-          {currentImage ? (
-            <OptimizedImage
-              path={currentImage.path}
-              alt={listing.title}
-              blurhash={currentImage.blurhash}
-              width={currentImage.width}
-              height={currentImage.height}
-              sha256={currentImage.sha256}
-              priority
-              sizes="(max-width: 768px) 90vw, (max-width: 1280px) 70vw, 1080px"
-              className="w-full h-full object-contain"
-            />
-          ) : <div className="w-full h-full bg-muted" />}
-          {(listing.images?.length || 0) > 1 && (<><Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button><Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={nextImage}><ChevronRight /></Button></>)}
+          <img src={detailImageUrl} alt={listing.title} className={cn("w-full h-full object-contain z-10 transition-opacity duration-500", isImageLoading ? "opacity-0" : "opacity-100")} onLoad={() => setIsImageLoading(false)} onError={() => setIsImageLoading(false)} />
+          {listing.image_urls.length > 1 && (<><Button variant="ghost" size="icon" className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={prevImage}><ChevronLeft /></Button><Button variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full z-20" onClick={nextImage}><ChevronRight /></Button></>)}
         </div>
         <div className="flex-grow overflow-y-auto hide-scrollbar p-4 space-y-4 sm:w-1/2 sm:h-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-4 sm:pb-4">
           {user ? (
