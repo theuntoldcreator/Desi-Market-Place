@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Message } from '@/lib/types';
+import { v4 as uuidv4 } from 'uuid';
 
 // Hook to get all conversations for the current user
 export const useConversations = () => {
@@ -51,8 +52,7 @@ export const useInfiniteMessages = (conversationId: string) => {
   });
 };
 
-
-// Hook to send and persist a message, returning the created record
+// Hook to send and persist a message with optimistic updates
 export const useSendMessage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -60,45 +60,62 @@ export const useSendMessage = () => {
   return useMutation({
     mutationFn: async ({ conversationId, body }: { conversationId: string; body: string }) => {
       if (!user) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          body,
-        })
-        .select()
+        .insert({ conversation_id: conversationId, sender_id: user.id, body })
+        .select('*, profiles(first_name, last_name, avatar_url)')
         .single();
         
       if (error) throw new Error(error.message);
-      return data;
+      return data as Message;
     },
-    onSuccess: (newMessage, { conversationId }) => {
-      // Invalidate conversations list to show recent activity
-      queryClient.invalidateQueries({ queryKey: ['conversations', user?.id] });
+    onMutate: async (newMessageData) => {
+      const { conversationId, body } = newMessageData;
+      await queryClient.cancelQueries({ queryKey: ['messages', conversationId] });
 
-      // Optimistically update the messages list for the sender for an instant UI update.
-      const profileData = {
-        first_name: user?.user_metadata.first_name || '',
-        last_name: user?.user_metadata.last_name || '',
-        avatar_url: user?.user_metadata.avatar_url || null,
+      const previousMessages = queryClient.getQueryData(['messages', conversationId]);
+
+      const optimisticMessage: Message = {
+        id: uuidv4(), // Temporary client-side ID
+        conversation_id: conversationId,
+        sender_id: user!.id,
+        body,
+        created_at: new Date().toISOString(),
+        profiles: {
+          first_name: user?.user_metadata.first_name || null,
+          last_name: user?.user_metadata.last_name || null,
+          avatar_url: user?.user_metadata.avatar_url || null,
+        },
       };
-      const messageWithProfile = { ...newMessage, profiles: profileData };
 
       queryClient.setQueryData(['messages', conversationId], (oldData: any) => {
-        if (!oldData) return { pages: [[messageWithProfile]], pageParams: [0] };
-
+        if (!oldData) return { pages: [[optimisticMessage]], pageParams: [0] };
         const lastPageIndex = oldData.pages.length - 1;
-        const lastPage = oldData.pages[lastPageIndex];
-        
         const newPages = [...oldData.pages];
-        newPages[lastPageIndex] = [...lastPage, messageWithProfile];
-
-        return {
-          ...oldData,
-          pages: newPages,
-        };
+        newPages[lastPageIndex] = [...oldData.pages[lastPageIndex], optimisticMessage];
+        return { ...oldData, pages: newPages };
       });
+
+      return { previousMessages, optimisticMessage };
+    },
+    onSuccess: (realMessage, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', user?.id] });
+
+      queryClient.setQueryData(['messages', variables.conversationId], (oldData: any) => {
+        if (!oldData) return oldData;
+        const newPages = oldData.pages.map((page: Message[]) => 
+          page.map((message: Message) => 
+            message.id === context?.optimisticMessage.id ? realMessage : message
+          )
+        );
+        return { ...oldData, pages: newPages };
+      });
+    },
+    onError: (err, newMessageData, context) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(['messages', newMessageData.conversationId], context.previousMessages);
+      }
     },
   });
 };
