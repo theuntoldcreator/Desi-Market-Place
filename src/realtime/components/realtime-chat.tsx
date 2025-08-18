@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,6 +7,7 @@ import { Send, Paperclip, X, Loader2 } from 'lucide-react';
 import { ChatMessage } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useChatScroll } from '@/realtime/hooks/use-chat-scroll';
 
 interface RealtimeChatProps {
   username: string;
@@ -21,12 +22,7 @@ export function RealtimeChat({ username, messages, onSend }: RealtimeChatProps) 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const scrollContainer = scrollAreaRef.current?.querySelector('div');
-    if (scrollContainer) {
-      scrollContainer.scrollTop = scrollContainer.scrollHeight;
-    }
-  }, [messages]);
+  useChatScroll(scrollAreaRef, messages.length);
 
   const handleSend = async () => {
     if ((!text.trim() && !image) || isSending) return;
