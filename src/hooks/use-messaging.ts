@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect } from 'react';
-import { Message } from '@/lib/types';
 
 // Hook to get all conversations for the current user
 export const useConversations = () => {
@@ -19,32 +17,8 @@ export const useConversations = () => {
   });
 };
 
-// Hook to get messages for a specific conversation and subscribe to realtime updates
+// Hook to get initial messages for a specific conversation
 export const useMessages = (conversationId: string) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const channel = supabase
-      .channel(`messages:${conversationId}`)
-      .on<Message>(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
-          queryClient.setQueryData(['messages', conversationId], (oldData: Message[] | undefined) => {
-            return oldData ? [...oldData, payload.new] : [payload.new];
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversationId, queryClient]);
-
   return useQuery({
     queryKey: ['messages', conversationId],
     queryFn: async () => {
@@ -60,20 +34,26 @@ export const useMessages = (conversationId: string) => {
   });
 };
 
-// Hook to send a message
-export const useSendMessage = (conversationId: string) => {
+// Hook to send and persist a message, returning the created record
+export const useSendMessage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (body: string) => {
+    mutationFn: async ({ conversationId, body }: { conversationId: string; body: string }) => {
       if (!user) throw new Error('User not authenticated');
-      const { error } = await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        body,
-      });
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          body,
+        })
+        .select()
+        .single();
+        
       if (error) throw new Error(error.message);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations', user?.id] });

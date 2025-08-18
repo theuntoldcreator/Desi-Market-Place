@@ -42,3 +42,14 @@ export interface Message {
     avatar_url: string | null;
   } | null
 }
+
+export interface ChatUser {
+  name: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  content: string;
+  user: ChatUser;
+  createdAt: string;
+}
