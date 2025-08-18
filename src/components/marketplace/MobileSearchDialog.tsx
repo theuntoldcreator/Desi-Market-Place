@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 
 interface MobileSearchDialogProps {
@@ -28,6 +28,7 @@ export function MobileSearchDialog({ searchQuery, onSearchChange }: MobileSearch
       <SheetContent side="top" className="h-auto p-4 pt-[calc(env(safe-area-inset-top)+1rem)]">
         <SheetHeader className="flex flex-row items-center justify-between space-y-0">
           <SheetTitle className="sr-only">Search Marketplace</SheetTitle>
+          <SheetDescription className="sr-only">Enter a search term to find items.</SheetDescription>
           <div className="relative flex-grow mr-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input

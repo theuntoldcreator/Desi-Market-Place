@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -126,7 +126,12 @@ export function ListingDetailModal({
         <div className="flex-grow overflow-y-auto hide-scrollbar p-4 space-y-4 sm:w-1/2 sm:h-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-4 sm:pb-4">
           {user ? (
             <>
-              <div className="space-y-1"><h1 className="text-2xl font-bold tracking-tight">{listing.title}</h1><p className="text-2xl font-bold">{listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}</p><div className="text-sm text-muted-foreground flex items-center gap-2 pt-1"><MapPin className="w-4 h-4" /><span>{listing.location}</span><span className="mx-1">&middot;</span><span>Posted {formatDistanceToNow(creationDate, { addSuffix: true })}</span></div></div>
+              <div className="space-y-1">
+                <DialogTitle className="text-2xl font-bold tracking-tight">{listing.title}</DialogTitle>
+                <DialogDescription className="sr-only">Detailed view of the listing: {listing.title}</DialogDescription>
+                <p className="text-2xl font-bold">{listing.price === 0 ? 'Free' : `$${listing.price.toLocaleString()}`}</p>
+                <div className="text-sm text-muted-foreground flex items-center gap-2 pt-1"><MapPin className="w-4 h-4" /><span>{listing.location}</span><span className="mx-1">&middot;</span><span>Posted {formatDistanceToNow(creationDate, { addSuffix: true })}</span></div>
+              </div>
               <Separator />
               <div className="space-y-3"><h2 className="text-lg font-semibold">Details</h2><div className="text-sm space-y-2"><div className="flex justify-between"><span>Category</span><span className="text-muted-foreground capitalize">{categoryMap[listing.category] || listing.category}</span></div>{listing.condition && <div className="flex justify-between"><span>Condition</span><span className="text-muted-foreground">{conditionMap[listing.condition]}</span></div>}<Tooltip><TooltipTrigger asChild><div className="flex justify-between cursor-help"><span>Listing Status</span><span className="text-muted-foreground">{expirationText}</span></div></TooltipTrigger><TooltipContent><p>Expires on {format(expirationDate, 'PPP')}</p></TooltipContent></Tooltip></div>{listing.description && <p className="text-sm text-foreground/80 pt-2">{listing.description}</p>}</div>
               {isOwner && (
