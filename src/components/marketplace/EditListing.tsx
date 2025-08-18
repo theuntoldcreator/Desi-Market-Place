@@ -3,37 +3,26 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { X, Loader2, Info, Image as ImageIcon } from 'lucide-react';
+import { X, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '../ui/alert';
 import { validateText } from '@/lib/profanity';
 import { ProfanityViolationModal } from './ProfanityViolationModal';
-import imageCompression from 'browser-image-compression';
-import { Listing } from '@/lib/types';
+import { Listing, ImageMetadata } from '@/lib/types';
 import { listingSchema, ListingFormValues } from '@/lib/schemas';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { v4 as uuidv4 } from 'uuid';
-import { ImageUploadPreview } from './ImageUploadPreview';
+import { ImageUploader } from './ImageUploader';
 
 interface EditListingProps {
   listing: Listing;
   isOpen: boolean;
   onClose: () => void;
 }
-
-type ImageState = {
-  id: string;
-  file: File;
-  previewUrl: string;
-  progress: number;
-  status: 'compressing' | 'done' | 'error';
-};
 
 const categories = [
   { value: 'electronics', label: 'Electronics' },
@@ -48,9 +37,7 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  const [existingImages, setExistingImages] = useState<string[]>([]);
-  const [newImageStates, setNewImageStates] = useState<ImageState[]>([]);
-  const [imagesToRemove, setImagesToRemove] = useState<string[]>([]);
+  const [images, setImages] = useState<ImageMetadata[]>([]);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
 
   const form = useForm<ListingFormValues>({
@@ -69,44 +56,25 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
         contact: listing.contact?.split(':')[1] || '',
         condition: listing.condition || '',
       });
-      setExistingImages(listing.image_urls);
-      newImageStates.forEach(img => URL.revokeObjectURL(img.previewUrl));
-      setNewImageStates([]);
-      setImagesToRemove([]);
+      setImages(listing.images || []);
     }
   }, [listing, isOpen, form]);
 
   const updateListingMutation = useMutation({
-    mutationFn: async (data: { formValues: ListingFormValues; newImages: File[] }) => {
-      if (imagesToRemove.length > 0) {
-        const filePaths = imagesToRemove.map(url => new URL(url).pathname.split('/listing_images/')[1]);
-        const { error: removeError } = await supabase.storage.from('listing_images').remove(filePaths);
-        if (removeError) throw new Error(`Failed to remove old images: ${removeError.message}`);
+    mutationFn: async (data: ListingFormValues) => {
+      const textValidationResult = validateText(data.title, data.description || '');
+      if (textValidationResult.isProfane) {
+        setViolation({ field: textValidationResult.field, word: textValidationResult.word });
+        throw new Error('Profanity detected.');
       }
 
-      const uploadedImageUrls = await Promise.all(
-        data.newImages.map(async (file) => {
-          const folderPath = new URL(listing.image_urls[0]).pathname.split('/').slice(4, -1).join('/');
-          const filePath = `${folderPath}/${Date.now()}-${file.name.split('.').slice(0, -1).join('.')}.webp`;
-          const { error: uploadError } = await supabase.storage.from('listing_images').upload(filePath, file);
-          if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
-          const { data: { publicUrl } } = supabase.storage.from('listing_images').getPublicUrl(filePath);
-          return publicUrl;
-        })
-      );
-
-      const finalImageUrls = [...existingImages, ...uploadedImageUrls];
-
-      const { title, description, price, category, location, contact, condition } = data.formValues;
+      const { title, description, price, category, location, contact, condition } = data;
       const fullContact = `telegram:${contact}`;
-      const { error: updateError } = await supabase.from('listings').update({
-        title, description, category, location, condition,
-        contact: fullContact,
-        price: price,
-        image_urls: finalImageUrls,
+      const { error } = await supabase.from('listings').update({
+        title, description, price, category, location, contact: fullContact, condition
       }).eq('id', listing.id);
 
-      if (updateError) throw new Error(`Failed to update listing: ${updateError.message}`);
+      if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Success!", description: "Your listing has been updated." });
@@ -115,70 +83,24 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
       onClose();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      if (error.message !== 'Profanity detected.') {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
     }
   });
 
-  const onSubmit = (data: ListingFormValues) => {
-    if (newImageStates.some(img => img.status === 'compressing')) {
-      toast({ title: "Please Wait", description: "New images are still being processed.", variant: "destructive" });
-      return;
+  const handleUploadComplete = (image: ImageMetadata) => {
+    setImages(prev => [...prev, image]);
+  };
+
+  const handleDeleteImage = async (path: string) => {
+    const { error } = await supabase.from('images').delete().eq('path', path);
+    if (error) {
+      toast({ title: 'Error', description: 'Could not delete image.', variant: 'destructive' });
+    } else {
+      setImages(prev => prev.filter(img => img.path !== path));
     }
-    const textValidationResult = validateText(data.title, data.description || '');
-    if (textValidationResult.isProfane) {
-      setViolation({ field: textValidationResult.field, word: textValidationResult.word });
-      return;
-    }
-    const newImages = newImageStates.filter(img => img.status === 'done').map(img => img.file);
-    updateListingMutation.mutate({ formValues: data, newImages });
   };
-
-  const handleImageUpload = async (files: FileList) => {
-    const totalCurrentImageCount = existingImages.length + newImageStates.length;
-    const newFilesToProcess = Array.from(files).slice(0, 5 - totalCurrentImageCount);
-    if (newFilesToProcess.length === 0) return;
-
-    const newStates: ImageState[] = newFilesToProcess.map(file => ({
-      id: uuidv4(),
-      file,
-      previewUrl: URL.createObjectURL(file),
-      progress: 0,
-      status: 'compressing',
-    }));
-
-    setNewImageStates(prev => [...prev, ...newStates]);
-
-    newStates.forEach(async (imageState) => {
-      try {
-        const options = {
-          maxSizeMB: 2, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/webp', quality: 0.8,
-          onProgress: (p: number) => {
-            setNewImageStates(current => current.map(s => s.id === imageState.id ? { ...s, progress: p } : s));
-          },
-        };
-        const compressedFile = await imageCompression(imageState.file, options);
-        setNewImageStates(current => current.map(s => s.id === imageState.id ? { ...s, file: compressedFile, status: 'done', progress: 100 } : s));
-      } catch (error) {
-        toast({ title: "Processing Failed", description: `Could not process image '${imageState.file.name}'.`, variant: "destructive" });
-        setNewImageStates(current => current.map(s => s.id === imageState.id ? { ...s, status: 'error' } : s));
-      }
-    });
-  };
-
-  const removeExistingImage = (url: string) => {
-    setExistingImages(prev => prev.filter(img => img !== url));
-    setImagesToRemove(prev => [...prev, url]);
-  };
-
-  const removeNewImage = (id: string) => {
-    const imageToRemove = newImageStates.find(img => img.id === id);
-    if (imageToRemove) {
-      URL.revokeObjectURL(imageToRemove.previewUrl);
-    }
-    setNewImageStates(prev => prev.filter(img => img.id !== id));
-  };
-
-  const isProcessingImages = newImageStates.some(img => img.status === 'compressing');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -186,42 +108,24 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-background/95 backdrop-blur-sm z-10 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-4">
           <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full"><X className="w-5 h-5" /></Button>
           <DialogTitle className="text-lg font-semibold">Edit Listing</DialogTitle>
-          <Button onClick={form.handleSubmit(onSubmit)} disabled={updateListingMutation.isPending || isProcessingImages} size="sm">
-            {updateListingMutation.isPending || isProcessingImages ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update'}
+          <Button onClick={form.handleSubmit((data) => updateListingMutation.mutate(data))} disabled={updateListingMutation.isPending} size="sm">
+            {updateListingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update'}
           </Button>
         </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-grow overflow-y-auto hide-scrollbar">
+          <form className="flex-grow overflow-y-auto hide-scrollbar">
             <div className="p-4 space-y-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4">
               <div className="space-y-3">
-                <FormLabel className="font-semibold">Images (up to 5) *</FormLabel>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                  {existingImages.map((url) => (
-                    <div key={url} className="relative group aspect-square">
-                      <img src={url} alt="Existing listing" className="w-full h-full object-cover rounded-lg border" />
-                      <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100" onClick={() => removeExistingImage(url)}><X className="w-3 h-3" /></Button>
-                    </div>
-                  ))}
-                  {newImageStates.map((image) => (
-                    <ImageUploadPreview
-                      key={image.id}
-                      status={image.status}
-                      progress={image.progress}
-                      previewUrl={image.previewUrl}
-                      onRemove={() => removeNewImage(image.id)}
-                    />
-                  ))}
-                  {existingImages.length + newImageStates.length < 5 && (
-                    <label htmlFor="image-upload-edit" className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer aspect-square min-h-[100px]">
-                      <input id="image-upload-edit" type="file" multiple accept="image/*" onChange={(e) => e.target.files && handleImageUpload(e.target.files)} className="hidden" disabled={isProcessingImages} />
-                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                      <p className="text-sm text-primary">Add Photos</p>
-                    </label>
-                  )}
-                </div>
+                <FormLabel className="font-semibold">Images (up to 5)</FormLabel>
+                <ImageUploader
+                  listingId={listing.id}
+                  onUploadComplete={handleUploadComplete}
+                  onDelete={handleDeleteImage}
+                  existingImages={images}
+                />
               </div>
               <div className="space-y-4 pt-4 border-t">
-                <FormLabel className="font-semibold">Listing Details *</FormLabel>
+                <FormLabel className="font-semibold">Listing Details</FormLabel>
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormControl><Textarea rows={4} {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <div className="grid grid-cols-2 gap-4">
@@ -234,7 +138,7 @@ export function EditListing({ listing, isOpen, onClose }: EditListingProps) {
                 </div>
               </div>
               <div className="space-y-4 pt-4 border-t">
-                <FormField control={form.control} name="contact" render={({ field }) => (<FormItem><FormLabel className="font-semibold">Contact Info *</FormLabel><FormControl><Input placeholder="Enter your Telegram username" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="contact" render={({ field }) => (<FormItem><FormLabel className="font-semibold">Contact Info</FormLabel><FormControl><Input placeholder="Enter your Telegram username" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <Alert className="text-xs p-3"><Info className="h-4 w-4" /><AlertDescription>Buyers will contact you on Telegram. Please enter your username without the '@' symbol.</AlertDescription></Alert>
               </div>
             </div>

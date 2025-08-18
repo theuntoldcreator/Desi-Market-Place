@@ -10,14 +10,9 @@ import { ListingDetailModal } from '@/components/marketplace/ListingDetailModal'
 import { useNavigate } from 'react-router-dom';
 
 const fetchFavoriteListings = async (): Promise<Listing[]> => {
-  const { data, error } = await supabase
-    .from('listings_with_profiles_and_favorites')
-    .select('*')
-    .eq('is_favorited', true)
-    .order('created_at', { ascending: false });
-
+  const { data, error } = await supabase.rpc('get_listings_with_details');
   if (error) throw new Error(error.message);
-  return data || [];
+  return ((data as any) || []).filter((l: Listing) => l.is_favorited);
 };
 
 export default function Favorites() {
@@ -29,7 +24,7 @@ export default function Favorites() {
     queryKey: ['favoriteListings', user?.id],
     queryFn: fetchFavoriteListings,
     enabled: !!user,
-    refetchInterval: 60000, // Poll every 1 minute
+    refetchInterval: 60000,
   });
 
   if (!loading && !session) {
