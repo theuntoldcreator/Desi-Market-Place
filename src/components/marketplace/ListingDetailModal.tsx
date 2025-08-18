@@ -102,7 +102,7 @@ export function ListingDetailModal({
   const prevImage = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + listing.image_urls.length) % listing.image_urls.length); };
 
   const creationDate = new Date(listing.created_at);
-  const expirationDate = addDays(creationDate, 1);
+  const expirationDate = addDays(creationDate, 7);
   const daysRemaining = differenceInDays(expirationDate, new Date());
   let expirationText = daysRemaining < 0 ? 'Expired' : daysRemaining === 0 ? 'Expires today' : `Expires in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`;
   const conditionMap: { [key: string]: string } = { new: 'New', like_new: 'Like New', used: 'Used' };
