@@ -1,28 +1,40 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./context/AuthContext";
-import Auth from "./pages/Auth";
-import MyListings from "./pages/MyListings";
-import Favorites from "./pages/Favorites";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
+// Lazy load page components
+const Index = lazy(() => import("./pages/Index"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Auth = lazy(() => import("./pages/Auth"));
+const MyListings = lazy(() => import("./pages/MyListings"));
+const Favorites = lazy(() => import("./pages/Favorites"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+
+const LoadingFallback = () => (
+  <div className="w-full h-screen flex items-center justify-center">
+    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+  </div>
+);
+
 const AppRoutes = () => {
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/login" element={<Auth />} />
-      <Route path="/my-listings" element={<MyListings />} />
-      <Route path="/favorites" element={<Favorites />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<Auth />} />
+        <Route path="/my-listings" element={<MyListings />} />
+        <Route path="/favorites" element={<Favorites />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 
