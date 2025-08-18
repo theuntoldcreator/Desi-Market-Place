@@ -162,7 +162,7 @@ export function ListingDetailModal({
 
                       if (method === 'telegram' && detail) {
                         const href = `https://t.me/${detail}`;
-                        const prefilledMessage = `Hi, I'm interested in your listing. Please verify the item with ID: ${formattedId} ("${listing.title}").`;
+                        const prefilledMessage = `Hello, is this ${listing.title} still available? Please verify the item with ID: ${formattedId} from NRI Marketplace`;
                         
                         const handleCopy = () => {
                           navigator.clipboard.writeText(prefilledMessage).then(() => {

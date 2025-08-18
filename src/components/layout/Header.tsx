@@ -57,9 +57,9 @@ export function Header({ showSearch = false, searchQuery, onSearchChange, onCrea
         {/* Left Section */}
         <div className="flex flex-1 justify-start items-center">
           <Link to="/" className="flex items-center space-x-3 mr-6">
-            <img src={logoUrl} alt="NRI's Marketplace Logo" className="w-8 h-8 rounded-lg border border-gray-200" />
+            <img src={logoUrl} alt="NRI Marketplace Logo" className="w-8 h-8 rounded-lg border border-gray-200" />
             <h1 className="hidden sm:block text-lg sm:text-xl font-bold text-foreground">
-              NRI's Marketplace
+              NRI Marketplace
             </h1>
           </Link>
         </div>

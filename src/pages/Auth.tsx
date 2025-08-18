@@ -128,9 +128,9 @@ const Auth = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <div className="mb-8 text-center">
         <Link to="/" className="inline-flex items-center space-x-3 group">
-          <img src={marketplaceLogo} alt="NRI's Marketplace Logo" className="w-12 h-12 rounded-lg border border-gray-200 group-hover:opacity-80 transition-opacity" />
+          <img src={marketplaceLogo} alt="NRI Marketplace Logo" className="w-12 h-12 rounded-lg border border-gray-200 group-hover:opacity-80 transition-opacity" />
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground group-hover:text-primary transition-colors">
-            NRI's Marketplace
+            NRI Marketplace
           </h1>
         </Link>
       </div>
