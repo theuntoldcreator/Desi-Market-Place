@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChat } from '@/components/messaging/RealtimeChat';
+import { RealtimeChat } from '@/realtime/components/realtime-chat';
 import { ChatMessage, Message } from '@/lib/types';
 
 const fetchConversationDetails = async (conversationId: string, currentUserId: string) => {
@@ -119,7 +119,7 @@ export default function Conversation() {
             roomName={conversationId!}
             username={currentUsername}
             initialMessages={initialChatMessages}
-            onMessage={handleSendMessage}
+            onSendMessage={handleSendMessage}
             fetchNextPage={fetchNextPage}
             hasNextPage={!!hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
