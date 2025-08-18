@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2, Send, Copy } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2, Send, Copy, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -172,21 +172,29 @@ export function ListingDetailModal({
                         };
 
                         return (
-                          <div className="space-y-3">
-                            <Label htmlFor="prefilled-message" className="text-sm font-medium">Suggested Message</Label>
-                            <div className="relative">
-                              <p className="text-sm bg-muted p-3 pr-12 rounded-md text-muted-foreground font-mono text-left">
-                                {prefilledMessage}
-                              </p>
-                              <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2" onClick={handleCopy}>
-                                {isCopied ? <CheckCircle className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5 text-muted-foreground" />}
-                                <span className="sr-only">Copy message</span>
-                              </Button>
+                          <div className="space-y-4">
+                            <Alert variant="default" className="p-3 text-xs bg-amber-50 border-amber-200 text-amber-900">
+                              <Shield className="h-4 w-4 text-amber-600" />
+                              <AlertDescription>
+                                <strong>Safety Tip:</strong> No advance deposits. Meet in public. Verify item before paying.
+                              </AlertDescription>
+                            </Alert>
+                            <div>
+                              <Label htmlFor="prefilled-message" className="text-sm font-medium">Suggested Message</Label>
+                              <div className="relative mt-1">
+                                <p className="text-sm bg-muted p-3 pr-12 rounded-md text-muted-foreground font-mono text-left">
+                                  {prefilledMessage}
+                                </p>
+                                <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2" onClick={handleCopy}>
+                                  {isCopied ? <CheckCircle className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5 text-muted-foreground" />}
+                                  <span className="sr-only">Copy message</span>
+                                </Button>
+                              </div>
                             </div>
-                            <Button asChild size="lg" className="w-full">
+                            <Button asChild size="lg" className="w-full bg-[#24A1DE] hover:bg-[#1C88C7] text-white">
                               <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                                 <Send className="w-5 h-5" />
-                                Contact on Telegram
+                                Chat on Telegram
                               </a>
                             </Button>
                           </div>
