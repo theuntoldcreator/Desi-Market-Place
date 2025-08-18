@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-import { initializeApp, cert } from 'https://esm.sh/firebase-admin@12.0.0/app'
-import { getAuth } from 'https://esm.sh/firebase-admin@12.0.0/auth'
+import { initializeApp, cert } from 'npm:firebase-admin@12.0.0/app'
+import { getAuth } from 'npm:firebase-admin@12.0.0/auth'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
