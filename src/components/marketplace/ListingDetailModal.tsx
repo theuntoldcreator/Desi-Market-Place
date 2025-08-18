@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2, Send } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2, Send, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
 import { EditListing } from './EditListing';
+import { Label } from '../ui/label';
 
 interface ListingDetailModalProps {
   listing: Listing;
@@ -31,6 +32,7 @@ export function ListingDetailModal({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -159,13 +161,35 @@ export function ListingDetailModal({
 
                       if (method === 'telegram' && detail) {
                         const href = `https://t.me/${detail}`;
+                        const prefilledMessage = `Hi, I’m interested in "${listing.title}" ($${listing.price}). Listing ID: ${listing.id}.`;
+                        
+                        const handleCopy = () => {
+                          navigator.clipboard.writeText(prefilledMessage).then(() => {
+                            setIsCopied(true);
+                            toast({ title: "Message copied!" });
+                            setTimeout(() => setIsCopied(false), 2000);
+                          });
+                        };
+
                         return (
-                          <Button asChild size="lg" className="w-full">
-                            <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                              <Send className="w-5 h-5" />
-                              Contact on Telegram
-                            </a>
-                          </Button>
+                          <div className="space-y-3">
+                            <Label htmlFor="prefilled-message" className="text-sm font-medium">Suggested Message</Label>
+                            <div className="relative">
+                              <p className="text-sm bg-muted p-3 pr-12 rounded-md text-muted-foreground font-mono text-left">
+                                {prefilledMessage}
+                              </p>
+                              <Button variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2" onClick={handleCopy}>
+                                {isCopied ? <CheckCircle className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5 text-muted-foreground" />}
+                                <span className="sr-only">Copy message</span>
+                              </Button>
+                            </div>
+                            <Button asChild size="lg" className="w-full">
+                              <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                                <Send className="w-5 h-5" />
+                                Contact on Telegram
+                              </a>
+                            </Button>
+                          </div>
                         );
                       }
                       
