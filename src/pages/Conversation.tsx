@@ -11,17 +11,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const fetchConversationDetails = async (conversationId: string, currentUserId: string) => {
-  const { data, error } = await supabase
-    .from('conversations')
-    .select('*, listing:listings(*), other_user:profiles!conversations_buyer_id_fkey(id, first_name, last_name, avatar_url)')
-    .eq('id', conversationId)
-    .single();
-
-  if (error) throw new Error(error.message);
-  
-  // This is a simplification; you might need to fetch seller/buyer profile based on who is the "other user"
-  // For now, this assumes the current user is the seller. A more robust solution is needed.
-  // Let's fetch both and determine the other user.
   const { data: fullData, error: fullError } = await supabase
     .from('conversations')
     .select('*, listing:listings(*), buyer:profiles!conversations_buyer_id_fkey(*), seller:profiles!conversations_seller_id_fkey(*)')
