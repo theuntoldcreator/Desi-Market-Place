@@ -13,11 +13,6 @@ export interface Listing {
   contact: string | null;
   updated_at: string | null; // timestamp with time zone
   is_favorited?: boolean;
-  profiles?: {
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-  } | null;
 }
 
 export interface ConversationPreview {

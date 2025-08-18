@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 const fetchUserListings = async (userId: string): Promise<Listing[]> => {
   const { data, error } = await supabase
     .from('listings')
-    .select('*, favorites ( user_id ), profiles ( first_name, last_name, avatar_url )')
+    .select('*, favorites ( user_id )')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
