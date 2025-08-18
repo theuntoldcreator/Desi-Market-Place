@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Users, Wifi } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -17,7 +17,10 @@ const fetchTotalUsers = async () => {
 };
 
 export function UserStats() {
-  const [onlineUsers, setOnlineUsers] = useState<number | null>(null);
+  // Initialize onlineUsers to 1, assuming the current user is always online.
+  // This prevents the skeleton from showing indefinitely if presence sync is delayed.
+  const [onlineUsers, setOnlineUsers] = useState<number>(1); 
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null); // Use useRef to hold channel instance
 
   const { data: totalUsers, isLoading: isLoadingTotal } = useQuery({
     queryKey: ['totalUsers'],
@@ -29,6 +32,7 @@ export function UserStats() {
   useEffect(() => {
     const setupPresence = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      // Use a unique key for each user/guest to track presence
       const userKey = session?.user?.id || `guest-${Math.random().toString(36).substring(2)}`;
 
       const channel = supabase.channel('online-users', {
@@ -38,31 +42,34 @@ export function UserStats() {
           },
         },
       });
+      channelRef.current = channel; // Store channel in ref
 
       channel.on('presence', { event: 'sync' }, () => {
         const presenceState = channel.presenceState();
         const userCount = Object.keys(presenceState).length;
-        setOnlineUsers(userCount > 0 ? userCount : 1); // Always show at least 1 user (self)
+        console.log('Supabase Presence Sync:', { presenceState, userCount }); // Debug log
+        setOnlineUsers(userCount > 0 ? userCount : 1); 
       });
 
       channel.subscribe(async (status) => {
+        console.log('Supabase Channel Status:', status); // Debug log
         if (status === 'SUBSCRIBED') {
           await channel.track({ online_at: new Date().toISOString() });
+          console.log('Supabase Presence Tracked for key:', userKey); // Debug log
         }
       });
-
-      return channel;
     };
 
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    setupPresence().then(ch => channel = ch);
+    setupPresence();
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      // Cleanup: remove the channel when the component unmounts
+      if (channelRef.current) {
+        console.log('Removing Supabase channel'); // Debug log
+        supabase.removeChannel(channelRef.current);
       }
     };
-  }, []);
+  }, []); // Empty dependency array means it runs once on mount and cleans up on unmount
 
   return (
     <div className="space-y-4">
@@ -84,17 +91,14 @@ export function UserStats() {
             <Wifi className="w-4 h-4" />
             <span>Online Now</span>
           </div>
-          {onlineUsers === null ? (
-             <Skeleton className="h-5 w-8 rounded-md" />
-          ) : (
-            <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
-                <span className="font-semibold">{onlineUsers.toLocaleString()}</span>
-            </div>
-          )}
+          {/* No longer checking for null, as it's initialized to 1 */}
+          <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="font-semibold">{onlineUsers.toLocaleString()}</span>
+          </div>
         </div>
       </div>
     </div>
