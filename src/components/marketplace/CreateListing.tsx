@@ -19,11 +19,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '@/context/AuthContext';
 import { listingSchema, ListingFormValues } from '@/lib/schemas';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ImageUploadPreview } from './ImageUploadPreview';
 
 interface CreateListingProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+type ImageState = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  progress: number;
+  status: 'compressing' | 'done' | 'error';
+};
 
 const categories = [
   { value: 'electronics', label: 'Electronics' },
@@ -39,9 +48,8 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  const [images, setImages] = useState<File[]>([]);
+  const [imageStates, setImageStates] = useState<ImageState[]>([]);
   const [violation, setViolation] = useState<{ field?: 'title' | 'description'; word?: string } | null>(null);
-  const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   const form = useForm<ListingFormValues>({
     resolver: zodResolver(listingSchema),
@@ -63,17 +71,18 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
 
   const resetForm = () => {
     form.reset();
-    setImages([]);
+    imageStates.forEach(img => URL.revokeObjectURL(img.previewUrl));
+    setImageStates([]);
     setViolation(null);
   };
 
   const createListingMutation = useMutation({
-    mutationFn: async (data: ListingFormValues) => {
+    mutationFn: async (data: { formValues: ListingFormValues; images: File[] }) => {
       if (!user) throw new Error('You must be logged in to create a listing.');
 
       const imageUploadFolder = uuidv4();
       const imageUrls = await Promise.all(
-        images.map(async (file) => {
+        data.images.map(async (file) => {
           const filePath = `${imageUploadFolder}/${Date.now()}-${file.name.split('.').slice(0, -1).join('.')}.webp`;
           const { error: uploadError } = await supabase.storage.from('listing_images').upload(filePath, file);
           if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
@@ -82,7 +91,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
         })
       );
 
-      const { title, description, price, category, location, contact, condition } = data;
+      const { title, description, price, category, location, contact, condition } = data.formValues;
       const fullContact = `telegram:${contact}`;
       const { error: insertError } = await supabase.from('listings').insert({
         user_id: user.id,
@@ -106,8 +115,13 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
   });
 
   const onSubmit = (data: ListingFormValues) => {
-    if (images.length === 0) {
+    const processedImages = imageStates.filter(img => img.status === 'done').map(img => img.file);
+    if (processedImages.length === 0) {
       toast({ title: "Missing Images", description: "Please upload at least one image.", variant: "destructive" });
+      return;
+    }
+    if (imageStates.some(img => img.status === 'compressing')) {
+      toast({ title: "Please Wait", description: "Images are still being processed.", variant: "destructive" });
       return;
     }
 
@@ -117,56 +131,66 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
       return;
     }
 
-    createListingMutation.mutate(data);
+    createListingMutation.mutate({ formValues: data, images: processedImages });
   };
 
   const handleImageUpload = async (files: FileList) => {
-    const newFilesToProcess = Array.from(files);
+    const newFilesToProcess = Array.from(files).slice(0, 5 - imageStates.length);
     if (newFilesToProcess.length === 0) return;
 
-    setIsProcessingImages(true);
-    toast({ title: "Processing images...", description: "Optimizing and converting images." });
+    const newImageStates: ImageState[] = newFilesToProcess.map(file => ({
+      id: uuidv4(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      progress: 0,
+      status: 'compressing',
+    }));
 
-    const processedFiles: File[] = [];
-    const maxTargetSize = 4 * 1024 * 1024;
+    setImageStates(prev => [...prev, ...newImageStates]);
 
-    for (const file of newFilesToProcess) {
-      if (images.length + processedFiles.length >= 5) {
-        toast({ title: "Image Limit Reached", description: "You can upload a maximum of 5 images.", variant: "destructive" });
-        break;
+    newImageStates.forEach(async (imageState) => {
+      try {
+        const options = {
+          maxSizeMB: 4,
+          maxWidthOrHeight: 2560,
+          useWebWorker: true,
+          fileType: 'image/webp',
+          quality: 0.8,
+          onProgress: (p: number) => {
+            setImageStates(currentStates =>
+              currentStates.map(s =>
+                s.id === imageState.id ? { ...s, progress: p } : s
+              )
+            );
+          },
+        };
+        const compressedFile = await imageCompression(imageState.file, options);
+        setImageStates(currentStates =>
+          currentStates.map(s =>
+            s.id === imageState.id ? { ...s, file: compressedFile, status: 'done', progress: 100 } : s
+          )
+        );
+      } catch (error) {
+        console.error("Image compression error:", error);
+        toast({ title: "Processing Failed", description: `Could not process image '${imageState.file.name}'.`, variant: "destructive" });
+        setImageStates(currentStates =>
+          currentStates.map(s =>
+            s.id === imageState.id ? { ...s, status: 'error' } : s
+          )
+        );
       }
-
-      let finalFile = file;
-      if (file.size > maxTargetSize) {
-        try {
-          const options = {
-            maxSizeMB: 4,
-            maxWidthOrHeight: 2560,
-            useWebWorker: true,
-            fileType: 'image/webp',
-            quality: 0.8,
-          };
-          const compressedFile = await imageCompression(file, options);
-          finalFile = compressedFile;
-          
-          if (finalFile.size > maxTargetSize) {
-            toast({ title: "Compression Failed", description: `Image '${file.name}' could not be compressed to the required size (max 4MB).`, variant: "destructive" });
-            continue;
-          }
-        } catch (error) {
-          console.error("Image compression error:", error);
-          toast({ title: "Processing Failed", description: `Could not process image '${file.name}'.`, variant: "destructive" });
-          continue;
-        }
-      }
-      processedFiles.push(finalFile);
-    }
-
-    setImages(prev => [...prev, ...processedFiles]);
-    setIsProcessingImages(false);
+    });
   };
 
-  const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index));
+  const removeImage = (id: string) => {
+    const imageToRemove = imageStates.find(img => img.id === id);
+    if (imageToRemove) {
+      URL.revokeObjectURL(imageToRemove.previewUrl);
+    }
+    setImageStates(prev => prev.filter(img => img.id !== id));
+  };
+
+  const isProcessingImages = imageStates.some(img => img.status === 'compressing');
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && (resetForm(), onClose())}>
@@ -178,7 +202,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
           </Button>
           <DialogTitle className="text-lg font-semibold">Create Listing</DialogTitle>
           <Button onClick={form.handleSubmit(onSubmit)} disabled={createListingMutation.isPending || isProcessingImages} size="sm">
-            {createListingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Publish'}
+            {createListingMutation.isPending || isProcessingImages ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Publish'}
           </Button>
         </div>
 
@@ -188,20 +212,21 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
               <div className="space-y-3">
                 <FormLabel className="font-semibold">Images (up to 5) *</FormLabel>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                  {images.map((image, index) => (
-                    <div key={index} className="relative group aspect-square">
-                      <img src={URL.createObjectURL(image)} alt={`Upload ${index + 1}`} className="w-full h-full object-cover rounded-lg border" />
-                      <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}>
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
+                  {imageStates.map((image) => (
+                    <ImageUploadPreview
+                      key={image.id}
+                      status={image.status}
+                      progress={image.progress}
+                      previewUrl={image.previewUrl}
+                      onRemove={() => removeImage(image.id)}
+                    />
                   ))}
-                  {images.length < 5 && (
+                  {imageStates.length < 5 && (
                     <label 
                       htmlFor="image-upload-create"
                       className={cn(
                         "border-2 border-dashed rounded-lg py-4 px-6 text-center transition-all flex flex-col items-center justify-center gap-2 cursor-pointer",
-                        images.length === 0 ? "col-span-full aspect-video min-h-[100px]" : "col-span-1 aspect-square min-h-[100px]"
+                        imageStates.length === 0 ? "col-span-full aspect-video min-h-[100px]" : "col-span-1 aspect-square min-h-[100px]"
                       )}
                     >
                       <input 
@@ -211,7 +236,7 @@ export function CreateListing({ isOpen, onClose }: CreateListingProps) {
                         accept="image/*" 
                         onChange={async (e) => e.target.files && await handleImageUpload(e.target.files)} 
                         className="hidden" 
-                        disabled={images.length >= 5 || isProcessingImages}
+                        disabled={imageStates.length >= 5 || isProcessingImages}
                       />
                       <ImageIcon className="w-10 h-10 text-muted-foreground" />
                       <p className="font-medium text-primary text-lg">Add Photos</p>
