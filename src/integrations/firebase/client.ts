@@ -2,14 +2,13 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// IMPORTANT: Replace this with your own Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDrZOQB6bElkrGenF0RVua0Uk3zChSv9D8",
+  authDomain: "desi-market-place.firebaseapp.com",
+  projectId: "desi-market-place",
+  storageBucket: "desi-market-place.firebasestorage.app",
+  messagingSenderId: "911068949400",
+  appId: "1:911068949400:web:eec79dc6a3fb76c4dc59ed"
 };
 
 const app = initializeApp(firebaseConfig);
