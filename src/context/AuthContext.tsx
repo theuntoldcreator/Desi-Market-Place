@@ -29,19 +29,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const signInToFirebase = async (currentSession: Session) => {
       try {
-        const { data } = await supabase.functions.invoke('create-firebase-token', {
+        const { data, error: functionError } = await supabase.functions.invoke('create-firebase-token', {
           headers: { Authorization: `Bearer ${currentSession.access_token}` },
         });
-        if (data.error) throw new Error(data.error);
+
+        if (functionError) {
+          console.error("Error invoking Supabase function 'create-firebase-token':", functionError);
+          throw new Error(`Supabase function error: ${functionError.message}`);
+        }
+        if (data.error) {
+          console.error("Error from within Supabase function:", data.error);
+          throw new Error(data.error);
+        }
         
         const userCredential = await signInWithCustomToken(firebaseAuth, data.firebaseToken);
         setFirebaseUser(userCredential.user);
       } catch (error) {
-        console.error("Firebase sign-in error:", error);
+        console.error("Firebase sign-in process failed:", error);
         setFirebaseUser(null);
         toast({
           title: "Chat Connection Failed",
-          description: "There was a problem connecting to the real-time chat service. Messaging may not work correctly.",
+          description: "There was a problem connecting to the real-time chat service. Check the console for details.",
           variant: "destructive",
         });
       }
@@ -51,9 +59,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false); // Unblock the app immediately
+      setLoading(false);
       if (session) {
-        signInToFirebase(session); // Sign in to Firebase in the background
+        signInToFirebase(session);
       }
     };
 
@@ -63,7 +71,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session) {
-        signInToFirebase(session); // Sign in to Firebase in the background
+        signInToFirebase(session);
       } else {
         if (firebaseAuth.currentUser) await firebaseSignOut(firebaseAuth);
         setFirebaseUser(null);
