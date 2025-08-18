@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { MapPin, Heart } from 'lucide-react';
+import { MapPin, Heart, Camera } from 'lucide-react';
 import { cn, transformSupabaseUrl } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '../ui/button';
@@ -59,6 +59,12 @@ export function ListingCard({ id, title, price, image_urls, location, status, is
             onLoad={() => setIsImageLoading(false)}
             onError={() => setIsImageLoading(false)}
           />
+          {image_urls.length > 1 && (
+            <div className="absolute bottom-2 right-2 z-20 bg-black/50 text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
+              <Camera className="w-3 h-3" />
+              <span>{image_urls.length}</span>
+            </div>
+          )}
         </AspectRatio>
         
         <div className="space-y-1">
