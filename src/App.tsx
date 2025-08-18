@@ -11,6 +11,7 @@ import MyListings from "./pages/MyListings";
 import Favorites from "./pages/Favorites";
 import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
+import { EnvVarCheck } from "./components/layout/EnvVarCheck";
 
 const queryClient = new QueryClient();
 
@@ -44,7 +45,9 @@ const App = () => {
 
 const Root = () => (
   <BrowserRouter>
-    <App />
+    <EnvVarCheck>
+      <App />
+    </EnvVarCheck>
   </BrowserRouter>
 );
 
