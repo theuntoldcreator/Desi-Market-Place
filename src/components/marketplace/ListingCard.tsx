@@ -55,7 +55,7 @@ export function ListingCard({ id, title, price, image_urls, location, status, is
               isImageLoading ? "opacity-0" : "opacity-100"
             )}
             loading={isPriority ? 'eager' : 'lazy'}
-            fetchPriority={isPriority ? 'high' : 'auto'}
+            {...{ fetchpriority: isPriority ? 'high' : 'auto' }}
             onLoad={() => setIsImageLoading(false)}
             onError={() => setIsImageLoading(false)}
           />
