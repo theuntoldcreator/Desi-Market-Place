@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, MapPin, Info, MessageCircle, Send, Mail, Edit, Trash2, CheckCircle, Lock, Loader2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Info, MessageCircle, Edit, Trash2, CheckCircle, Lock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
 import { EditListing } from './EditListing';
-import { useStartConversation } from '@/hooks/use-messaging';
+import { useStartConversation } from '@/hooks/use-firebase-messaging';
 
 interface ListingDetailModalProps {
   listing: Listing;
@@ -124,9 +124,6 @@ export function ListingDetailModal({
   let expirationText = daysRemaining < 0 ? 'Expired' : daysRemaining === 0 ? 'Expires today' : `Expires in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`;
   const conditionMap: { [key: string]: string } = { new: 'New', like_new: 'Like New', used: 'Used' };
   const categoryMap: { [key: string]: string } = { electronics: 'Electronics', books: 'Books & Study', furniture: 'Furniture', vehicles: 'Vehicles', clothing: 'Clothing', gaming: 'Gaming', free: 'Free Stuff' };
-  const contactParts = listing.contact?.match(/^([^:]+):(.*)$/);
-  const contactMethod = contactParts ? contactParts[1] : null;
-  const contactValue = contactParts ? contactParts[2] : null;
   const detailImageUrl = `${listing.image_urls[currentImageIndex]}?width=800&height=800&resize=contain`;
 
   if (isEditing) {

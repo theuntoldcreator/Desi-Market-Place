@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export interface Listing {
   id: number; // bigint in DB
   user_id: string; // uuid
@@ -15,41 +17,46 @@ export interface Listing {
   is_favorited?: boolean;
 }
 
+// Firebase-based types
 export interface ConversationPreview {
-  id: string; // uuid
-  updated_at: string;
-  listing_id: number;
-  listing_title: string;
-  listing_image_url: string;
-  other_user_id: string; // uuid
-  other_user_first_name: string | null;
-  other_user_last_name: string | null;
-  other_user_avatar_url: string | null;
-  last_message_body: string | null;
-  last_message_created_at: string | null;
-  last_message_sender_id: string | null; // uuid
+  id: string;
+  listingId: string;
+  listingTitle: string;
+  listingImageUrl: string;
+  otherUser: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatarUrl: string | null;
+  };
+  lastMessage: {
+    text: string | null;
+    createdAt: Timestamp;
+    senderId: string;
+    read: boolean;
+  } | null;
 }
 
 export interface Message {
-  id: string; // uuid
-  conversation_id: string; // uuid
-  sender_id: string; // uuid
-  body: string;
-  created_at: string;
-  profiles: {
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-  } | null
+  id: string;
+  senderId: string;
+  text: string | null;
+  imageUrl: string | null;
+  createdAt: Timestamp;
 }
 
-export interface ChatUser {
-  name: string;
+export interface UserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
 }
 
+// Generic chat message type for UI components
 export interface ChatMessage {
   id: string;
-  content: string;
-  user: ChatUser;
+  content: string | null;
+  imageUrl: string | null;
+  user: { name: string };
   createdAt: string;
 }

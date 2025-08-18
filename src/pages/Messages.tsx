@@ -1,4 +1,4 @@
-import { useConversations } from '@/hooks/use-messaging';
+import { useConversations } from '@/hooks/use-firebase-messaging';
 import { Header } from '@/components/layout/Header';
 import { Loader2, Inbox } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';

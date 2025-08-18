@@ -1,40 +1,21 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useInfiniteMessages, useSendMessage } from '@/hooks/use-messaging';
+import { useMessages, useSendMessage, useConversations } from '@/hooks/use-firebase-messaging';
 import { useAuth } from '@/context/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChat } from '@/realtime/components/realtime-chat';
-import { ChatMessage, Message } from '@/lib/types';
-import { useRealtimeMessages } from '@/realtime/hooks/use-realtime-messages';
+import { ChatMessage, Message as FirebaseMessage } from '@/lib/types';
 
-const fetchConversationDetails = async (conversationId: string, currentUserId: string) => {
-  const { data: fullData, error: fullError } = await supabase
-    .from('conversations')
-    .select('*, listing:listings(*), buyer:profiles!conversations_buyer_id_fkey(*), seller:profiles!conversations_seller_id_fkey(*)')
-    .eq('id', conversationId)
-    .single();
-
-  if (fullError) throw new Error(fullError.message);
-
-  const otherUser = fullData.buyer.id === currentUserId ? fullData.seller : fullData.buyer;
-
-  return {
-    listing: fullData.listing,
-    otherUser: otherUser,
-  };
-};
-
-const transformDbMessageToChatMessage = (msg: Message): ChatMessage => {
-  const userName = `${msg.profiles?.first_name || ''} ${msg.profiles?.last_name || ''}`.trim() || 'User';
+const transformFirebaseMessageToChatMessage = (msg: FirebaseMessage, profiles: Map<string, { name: string }>): ChatMessage => {
+  const userProfile = profiles.get(msg.senderId) || { name: 'User' };
   return {
     id: msg.id,
-    content: msg.body,
-    user: { name: userName },
-    createdAt: msg.created_at,
+    content: msg.text,
+    imageUrl: msg.imageUrl,
+    user: { name: userProfile.name },
+    createdAt: msg.createdAt.toDate().toISOString(),
   };
 };
 
@@ -43,52 +24,53 @@ export default function Conversation() {
   const navigate = useNavigate();
   const { user, session, loading: authLoading } = useAuth();
 
-  // This hook now keeps our message cache updated in real-time.
-  useRealtimeMessages(conversationId!);
-
-  const { 
-    data: infiniteMessages, 
-    isLoading: messagesLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteMessages(conversationId!);
+  const { data: conversations, isLoading: conversationsLoading } = useConversations();
+  const { messages, loading: messagesLoading } = useMessages(conversationId!);
   const sendMessageMutation = useSendMessage();
 
-  const { data: conversationDetails, isLoading: detailsLoading } = useQuery({
-    queryKey: ['conversationDetails', conversationId, user?.id],
-    queryFn: () => fetchConversationDetails(conversationId!, user!.id),
-    enabled: !!conversationId && !!user,
-  });
+  const conversationDetails = useMemo(() => {
+    return conversations?.find(c => c.id === conversationId);
+  }, [conversations, conversationId]);
+
+  const userProfiles = useMemo(() => {
+    const profiles = new Map<string, { name: string }>();
+    if (user && conversationDetails) {
+      profiles.set(user.id, { name: `${user.user_metadata.first_name || ''} ${user.user_metadata.last_name || ''}`.trim() || 'You' });
+      profiles.set(conversationDetails.otherUser.id, { name: `${conversationDetails.otherUser.firstName} ${conversationDetails.otherUser.lastName}`.trim() });
+    }
+    return profiles;
+  }, [user, conversationDetails]);
 
   const chatMessages = useMemo(() => {
-    if (!infiniteMessages) return [];
-    return infiniteMessages.pages.flat().map(transformDbMessageToChatMessage);
-  }, [infiniteMessages]);
+    return messages.map(msg => transformFirebaseMessageToChatMessage(msg, userProfiles));
+  }, [messages, userProfiles]);
 
-  if (!authLoading && !session) {
-    navigate('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && !session) {
+      navigate('/login');
+    }
+  }, [authLoading, session, navigate]);
 
   const currentUsername = user ? `${user.user_metadata.first_name || ''} ${user.user_metadata.last_name || ''}`.trim() || 'You' : '';
 
-  const handleSendMessage = async (content: string) => {
-    if (!conversationId || !user) return;
+  const handleSendMessage = async (text: string | null, image: File | null) => {
+    if (!conversationId || (!text && !image)) return;
     try {
-      await sendMessageMutation.mutateAsync({ conversationId, body: content });
+      await sendMessageMutation.mutateAsync({ conversationId, text, image });
     } catch (error) {
       console.error("Failed to send message:", error);
     }
   };
 
-  const otherUserName = `${conversationDetails?.otherUser.first_name || ''} ${conversationDetails?.otherUser.last_name || ''}`.trim();
+  if (authLoading || conversationsLoading) {
+    return <div className="w-full h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  }
 
   return (
     <div className="w-full h-screen flex flex-col">
       <Header />
       <div className="flex-grow flex flex-col overflow-hidden">
-        {detailsLoading ? (
+        {!conversationDetails ? (
           <div className="flex items-center justify-center h-20 border-b"><Loader2 className="w-6 h-6 animate-spin" /></div>
         ) : (
           <div className="border-b p-3 flex items-center gap-4">
@@ -96,29 +78,22 @@ export default function Conversation() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex-grow overflow-hidden">
-              <p className="font-bold truncate">{otherUserName}</p>
-              {conversationDetails?.listing && (
-                <Link to={`/?openListing=${conversationDetails.listing.id}`} className="text-sm text-muted-foreground hover:underline truncate block">
-                  {conversationDetails.listing.title}
-                </Link>
-              )}
+              <p className="font-bold truncate">{`${conversationDetails.otherUser.firstName} ${conversationDetails.otherUser.lastName}`.trim()}</p>
+              <Link to={`/?openListing=${conversationDetails.listingId}`} className="text-sm text-muted-foreground hover:underline truncate block">
+                {conversationDetails.listingTitle}
+              </Link>
             </div>
-            {conversationDetails?.listing && (
-              <img src={conversationDetails.listing.image_urls[0]} alt={conversationDetails.listing.title} className="w-12 h-12 object-cover rounded-md flex-shrink-0" />
-            )}
+            <img src={conversationDetails.listingImageUrl} alt={conversationDetails.listingTitle} className="w-12 h-12 object-cover rounded-md flex-shrink-0" />
           </div>
         )}
 
-        {messagesLoading && !infiniteMessages ? (
+        {messagesLoading ? (
           <div className="flex-grow flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
         ) : (
           <RealtimeChat
             username={currentUsername}
             messages={chatMessages}
             onSend={handleSendMessage}
-            fetchNextPage={fetchNextPage}
-            hasNextPage={!!hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
           />
         )}
       </div>

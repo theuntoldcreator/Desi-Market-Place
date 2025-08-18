@@ -34,10 +34,15 @@ export const ChatMessageItem = ({ message, isOwnMessage, showHeader }: ChatMessa
         <div
           className={cn(
             'py-2 px-3 rounded-xl text-sm w-fit',
-            isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+            isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
+            { 'p-1': message.imageUrl }
           )}
         >
-          {message.content}
+          {message.imageUrl ? (
+            <img src={message.imageUrl} alt="Sent image" className="max-w-xs rounded-lg" />
+          ) : (
+            message.content
+          )}
         </div>
       </div>
     </div>
