@@ -175,7 +175,7 @@ export function ListingDetailModal({
                               <Shield className="h-4 w-4 text-amber-600" />
                               <AlertDescription>
                                 <strong>Safety Tip:</strong> No advance deposits. Meet in public. Verify item before paying.
-                              </Aler tDescription>
+                              </AlertDescription>
                             </Alert>
                             <div>
                               <Label htmlFor="prefilled-message" className="text-sm font-medium">Suggested Message</Label>

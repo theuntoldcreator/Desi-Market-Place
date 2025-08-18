@@ -39,7 +39,6 @@ export function OptimizedImage({
         transform: {
           width,
           quality: 75,
-          format: 'webp',
         },
       });
     return `${data.publicUrl}${cacheBust}`;
