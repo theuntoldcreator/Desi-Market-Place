@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useMessages, useSendMessage } from '@/hooks/use-messaging';
+import { useInfiniteMessages, useSendMessage } from '@/hooks/use-messaging';
 import { useAuth } from '@/context/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,13 @@ export default function Conversation() {
   const navigate = useNavigate();
   const { user, session, loading: authLoading } = useAuth();
 
-  const { data: initialDbMessages = [], isLoading: messagesLoading } = useMessages(conversationId!);
+  const { 
+    data: infiniteMessages, 
+    isLoading: messagesLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteMessages(conversationId!);
   const sendMessageMutation = useSendMessage();
 
   const { data: conversationDetails, isLoading: detailsLoading } = useQuery({
@@ -52,8 +58,9 @@ export default function Conversation() {
   });
 
   const initialChatMessages = useMemo(() => {
-    return initialDbMessages.map(transformDbMessageToChatMessage);
-  }, [initialDbMessages]);
+    if (!infiniteMessages) return [];
+    return infiniteMessages.pages.flat().map(transformDbMessageToChatMessage);
+  }, [infiniteMessages]);
 
   if (!authLoading && !session) {
     navigate('/login');
@@ -66,7 +73,6 @@ export default function Conversation() {
     if (!conversationId || !user) return null;
     try {
       const persistedMessage = await sendMessageMutation.mutateAsync({ conversationId, body: content });
-      // The persistedMessage doesn't have profile info, so we construct the ChatMessage manually for broadcast
       return {
         id: persistedMessage.id,
         content: persistedMessage.body,
@@ -75,7 +81,6 @@ export default function Conversation() {
       };
     } catch (error) {
       console.error("Failed to send message:", error);
-      // You could add a toast notification here for the user
       return null;
     }
   };
@@ -107,7 +112,7 @@ export default function Conversation() {
           </div>
         )}
 
-        {messagesLoading ? (
+        {messagesLoading && !infiniteMessages ? (
           <div className="flex-grow flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
         ) : (
           <RealtimeChat
@@ -115,6 +120,9 @@ export default function Conversation() {
             username={currentUsername}
             initialMessages={initialChatMessages}
             onMessage={handleSendMessage}
+            fetchNextPage={fetchNextPage}
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
           />
         )}
       </div>
