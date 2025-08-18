@@ -25,16 +25,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session) {
-        await signInToFirebase(session);
-      }
-      setLoading(false);
-    };
-
     const signInToFirebase = async (currentSession: Session) => {
       try {
         const { data } = await supabase.functions.invoke('create-firebase-token', {
@@ -50,13 +40,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false); // Unblock the app immediately
+      if (session) {
+        signInToFirebase(session); // Sign in to Firebase in the background
+      }
+    };
+
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session) {
-        await signInToFirebase(session);
+        signInToFirebase(session); // Sign in to Firebase in the background
       } else {
         if (firebaseAuth.currentUser) await firebaseSignOut(firebaseAuth);
         setFirebaseUser(null);
