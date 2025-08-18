@@ -12,9 +12,16 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// --- ADDING THIS FOR DEBUGGING ---
+console.log("Attempting to initialize Firebase with API Key:", import.meta.env.VITE_FIREBASE_API_KEY);
+// ---------------------------------
+
 // Basic validation to ensure environment variables are set
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  throw new Error("Firebase configuration is missing. Please set up your .env file.");
+  console.error("CRITICAL ERROR: Firebase environment variables are missing from the build.");
+  console.error("VITE_FIREBASE_API_KEY loaded as:", import.meta.env.VITE_FIREBASE_API_KEY);
+  console.error("VITE_FIREBASE_PROJECT_ID loaded as:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
+  throw new Error("Firebase configuration is missing. Please check your .env file and rebuild the application.");
 }
 
 const app = initializeApp(firebaseConfig);
