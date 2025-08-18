@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2, MessageSquare, Send, Mail } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MapPin, Info, Edit, Trash2, CheckCircle, Lock, Loader2, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, differenceInDays, format, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -154,43 +154,22 @@ export function ListingDetailModal({
                     {(() => {
                       if (!listing.contact) return <p className="text-sm text-muted-foreground">The seller has not provided contact information.</p>;
                       const parts = listing.contact.split(':');
-                      if (parts.length < 2) return <p className="text-sm text-muted-foreground">Contact: {listing.contact}</p>;
-                      
-                      const [method, ...detailParts] = parts;
-                      const detail = detailParts.join(':');
-                      
-                      let href = '';
-                      let text = '';
-                      let Icon;
+                      const method = parts[0];
+                      const detail = parts.slice(1).join(':');
 
-                      switch (method) {
-                        case 'whatsapp':
-                          href = `https://wa.me/${detail.replace(/\D/g, '')}`;
-                          text = 'Contact on WhatsApp';
-                          Icon = MessageSquare;
-                          break;
-                        case 'telegram':
-                          href = `https://t.me/${detail}`;
-                          text = 'Contact on Telegram';
-                          Icon = Send;
-                          break;
-                        case 'email':
-                          href = `mailto:${detail}`;
-                          text = 'Contact via Email';
-                          Icon = Mail;
-                          break;
-                        default:
-                          return <p className="text-sm text-muted-foreground">Contact: {listing.contact}</p>;
+                      if (method === 'telegram' && detail) {
+                        const href = `https://t.me/${detail}`;
+                        return (
+                          <Button asChild size="lg" className="w-full">
+                            <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                              <Send className="w-5 h-5" />
+                              Contact on Telegram
+                            </a>
+                          </Button>
+                        );
                       }
-
-                      return (
-                        <Button asChild size="lg" className="w-full">
-                          <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                            <Icon className="w-5 h-5" />
-                            {text}
-                          </a>
-                        </Button>
-                      );
+                      
+                      return <p className="text-sm text-muted-foreground">The seller has not provided contact information.</p>;
                     })()}
                   </div>
                 </>
