@@ -3,14 +3,13 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
-// IMPORTANT: Create a .env file in your project root and add your Firebase credentials.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyDrZOQB6bElkrGenF0RVua0Uk3zChSv9D8",
+  authDomain: "desi-market-place.firebaseapp.com",
+  projectId: "desi-market-place",
+  storageBucket: "desi-market-place.appspot.com",
+  messagingSenderId: "911068949400",
+  appId: "1:911068949400:web:eec79dc6a3fb76c4dc59ed"
 };
 
 const app = initializeApp(firebaseConfig);
