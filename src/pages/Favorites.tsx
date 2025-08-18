@@ -12,13 +12,14 @@ import { useNavigate } from 'react-router-dom';
 const fetchFavoriteListings = async (userId: string): Promise<Listing[]> => {
   const { data, error } = await supabase
     .from('favorites')
-    .select('listings(*, favorites(user_id))')
+    .select('listings!inner(*)') // Use inner join to ensure listing exists and simplify query
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
 
-  return data.map(item => ({
+  // Safely map over data, ensuring it's not null.
+  return data?.map(item => ({
     ...(item.listings as Listing),
     is_favorited: true,
   })) || [];
