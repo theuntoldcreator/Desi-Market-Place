@@ -2,6 +2,7 @@ import { Search, ShoppingBag, Laptop, BookOpen, Home, Car, Shirt, Gamepad2, Gift
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { UserStats } from '@/components/marketplace/UserStats';
 
 const categories = [
   { id: 'all', name: 'All Items', icon: ShoppingBag },
@@ -47,6 +48,8 @@ export const SidebarContent = ({ selectedCategory, onCategoryChange, searchQuery
           </button>
         ))}
       </div>
+      <Separator />
+      <UserStats />
     </div>
   );
 };
